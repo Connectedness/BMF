@@ -22,6 +22,7 @@
         <Project Path="src/Transports/Usf.Transport.RabbitMq/Usf.Transport.RabbitMq.csproj" />
     </Folder>
     <Folder Name="/tests/">
+        <File Path="tests\AGENTS.md" />
         <File Path="tests\Directory.Build.props" />
         <Project Path="tests/Usf.Core.Tests/Usf.Core.Tests.csproj" />
     </Folder>
