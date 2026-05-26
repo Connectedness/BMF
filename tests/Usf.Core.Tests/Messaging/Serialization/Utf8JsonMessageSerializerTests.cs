@@ -75,10 +75,8 @@ public sealed class Utf8JsonMessageSerializerTests
         SerializerBaseMessage message = new SerializerDerivedMessage("Base", "Derived");
 
         var serializedMessage = await serializer.SerializeAsync(message, cancellationToken);
-        var json = GetJson(serializedMessage);
 
-        json.Should().Contain("\"BaseValue\":\"Base\"");
-        json.Should().Contain("\"DerivedValue\":\"Derived\"");
+        GetJson(serializedMessage).Should().Be("{\"DerivedValue\":\"Derived\",\"BaseValue\":\"Base\"}");
     }
 
     [Fact]
@@ -93,11 +91,28 @@ public sealed class Utf8JsonMessageSerializerTests
         SerializerPolymorphicBaseMessage message = new SerializerKnownDerivedMessage("Base", "Derived");
 
         var serializedMessage = await serializer.SerializeAsync(message, cancellationToken);
-        var json = GetJson(serializedMessage);
 
-        json.Should().Contain("\"$kind\":\"known\"");
-        json.Should().Contain("\"BaseValue\":\"Base\"");
-        json.Should().Contain("\"KnownValue\":\"Derived\"");
+        GetJson(serializedMessage)
+           .Should()
+           .Be("{\"$kind\":\"known\",\"KnownValue\":\"Derived\",\"BaseValue\":\"Base\"}");
+    }
+
+    [Fact]
+    public async Task SerializeAsync_FallsBackToNearestAncestor_WhenPolymorphismOptionsAllowIt()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var options = new JsonSerializerOptions
+        {
+            TypeInfoResolver = Utf8JsonMessageSerializerFallbackContext.Default
+        };
+        var serializer = new Utf8JsonMessageSerializer(options);
+        SerializerFallbackBaseMessage message = new SerializerFallbackLeafMessage("Base", "Known", "Leaf");
+
+        var serializedMessage = await serializer.SerializeAsync(message, cancellationToken);
+
+        GetJson(serializedMessage)
+           .Should()
+           .Be("{\"$kind\":\"known\",\"KnownValue\":\"Known\",\"BaseValue\":\"Base\"}");
     }
 
     [Fact]
@@ -149,6 +164,19 @@ public record SerializerPolymorphicBaseMessage(string BaseValue);
 public sealed record SerializerKnownDerivedMessage(string BaseValue, string KnownValue) :
     SerializerPolymorphicBaseMessage(BaseValue);
 
+[JsonPolymorphic(
+    TypeDiscriminatorPropertyName = "$kind",
+    UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor
+)]
+[JsonDerivedType(typeof(SerializerFallbackKnownDerivedMessage), "known")]
+public record SerializerFallbackBaseMessage(string BaseValue);
+
+public record SerializerFallbackKnownDerivedMessage(string BaseValue, string KnownValue) :
+    SerializerFallbackBaseMessage(BaseValue);
+
+public sealed record SerializerFallbackLeafMessage(string BaseValue, string KnownValue, string LeafValue) :
+    SerializerFallbackKnownDerivedMessage(BaseValue, KnownValue);
+
 [JsonSerializable(typeof(SerializerExactMessage))]
 [JsonSerializable(typeof(SerializerBaseMessage))]
 [JsonSerializable(typeof(SerializerDerivedMessage))]
@@ -161,6 +189,10 @@ public partial class Utf8JsonMessageSerializerCamelCaseContext : JsonSerializerC
 [JsonSerializable(typeof(SerializerPolymorphicBaseMessage))]
 [JsonSerializable(typeof(SerializerKnownDerivedMessage))]
 public partial class Utf8JsonMessageSerializerPolymorphicContext : JsonSerializerContext;
+
+[JsonSerializable(typeof(SerializerFallbackBaseMessage))]
+[JsonSerializable(typeof(SerializerFallbackKnownDerivedMessage))]
+public partial class Utf8JsonMessageSerializerFallbackContext : JsonSerializerContext;
 
 [JsonSerializable(typeof(SerializerBaseMessage))]
 public partial class Utf8JsonMessageSerializerMissingRuntimeContext : JsonSerializerContext;

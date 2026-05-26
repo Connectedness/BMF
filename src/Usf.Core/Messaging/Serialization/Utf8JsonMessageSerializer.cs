@@ -33,16 +33,13 @@ public sealed class Utf8JsonMessageSerializer : IMessageSerializer
             throw new ArgumentNullException(nameof(message));
         }
 
-        var declaredType = typeof(T);
+        var declaredTypeInfo = GetRequiredTypeInfo(typeof(T));
         var runtimeType = message.GetType();
-        var typeInfo = GetRequiredTypeInfo(declaredType);
 
-        if (declaredType != runtimeType && !DeclaredTypeMetadataSupportsRuntimeType(typeInfo, runtimeType))
-        {
-            typeInfo = GetRequiredTypeInfo(runtimeType);
-        }
+        var utf8Bytes = ShouldUseWith(declaredTypeInfo, runtimeType) ?
+            JsonSerializer.SerializeToUtf8Bytes(message, (JsonTypeInfo<T>) declaredTypeInfo) :
+            JsonSerializer.SerializeToUtf8Bytes(message, GetRequiredTypeInfo(runtimeType));
 
-        var utf8Bytes = JsonSerializer.SerializeToUtf8Bytes(message, typeInfo);
         SerializedMessage serializedMessage = new (
             utf8Bytes,
             "application/json",
@@ -57,15 +54,13 @@ public sealed class Utf8JsonMessageSerializer : IMessageSerializer
 
     private JsonTypeInfo GetRequiredTypeInfo(Type type)
     {
-        if (_serializerOptions.TryGetTypeInfo(type, out var typeInfo) && typeInfo is not null)
+        if (_serializerOptions.TryGetTypeInfo(type, out var typeInfo))
         {
             return typeInfo;
         }
 
         throw new InvalidOperationException(
-            $"JsonTypeInfo metadata for type '{type}' was not provided by TypeInfoResolver of type '{GetResolverDisplayName()}'. " +
-            "If using source generation, ensure that all root types passed to the serializer have been annotated with " +
-            "'JsonSerializableAttribute', along with any types that might be serialized polymorphically."
+            $"JsonTypeInfo metadata for type '{type}' was not provided by TypeInfoResolver of type '{GetResolverDisplayName()}'. If using source generation, ensure that all root types passed to the serializer have been annotated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically."
         );
     }
 
@@ -74,31 +69,17 @@ public sealed class Utf8JsonMessageSerializer : IMessageSerializer
         return _serializerOptions.TypeInfoResolver?.GetType().FullName ?? "<null>";
     }
 
-    private static bool DeclaredTypeMetadataSupportsRuntimeType(JsonTypeInfo declaredTypeInfo, Type runtimeType)
-    {
-        var polymorphismOptions = declaredTypeInfo.PolymorphismOptions;
+    // The two helpers below mirror Microsoft.AspNetCore.Http.JsonSerializerExtensions:
+    // if the declared type is sealed, a value type, or has explicit polymorphism options
+    // configured, its JsonTypeInfo is trusted to handle the runtime instance correctly.
+    private static bool ShouldUseWith(JsonTypeInfo declaredTypeInfo, Type runtimeType) =>
+        declaredTypeInfo.Type == runtimeType || HasKnownPolymorphism(declaredTypeInfo);
 
-        if (polymorphismOptions is null)
-        {
-            return false;
-        }
+    private static bool HasKnownPolymorphism(JsonTypeInfo declaredTypeInfo) =>
+        declaredTypeInfo.Type.IsSealed ||
+        declaredTypeInfo.Type.IsValueType ||
+        declaredTypeInfo.PolymorphismOptions is not null;
 
-        foreach (var derivedType in polymorphismOptions.DerivedTypes)
-        {
-            if (derivedType.DerivedType == runtimeType)
-            {
-                return true;
-            }
-        }
+    private static JsonSerializerOptions CreateDefaultSerializerOptions() => JsonSerializerOptions.Default;
 
-        return false;
-    }
-
-    private static JsonSerializerOptions CreateDefaultSerializerOptions()
-    {
-        return new JsonSerializerOptions
-        {
-            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
-        };
-    }
 }
