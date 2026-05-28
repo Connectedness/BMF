@@ -8,13 +8,13 @@ namespace Usf.Transport.RabbitMq;
 public sealed class RabbitMqMessagePublishingBuilder
 {
     private readonly List<RabbitMqBindingDefinition> _bindingDefinitions = [];
-    private RabbitMqChannelPoolingMode _channelPoolingMode = RabbitMqChannelPoolingMode.PerTarget;
     private readonly List<RabbitMqExchangeDefinition> _exchangeDefinitions = [];
-    private int _maxChannelsPerTarget = 1;
     private readonly List<RabbitMqQueueDefinition> _queueDefinitions = [];
     private readonly List<RabbitMqPublishRouteConfiguration> _routes = [];
-    private int _sharedChannelPoolSize = 8;
+    private RabbitMqChannelPoolingMode _channelPoolingMode = RabbitMqChannelPoolingMode.PerTarget;
     private Func<IServiceProvider, ConnectionFactory>? _connectionFactoryFactory;
+    private int _maxChannelsPerTarget = 1;
+    private int _sharedChannelPoolSize = 8;
 
     public RabbitMqMessagePublishingBuilder UseConnectionFactory(ConnectionFactory connectionFactory)
     {

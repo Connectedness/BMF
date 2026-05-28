@@ -6,27 +6,26 @@ namespace Usf.Transport.RabbitMq;
 
 public readonly struct RabbitMqChannelLease : IAsyncDisposable
 {
-    private readonly DefaultRabbitMqChannelPool _pool;
-    private readonly long _leaseId;
-    private readonly DefaultRabbitMqChannelPool.PooledChannel _pooledChannel;
+    private readonly IRabbitMqChannelPool? _pool;
+    private readonly IChannel? _channel;
 
-    public RabbitMqChannelLease(DefaultRabbitMqChannelPool pool, DefaultRabbitMqChannelPool.PooledChannel pooledChannel, long leaseId)
+    public RabbitMqChannelLease(IRabbitMqChannelPool pool, IChannel channel, object? state = null, long token = 0)
     {
         _pool = pool ?? throw new ArgumentNullException(nameof(pool));
-        _pooledChannel = pooledChannel ?? throw new ArgumentNullException(nameof(pooledChannel));
-        _leaseId = leaseId;
+        _channel = channel ?? throw new ArgumentNullException(nameof(channel));
+        State = state;
+        Token = token;
     }
 
     public IChannel Channel =>
-        _pooledChannel.Channel ?? throw new ObjectDisposedException(nameof(RabbitMqChannelLease));
+        _channel ?? throw new ObjectDisposedException(nameof(RabbitMqChannelLease));
+
+    public object? State { get; }
+
+    public long Token { get; }
 
     public ValueTask DisposeAsync()
     {
-        if (_pool is null || _pooledChannel is null)
-        {
-            return default;
-        }
-
-        return _pool.ReleaseAsync(_pooledChannel, _leaseId);
+        return _pool?.ReleaseAsync(in this) ?? default;
     }
 }

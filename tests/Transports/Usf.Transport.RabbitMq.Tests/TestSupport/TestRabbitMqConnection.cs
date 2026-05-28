@@ -12,9 +12,11 @@ public sealed class TestRabbitMqConnection
     private readonly Queue<IChannel> _channels = new ();
     private readonly IConnection _connection;
 
-    public TestRabbitMqConnection()
+    public TestRabbitMqConnection(IList<string>? disposalEvents = null, string disposalEventName = "connection")
     {
         _connection = RabbitMqDispatchProxy<IConnection>.Create(HandleInvoke);
+        DisposalEvents = disposalEvents;
+        DisposalEventName = disposalEventName;
     }
 
     public ushort ChannelMax { get; set; }
@@ -24,6 +26,10 @@ public sealed class TestRabbitMqConnection
     public int DisposeAsyncCallCount { get; private set; }
 
     public int DisposeCallCount { get; private set; }
+
+    public IList<string>? DisposalEvents { get; }
+
+    public string DisposalEventName { get; }
 
     public bool IsOpen { get; private set; } = true;
 
@@ -49,10 +55,12 @@ public sealed class TestRabbitMqConnection
             case "DisposeAsync":
                 DisposeAsyncCallCount++;
                 IsOpen = false;
+                DisposalEvents?.Add(DisposalEventName);
                 return default(ValueTask);
             case "Dispose":
                 DisposeCallCount++;
                 IsOpen = false;
+                DisposalEvents?.Add(DisposalEventName);
                 return null;
         }
 

@@ -36,18 +36,18 @@ public static class RabbitMqMessageTopologyCompiler
         Dictionary<Type, Target> defaultTargetsByMessageType = new ();
         Dictionary<string, Target> targetsByName = new (StringComparer.Ordinal);
         List<Target> targets = [];
-        IRabbitMqChannelPool? sharedChannelPool = null;
 
         LogWorstCaseChannelCount(serviceProvider, configuration);
 
+        var sharedChannelPool = configuration.ChannelPoolingMode == RabbitMqChannelPoolingMode.Shared ?
+            CreateChannelPool(connectionManager, configuration.SharedChannelPoolSize) :
+            null;
+        var ownsChannelPool = configuration.ChannelPoolingMode == RabbitMqChannelPoolingMode.PerTarget;
+
         foreach (var route in OrderRoutes(configuration.Routes))
         {
-            sharedChannelPool ??= configuration.ChannelPoolingMode == RabbitMqChannelPoolingMode.Shared ?
-                CreateChannelPool(connectionManager, configuration.SharedChannelPoolSize) :
-                null;
             var channelPool = sharedChannelPool ??
                               CreateChannelPool(connectionManager, configuration.MaxChannelsPerTarget);
-            var ownsChannelPool = configuration.ChannelPoolingMode == RabbitMqChannelPoolingMode.PerTarget;
             var target = CreateTarget(route, serviceProvider, channelPool, ownsChannelPool);
             targets.Add(target);
 
@@ -67,7 +67,8 @@ public static class RabbitMqMessageTopologyCompiler
             configuration.Queues,
             configuration.Bindings,
             targets,
-            sharedChannelPool
+            sharedChannelPool,
+            connectionManager
         );
     }
 
@@ -465,41 +466,13 @@ public static class RabbitMqMessageTopologyCompiler
         RabbitMqPublishingConfiguration configuration
     )
     {
-        var worstCaseChannelCount = GetWorstCaseChannelCount(configuration);
+        var (worstCaseChannelCount, description) = RabbitMqChannelBudget.Calculate(configuration);
         var loggerFactory = serviceProvider.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance;
         var logger = loggerFactory.CreateLogger(typeof(RabbitMqMessageTopologyCompiler));
         logger.LogInformation(
             "RabbitMQ publish topology may open up to {ChannelCount} channels ({Description}).",
             worstCaseChannelCount,
-            GetWorstCaseChannelCountDescription(configuration)
+            description
         );
-    }
-
-    private static int GetWorstCaseChannelCount(RabbitMqPublishingConfiguration configuration)
-    {
-        if (configuration.Routes.Count == 0)
-        {
-            return 0;
-        }
-
-        return configuration.ChannelPoolingMode switch
-        {
-            RabbitMqChannelPoolingMode.PerTarget =>
-                checked(configuration.Routes.Count * configuration.MaxChannelsPerTarget),
-            RabbitMqChannelPoolingMode.Shared => configuration.SharedChannelPoolSize,
-            _ => 0
-        };
-    }
-
-    private static string GetWorstCaseChannelCountDescription(RabbitMqPublishingConfiguration configuration)
-    {
-        return configuration.ChannelPoolingMode switch
-        {
-            RabbitMqChannelPoolingMode.PerTarget =>
-                $"PerTarget mode, {configuration.Routes.Count} targets × max {configuration.MaxChannelsPerTarget}",
-            RabbitMqChannelPoolingMode.Shared =>
-                $"Shared mode, shared pool size {configuration.SharedChannelPoolSize}",
-            _ => "unknown pooling mode"
-        };
     }
 }

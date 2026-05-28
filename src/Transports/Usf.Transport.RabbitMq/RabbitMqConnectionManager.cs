@@ -17,7 +17,7 @@ public sealed class RabbitMqConnectionManager : IAsyncDisposable, IDisposable
     private readonly int _worstCaseChannelCount;
     private readonly string _worstCaseChannelCountDescription;
     private volatile Task<IConnection>? _connectionTask;
-    private bool _disposed;
+    private int _disposed;
 
     public RabbitMqConnectionManager(RabbitMqPublishingConfiguration configuration, IServiceProvider serviceProvider)
         : this(
@@ -57,18 +57,18 @@ public sealed class RabbitMqConnectionManager : IAsyncDisposable, IDisposable
             createConnectionAsync ?? throw new ArgumentNullException(nameof(createConnectionAsync));
         _logger =
             (loggerFactory ?? NullLoggerFactory.Instance).CreateLogger<RabbitMqConnectionManager>();
-        _worstCaseChannelCount = GetWorstCaseChannelCount(configuration);
-        _worstCaseChannelCountDescription = GetWorstCaseChannelCountDescription(configuration);
+        var (worstCaseChannelCount, description) = RabbitMqChannelBudget.Calculate(configuration);
+        _worstCaseChannelCount = worstCaseChannelCount;
+        _worstCaseChannelCountDescription = description;
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_disposed)
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
             return;
         }
 
-        _disposed = true;
         _gate.Dispose();
 
         if (_connectionTask is not null && _connectionTask.Status == TaskStatus.RanToCompletion)
@@ -87,12 +87,11 @@ public sealed class RabbitMqConnectionManager : IAsyncDisposable, IDisposable
 
     public void Dispose()
     {
-        if (_disposed)
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
             return;
         }
 
-        _disposed = true;
         _gate.Dispose();
 
         if (_connectionTask is not null && _connectionTask.Status == TaskStatus.RanToCompletion)
@@ -180,37 +179,9 @@ public sealed class RabbitMqConnectionManager : IAsyncDisposable, IDisposable
         );
     }
 
-    private static int GetWorstCaseChannelCount(RabbitMqPublishingConfiguration configuration)
-    {
-        if (configuration.Routes.Count == 0)
-        {
-            return 0;
-        }
-
-        return configuration.ChannelPoolingMode switch
-        {
-            RabbitMqChannelPoolingMode.PerTarget =>
-                checked(configuration.Routes.Count * configuration.MaxChannelsPerTarget),
-            RabbitMqChannelPoolingMode.Shared => configuration.SharedChannelPoolSize,
-            _ => 0
-        };
-    }
-
-    private static string GetWorstCaseChannelCountDescription(RabbitMqPublishingConfiguration configuration)
-    {
-        return configuration.ChannelPoolingMode switch
-        {
-            RabbitMqChannelPoolingMode.PerTarget =>
-                $"PerTarget mode, {configuration.Routes.Count} targets × max {configuration.MaxChannelsPerTarget}",
-            RabbitMqChannelPoolingMode.Shared =>
-                $"Shared mode, shared pool size {configuration.SharedChannelPoolSize}",
-            _ => "unknown pooling mode"
-        };
-    }
-
     private void ThrowIfDisposed()
     {
-        if (_disposed)
+        if (Volatile.Read(ref _disposed) != 0)
         {
             throw new ObjectDisposedException(nameof(RabbitMqConnectionManager));
         }

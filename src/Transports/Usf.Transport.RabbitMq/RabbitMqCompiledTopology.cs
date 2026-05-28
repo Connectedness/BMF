@@ -8,13 +8,18 @@ namespace Usf.Transport.RabbitMq;
 
 public sealed class RabbitMqCompiledTopology : IAsyncDisposable, IDisposable
 {
+    private readonly RabbitMqConnectionManager? _connectionManager;
+    private readonly IRabbitMqChannelPool? _sharedChannelPool;
+    private readonly IReadOnlyList<Target> _targets;
+
     public RabbitMqCompiledTopology(
         MessageTopology messageTopology,
         IReadOnlyList<RabbitMqExchangeDefinition> exchanges,
         IReadOnlyList<RabbitMqQueueDefinition> queues,
         IReadOnlyList<RabbitMqBindingDefinition> bindings,
         IReadOnlyList<Target> targets,
-        IRabbitMqChannelPool? sharedChannelPool
+        IRabbitMqChannelPool? sharedChannelPool,
+        RabbitMqConnectionManager? connectionManager = null
     )
     {
         MessageTopology = messageTopology ?? throw new ArgumentNullException(nameof(messageTopology));
@@ -23,10 +28,8 @@ public sealed class RabbitMqCompiledTopology : IAsyncDisposable, IDisposable
         Bindings = bindings ?? throw new ArgumentNullException(nameof(bindings));
         _targets = targets ?? throw new ArgumentNullException(nameof(targets));
         _sharedChannelPool = sharedChannelPool;
+        _connectionManager = connectionManager;
     }
-
-    private readonly IRabbitMqChannelPool? _sharedChannelPool;
-    private readonly IReadOnlyList<Target> _targets;
 
     public MessageTopology MessageTopology { get; }
 
@@ -54,6 +57,11 @@ public sealed class RabbitMqCompiledTopology : IAsyncDisposable, IDisposable
         {
             await _sharedChannelPool.DisposeAsync().ConfigureAwait(false);
         }
+
+        if (_connectionManager is not null)
+        {
+            await _connectionManager.DisposeAsync().ConfigureAwait(false);
+        }
     }
 
     public void Dispose()
@@ -67,5 +75,6 @@ public sealed class RabbitMqCompiledTopology : IAsyncDisposable, IDisposable
         }
 
         _sharedChannelPool?.Dispose();
+        _connectionManager?.Dispose();
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -9,10 +10,11 @@ namespace Usf.Transport.RabbitMq;
 
 public sealed class DefaultRabbitMqChannelPool : IRabbitMqChannelPool
 {
-    private readonly Channel<PooledChannel> _availableChannels;
     private readonly TaskCompletionSource<object?> _allChannelsDisposed = new (
         TaskCreationOptions.RunContinuationsAsynchronously
     );
+
+    private readonly Channel<PooledChannel> _availableChannels;
     private readonly Func<CancellationToken, Task<IChannel>> _channelFactory;
     private readonly int _maximumChannelCount;
     private int _disposed;
@@ -99,6 +101,28 @@ public sealed class DefaultRabbitMqChannelPool : IRabbitMqChannelPool
         }
     }
 
+    public ValueTask ReleaseAsync(in RabbitMqChannelLease lease)
+    {
+        if (lease.State is not PooledChannel pooledChannel)
+        {
+            return default;
+        }
+
+        if (!pooledChannel.TryCompleteLease(lease.Token))
+        {
+            return default;
+        }
+
+        if (Volatile.Read(ref _disposed) != 0 ||
+            !pooledChannel.IsHealthy ||
+            !_availableChannels.Writer.TryWrite(pooledChannel))
+        {
+            return DiscardAsync(pooledChannel);
+        }
+
+        return default;
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (Interlocked.Exchange(ref _disposed, 1) == 0)
@@ -121,33 +145,13 @@ public sealed class DefaultRabbitMqChannelPool : IRabbitMqChannelPool
 
     public void Dispose()
     {
-        DisposeAsync().AsTask().GetAwaiter().GetResult();
-    }
-
-    public ValueTask ReleaseAsync(PooledChannel pooledChannel, long leaseId)
-    {
-        if (pooledChannel is null)
-        {
-            return default;
-        }
-
-        if (!pooledChannel.TryCompleteLease(leaseId))
-        {
-            return default;
-        }
-
-        if (Volatile.Read(ref _disposed) != 0 || !pooledChannel.IsHealthy || !_availableChannels.Writer.TryWrite(pooledChannel))
-        {
-            return DiscardAsync(pooledChannel);
-        }
-
-        return default;
+        Task.Run(async () => await DisposeAsync().ConfigureAwait(false)).GetAwaiter().GetResult();
     }
 
     private RabbitMqChannelLease CreateLease(PooledChannel pooledChannel)
     {
         var leaseId = pooledChannel.BeginLease();
-        return new RabbitMqChannelLease(this, pooledChannel, leaseId);
+        return new RabbitMqChannelLease(this, pooledChannel.Channel, pooledChannel, leaseId);
     }
 
     private async ValueTask DiscardAsync(PooledChannel pooledChannel)
@@ -198,12 +202,13 @@ public sealed class DefaultRabbitMqChannelPool : IRabbitMqChannelPool
         }
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class PooledChannel : IAsyncDisposable
     {
         private readonly IChannel _channel;
         private long _currentLeaseId;
-        private int _observedShutdown;
         private long _nextLeaseId;
+        private int _observedShutdown;
 
         public PooledChannel(IChannel channel)
         {
@@ -214,23 +219,6 @@ public sealed class DefaultRabbitMqChannelPool : IRabbitMqChannelPool
         public IChannel Channel => _channel;
 
         public bool IsHealthy => Volatile.Read(ref _observedShutdown) == 0 && _channel.IsOpen;
-
-        public long BeginLease()
-        {
-            var leaseId = Interlocked.Increment(ref _nextLeaseId);
-
-            if (Interlocked.CompareExchange(ref _currentLeaseId, leaseId, 0) != 0)
-            {
-                throw new InvalidOperationException("A RabbitMQ channel cannot be leased concurrently.");
-            }
-
-            return leaseId;
-        }
-
-        public bool TryCompleteLease(long leaseId)
-        {
-            return Interlocked.CompareExchange(ref _currentLeaseId, 0, leaseId) == leaseId;
-        }
 
         public async ValueTask DisposeAsync()
         {
@@ -243,6 +231,18 @@ public sealed class DefaultRabbitMqChannelPool : IRabbitMqChannelPool
             }
 
             _channel.Dispose();
+        }
+
+        public long BeginLease()
+        {
+            var leaseId = Interlocked.Increment(ref _nextLeaseId);
+            Volatile.Write(ref _currentLeaseId, leaseId);
+            return leaseId;
+        }
+
+        public bool TryCompleteLease(long leaseId)
+        {
+            return Interlocked.CompareExchange(ref _currentLeaseId, 0, leaseId) == leaseId;
         }
 
         private Task OnChannelShutdownAsync(object sender, ShutdownEventArgs eventArgs)
