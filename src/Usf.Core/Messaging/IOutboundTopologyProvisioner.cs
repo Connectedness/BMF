@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Usf.Core.Messaging;
 
-public interface ITopologyProvisioner
+public interface IOutboundTopologyProvisioner
 {
     Task ProvisionAsync(CancellationToken cancellationToken = default);
 }

@@ -12,7 +12,7 @@ public sealed class RabbitMqQueueBuilder
     public RabbitMqQueueBuilder(string name)
     {
         Name = RequireText(name, nameof(name));
-        DeclareMode = RabbitMqDeclareMode.Ensure;
+        DeclareMode = RabbitMqDeclareMode.Active;
         Durable = true;
     }
 

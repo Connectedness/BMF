@@ -10,6 +10,7 @@ using RabbitMQ.Client;
 using Testcontainers.RabbitMq;
 using Usf.Core.Messaging;
 using Usf.Core.Messaging.Serialization;
+using Usf.Transport.RabbitMq.Configuration;
 using Usf.Transport.RabbitMq.Tests.TestSupport;
 using Xunit;
 
@@ -26,10 +27,12 @@ public sealed class RabbitMqPublishingIntegrationTests
 
         try
         {
+            await DeclareExchangeAsync(container.GetConnectionString(), "orders-fanout", ExchangeType.Fanout, cancellationToken);
+
             var services = new ServiceCollection();
             services.AddSingleton<Utf8JsonMessageSerializer>();
             services.AddSingleton<RabbitMqIntegrationSerializer>();
-            services.AddRabbitMqMessagePublishing(
+            services.AddRabbitMqOutboundTopology(
                 builder =>
                 {
                     builder.UseConnectionFactory(
@@ -41,18 +44,29 @@ public sealed class RabbitMqPublishingIntegrationTests
 
                     builder.Exchange("orders-direct", ExchangeType.Direct);
                     builder.Exchange("orders-topic", ExchangeType.Topic);
-                    builder.Exchange("orders-fanout", ExchangeType.Fanout);
+                    builder.Exchange(
+                        "orders-fanout",
+                        ExchangeType.Fanout,
+                        exchange => exchange.WithDeclareMode(RabbitMqDeclareMode.Passive)
+                    );
                     builder.Exchange("orders-headers", ExchangeType.Headers);
                     builder.Exchange("orders-upstream", ExchangeType.Direct);
                     builder.Exchange("orders-downstream", ExchangeType.Direct);
+                    builder.Address("orders-direct-address", "orders-direct");
+                    builder.Address("orders-topic-address", "orders-topic");
+                    builder.Address("orders-fanout-address", "orders-fanout");
+                    builder.Address("orders-headers-address", "orders-headers");
+                    builder.Address("orders-upstream-address", "orders-upstream");
 
                     builder.Queue("orders-direct-queue");
+                    builder.Queue("orders-audit-queue");
                     builder.Queue("orders-topic-queue");
                     builder.Queue("orders-fanout-queue");
                     builder.Queue("orders-headers-queue");
                     builder.Queue("orders-exchange-binding-queue");
 
                     builder.QueueBinding("orders-direct", "orders-direct-queue", "orders.created");
+                    builder.QueueBinding("orders-direct", "orders-audit-queue", "orders.audit");
                     builder.QueueBinding("orders-topic", "orders-topic-queue", "orders.topic");
                     builder.QueueBinding("orders-fanout", "orders-fanout-queue");
                     builder.QueueBinding(
@@ -68,25 +82,30 @@ public sealed class RabbitMqPublishingIntegrationTests
 
                     builder.Publish<RabbitMqPublishMessage>(
                         route => route
-                           .ToDirectExchange("orders-direct", "orders.created")
+                           .ToDirectAddress("orders-direct-address", "orders.created")
                            .WithSerializer<RabbitMqIntegrationSerializer>()
+                    );
+                    builder.Publish<RabbitMqAuditMessage>(
+                        route => route
+                           .ToDirectAddress("orders-direct-address", "orders.audit")
+                           .WithSerializer<Utf8JsonMessageSerializer>()
                     );
                     builder.PublishNamed<RabbitMqPublishMessage>(
                         "topic-target",
                         route => route
-                           .ToTopicExchange("orders-topic", static message => $"orders.{message.Name}")
+                           .ToTopicAddress("orders-topic-address", static message => $"orders.{message.Name}")
                            .WithSerializer<RabbitMqIntegrationSerializer>()
                     );
                     builder.PublishNamed<RabbitMqPublishMessage>(
                         "fanout-target",
                         route => route
-                           .ToFanoutExchange("orders-fanout")
+                           .ToFanoutAddress("orders-fanout-address")
                            .WithSerializer<RabbitMqIntegrationSerializer>()
                     );
                     builder.PublishNamed<RabbitMqPublishMessage>(
                         "headers-target",
                         route => route
-                           .ToHeadersExchange("orders-headers")
+                           .ToHeadersAddress("orders-headers-address")
                            .WithHeader("tenant", "route-tenant")
                            .WithHeader("region", "us")
                            .WithSerializer<RabbitMqIntegrationSerializer>()
@@ -94,7 +113,7 @@ public sealed class RabbitMqPublishingIntegrationTests
                     builder.PublishNamed<RabbitMqPublishMessage>(
                         "exchange-binding-target",
                         route => route
-                           .ToDirectExchange("orders-upstream", "orders.exchange")
+                           .ToDirectAddress("orders-upstream-address", "orders.exchange")
                            .WithSerializer<RabbitMqIntegrationSerializer>()
                     );
                 }
@@ -108,7 +127,7 @@ public sealed class RabbitMqPublishingIntegrationTests
             }
 
             var publisher = serviceProvider.GetRequiredService<IMessagePublisher>();
-            var targetRegistry = serviceProvider.GetRequiredService<ITargetRegistry>();
+            var targetRegistry = serviceProvider.GetRequiredService<IOutboundTargetRegistry>();
 
             await publisher.PublishMessageAsync(
                 new RabbitMqPublishMessage(42, "created"),
@@ -118,6 +137,10 @@ public sealed class RabbitMqPublishingIntegrationTests
                 new RabbitMqPublishMessage(43, "topic"),
                 targetRegistry.GetRequiredTarget("topic-target"),
                 cancellationToken
+            );
+            await publisher.PublishMessageAsync(
+                new RabbitMqAuditMessage(1042, "audit"),
+                cancellationToken: cancellationToken
             );
             await publisher.PublishMessageAsync(
                 new RabbitMqPublishMessage(44, "fanout"),
@@ -143,6 +166,7 @@ public sealed class RabbitMqPublishingIntegrationTests
             await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
             var directMessage = await GetRequiredMessageAsync(channel, "orders-direct-queue", cancellationToken);
+            var auditMessage = await GetRequiredMessageAsync(channel, "orders-audit-queue", cancellationToken);
             var topicMessage = await GetRequiredMessageAsync(channel, "orders-topic-queue", cancellationToken);
             var fanoutMessage = await GetRequiredMessageAsync(channel, "orders-fanout-queue", cancellationToken);
             var headersMessage = await GetRequiredMessageAsync(channel, "orders-headers-queue", cancellationToken);
@@ -153,6 +177,7 @@ public sealed class RabbitMqPublishingIntegrationTests
             );
 
             Encoding.UTF8.GetString(directMessage.Body.ToArray()).Should().Be("{\"Id\":42,\"Name\":\"created\"}");
+            Encoding.UTF8.GetString(auditMessage.Body.ToArray()).Should().Be("{\"Id\":1042,\"EventName\":\"audit\"}");
             Encoding.UTF8.GetString(topicMessage.Body.ToArray()).Should().Be("{\"Id\":43,\"Name\":\"topic\"}");
             Encoding.UTF8.GetString(fanoutMessage.Body.ToArray()).Should().Be("{\"Id\":44,\"Name\":\"fanout\"}");
             Encoding.UTF8.GetString(headersMessage.Body.ToArray()).Should().Be("{\"Id\":45,\"Name\":\"headers\"}");
@@ -164,8 +189,14 @@ public sealed class RabbitMqPublishingIntegrationTests
             ExtractHeaderValue(headersMessage.BasicProperties.Headers!, "tenant").Should().Be("tenant-headers");
             ExtractHeaderValue(headersMessage.BasicProperties.Headers!, "region").Should().Be("us");
 
-            serviceProvider.GetRequiredService<IMessageTopology>().GetRequiredTarget<RabbitMqPublishMessage>().Name
+            serviceProvider
+               .GetRequiredService<IOutboundTopology>()
+               .GetRequiredTarget<RabbitMqPublishMessage>().Name
                .Should().Be(typeof(RabbitMqPublishMessage).FullName);
+            serviceProvider
+               .GetRequiredService<IOutboundTopology>()
+               .GetRequiredTarget<RabbitMqAuditMessage>().Name
+               .Should().Be(typeof(RabbitMqAuditMessage).FullName);
             targetRegistry.GetRequiredTarget("topic-target").Should().NotBeNull();
             targetRegistry.GetRequiredTarget("fanout-target").Should().NotBeNull();
             targetRegistry.GetRequiredTarget("headers-target").Should().NotBeNull();
@@ -196,6 +227,28 @@ public sealed class RabbitMqPublishingIntegrationTests
         }
 
         throw new InvalidOperationException($"No RabbitMQ message was available in queue '{queueName}'.");
+    }
+
+    private static async Task DeclareExchangeAsync(
+        string connectionString,
+        string exchangeName,
+        string exchangeType,
+        CancellationToken cancellationToken
+    )
+    {
+        var connectionFactory = new ConnectionFactory
+        {
+            Uri = new Uri(connectionString)
+        };
+        await using var connection = await connectionFactory.CreateConnectionAsync(cancellationToken);
+        await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
+        await channel.ExchangeDeclareAsync(
+            exchangeName,
+            exchangeType,
+            durable: true,
+            autoDelete: false,
+            cancellationToken: cancellationToken
+        );
     }
 
     private static string ExtractHeaderValue(IDictionary<string, object?> headers, string name)

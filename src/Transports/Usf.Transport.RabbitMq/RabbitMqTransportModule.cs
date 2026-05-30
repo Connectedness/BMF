@@ -7,9 +7,9 @@ namespace Usf.Transport.RabbitMq;
 
 public static class RabbitMqTransportModule
 {
-    public static IServiceCollection AddRabbitMqMessagePublishing(
+    public static IServiceCollection AddRabbitMqOutboundTopology(
         this IServiceCollection services,
-        Action<RabbitMqMessagePublishingBuilder> configure
+        Action<RabbitMqOutboundTopologyBuilder> configure
     )
     {
         if (services is null)
@@ -22,27 +22,26 @@ public static class RabbitMqTransportModule
             throw new ArgumentNullException(nameof(configure));
         }
 
-        var builder = new RabbitMqMessagePublishingBuilder();
+        var builder = new RabbitMqOutboundTopologyBuilder();
         configure(builder);
         var configuration = builder.Build();
 
         services.AddSingleton(configuration);
-        services.AddSingleton<RabbitMqConnectionManager>();
-        services.AddSingleton<RabbitMqCompiledTopology>(
-            static serviceProvider => RabbitMqMessageTopologyCompiler.Compile(serviceProvider)
+        services.AddSingleton<RabbitMqOutboundTopology>(
+            static serviceProvider => RabbitMqOutboundTopologyCompiler.Compile(serviceProvider)
         );
-        services.AddSingleton<IMessageTopology>(
-            static serviceProvider => serviceProvider.GetRequiredService<RabbitMqCompiledTopology>().MessageTopology
+        services.AddSingleton<IOutboundTopology>(
+            static serviceProvider => serviceProvider.GetRequiredService<RabbitMqOutboundTopology>().OutboundTopology
         );
-        services.AddSingleton<MessageTopology>(
-            static serviceProvider => serviceProvider.GetRequiredService<RabbitMqCompiledTopology>().MessageTopology
+        services.AddSingleton<OutboundTopology>(
+            static serviceProvider => serviceProvider.GetRequiredService<RabbitMqOutboundTopology>().OutboundTopology
         );
-        services.AddSingleton<ITargetRegistry>(
-            static serviceProvider => serviceProvider.GetRequiredService<RabbitMqCompiledTopology>().MessageTopology
+        services.AddSingleton<IOutboundTargetRegistry>(
+            static serviceProvider => serviceProvider.GetRequiredService<IOutboundTopology>()
         );
         services.AddSingleton<IMessagePublisher, MessagePublisher>();
-        services.AddSingleton<ITopologyProvisioner, RabbitMqTopologyProvisioner>();
-        services.AddSingleton<IHostedService, MessagePublishingHostedService>();
+        services.AddSingleton<IOutboundTopologyProvisioner, RabbitMqOutboundTopologyProvisioner>();
+        services.AddSingleton<IHostedService, OutboundTopologyHostedService>();
 
         return services;
     }

@@ -1,0 +1,166 @@
+using System;
+using System.Collections.Generic;
+using RabbitMQ.Client;
+using Usf.Transport.RabbitMq.Configuration;
+
+namespace Usf.Transport.RabbitMq;
+
+public sealed class RabbitMqOutboundTopologyBuilder
+{
+    private readonly List<RabbitMqAddressDefinition> _addressDefinitions = [];
+    private readonly List<RabbitMqBindingDefinition> _bindingDefinitions = [];
+    private readonly List<RabbitMqChannelGroupDefinition> _channelGroupDefinitions = [];
+    private readonly List<RabbitMqExchangeDefinition> _exchangeDefinitions = [];
+    private readonly List<RabbitMqQueueDefinition> _queueDefinitions = [];
+    private readonly List<RabbitMqOutboundTargetDefinition> _targets = [];
+    private Func<IServiceProvider, ConnectionFactory>? _createConnectionFactory;
+
+    public RabbitMqOutboundTopologyBuilder UseConnectionFactory(ConnectionFactory connectionFactory)
+    {
+        if (connectionFactory is null)
+        {
+            throw new ArgumentNullException(nameof(connectionFactory));
+        }
+
+        var capturedFactory = connectionFactory;
+        _createConnectionFactory = _ => capturedFactory;
+        return this;
+    }
+
+    public RabbitMqOutboundTopologyBuilder UseConnectionFactory(
+        Func<IServiceProvider, ConnectionFactory> createConnectionFactory
+    )
+    {
+        _createConnectionFactory = createConnectionFactory ??
+                                   throw new ArgumentNullException(nameof(createConnectionFactory));
+        return this;
+    }
+
+    public RabbitMqOutboundTopologyBuilder Exchange(
+        string name,
+        string type,
+        Action<RabbitMqExchangeBuilder>? configure = null
+    )
+    {
+        RabbitMqExchangeBuilder builder = new (name, type);
+        configure?.Invoke(builder);
+        _exchangeDefinitions.Add(builder.Build());
+        return this;
+    }
+
+    public RabbitMqOutboundTopologyBuilder Queue(string name, Action<RabbitMqQueueBuilder>? configure = null)
+    {
+        RabbitMqQueueBuilder builder = new (name);
+        configure?.Invoke(builder);
+        _queueDefinitions.Add(builder.Build());
+        return this;
+    }
+
+    public RabbitMqOutboundTopologyBuilder QueueBinding(
+        string exchangeName,
+        string queueName,
+        string routingKey = "",
+        Action<RabbitMqQueueBindingBuilder>? configure = null
+    )
+    {
+        RabbitMqQueueBindingBuilder builder = new (exchangeName, queueName, routingKey);
+        configure?.Invoke(builder);
+        _bindingDefinitions.Add(builder.Build());
+        return this;
+    }
+
+    public RabbitMqOutboundTopologyBuilder ExchangeBinding(
+        string sourceExchangeName,
+        string destinationExchangeName,
+        string routingKey = "",
+        Action<RabbitMqExchangeBindingBuilder>? configure = null
+    )
+    {
+        RabbitMqExchangeBindingBuilder builder = new (sourceExchangeName, destinationExchangeName, routingKey);
+        configure?.Invoke(builder);
+        _bindingDefinitions.Add(builder.Build());
+        return this;
+    }
+
+    public RabbitMqOutboundTopologyBuilder Address(string name, string exchangeName)
+    {
+        _addressDefinitions.Add(
+            new RabbitMqAddressDefinition(
+                RequireText(name, nameof(name)),
+                RequireText(exchangeName, nameof(exchangeName))
+            )
+        );
+        return this;
+    }
+
+    public RabbitMqOutboundTopologyBuilder ChannelGroup(string name, int maximumChannelCount)
+    {
+        if (maximumChannelCount < 1)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(maximumChannelCount),
+                maximumChannelCount,
+                "The value must be greater than zero."
+            );
+        }
+
+        _channelGroupDefinitions.Add(
+            new RabbitMqChannelGroupDefinition(RequireText(name, nameof(name)), maximumChannelCount)
+        );
+        return this;
+    }
+
+    public RabbitMqOutboundTopologyBuilder Publish<TMessage>(
+        Action<RabbitMqOutboundTargetBuilder<TMessage>> configure
+    )
+    {
+        return PublishCore(null, configure);
+    }
+
+    public RabbitMqOutboundTopologyBuilder PublishNamed<TMessage>(
+        string targetName,
+        Action<RabbitMqOutboundTargetBuilder<TMessage>> configure
+    )
+    {
+        return PublishCore(RequireText(targetName, nameof(targetName)), configure);
+    }
+
+    private RabbitMqOutboundTopologyBuilder PublishCore<TMessage>(
+        string? targetName,
+        Action<RabbitMqOutboundTargetBuilder<TMessage>> configure
+    )
+    {
+        if (configure is null)
+        {
+            throw new ArgumentNullException(nameof(configure));
+        }
+
+        RabbitMqOutboundTargetBuilder<TMessage> builder = new ();
+        configure(builder);
+        _targets.Add(builder.Build(targetName));
+        return this;
+    }
+
+    public RabbitMqOutboundTopologyConfiguration Build()
+    {
+        return new RabbitMqOutboundTopologyConfiguration(
+            _createConnectionFactory,
+            _exchangeDefinitions.AsReadOnly(),
+            _queueDefinitions.AsReadOnly(),
+            _bindingDefinitions.AsReadOnly(),
+            _addressDefinitions.AsReadOnly(),
+            _channelGroupDefinitions.AsReadOnly(),
+            _targets.AsReadOnly()
+        );
+    }
+
+    private static string RequireText(string value, string parameterName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
+        }
+
+        return value;
+    }
+}

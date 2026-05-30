@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Usf.Core.Tests.Messaging;
 
-public sealed class TargetTests
+public sealed class OutboundTargetTests
 {
     [Fact]
     public async Task PublishAsync_WrapsSerializationFailures()

@@ -4,10 +4,10 @@ using System.Linq;
 
 namespace Usf.Core.Messaging.Errors;
 
-public sealed class MessageTopologyValidationException : Exception
+public sealed class OutboundTopologyValidationException : Exception
 {
-    public MessageTopologyValidationException(IReadOnlyList<string> validationErrors)
-        : base("Message topology validation failed.")
+    public OutboundTopologyValidationException(IReadOnlyList<string> validationErrors)
+        : base("Outbound topology validation failed.")
     {
         if (validationErrors is null)
         {

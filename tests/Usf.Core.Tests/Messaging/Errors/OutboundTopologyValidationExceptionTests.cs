@@ -5,12 +5,12 @@ using Xunit;
 
 namespace Usf.Core.Tests.Messaging.Errors;
 
-public sealed class MessageTopologyValidationExceptionTests
+public sealed class OutboundTopologyValidationExceptionTests
 {
     [Fact]
     public void ValidationErrors_AreSortedDeterministically()
     {
-        MessageTopologyValidationException exception = new (["zeta", "alpha", "beta"]);
+        OutboundTopologyValidationException exception = new (["zeta", "alpha", "beta"]);
 
         exception.ValidationErrors.Should().Equal("alpha", "beta", "zeta");
     }
@@ -18,7 +18,7 @@ public sealed class MessageTopologyValidationExceptionTests
     [Fact]
     public void Constructor_RequiresAtLeastOneError()
     {
-        Action action = () => _ = new MessageTopologyValidationException(Array.Empty<string>());
+        Action action = () => _ = new OutboundTopologyValidationException(Array.Empty<string>());
 
         action.Should().Throw<ArgumentException>();
     }

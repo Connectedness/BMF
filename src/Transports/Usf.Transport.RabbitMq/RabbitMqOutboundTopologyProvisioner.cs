@@ -9,50 +9,44 @@ using Usf.Transport.RabbitMq.Configuration;
 
 namespace Usf.Transport.RabbitMq;
 
-public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
+public sealed class RabbitMqOutboundTopologyProvisioner : IOutboundTopologyProvisioner
 {
-    private readonly RabbitMqCompiledTopology _compiledTopology;
-    private readonly RabbitMqConnectionManager _connectionManager;
+    private readonly RabbitMqOutboundTopology _outboundTopology;
 
-    public RabbitMqTopologyProvisioner(
-        RabbitMqCompiledTopology compiledTopology,
-        RabbitMqConnectionManager connectionManager
-    )
+    public RabbitMqOutboundTopologyProvisioner(RabbitMqOutboundTopology outboundTopology)
     {
-        _compiledTopology = compiledTopology ?? throw new ArgumentNullException(nameof(compiledTopology));
-        _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
+        _outboundTopology = outboundTopology ?? throw new ArgumentNullException(nameof(outboundTopology));
     }
 
     public async Task ProvisionAsync(CancellationToken cancellationToken = default)
     {
         var outcome = "success";
-        var activity = MessagePublishingDiagnostics.ActivitySource.StartActivity("usf.messaging.topology.provision");
+        var activity = OutboundDiagnostics.ActivitySource.StartActivity("usf.outbound.topology.provision");
         var startedTimestamp = Stopwatch.GetTimestamp();
         KeyValuePair<string, object?>[] attemptTags =
         [
-            new (MessagePublishingDiagnostics.TransportNameTagName, "rabbitmq")
+            new (OutboundDiagnostics.TransportNameTagName, "rabbitmq")
         ];
 
-        MessagePublishingDiagnostics.TopologyProvisioningAttempts.Add(1, attemptTags);
-        activity?.SetTag(MessagePublishingDiagnostics.TransportNameTagName, "rabbitmq");
+        OutboundDiagnostics.TopologyProvisioningAttempts.Add(1, attemptTags);
+        activity?.SetTag(OutboundDiagnostics.TransportNameTagName, "rabbitmq");
 
         try
         {
-            var connection = await _connectionManager.GetConnectionAsync(cancellationToken).ConfigureAwait(false);
-            await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken)
+            await using var channel = await _outboundTopology.CreateChannelAsync(cancellationToken)
                .ConfigureAwait(false);
 
-            foreach (var exchange in _compiledTopology.Exchanges)
+            foreach (var exchange in _outboundTopology.Exchanges)
             {
                 await ProvisionExchangeAsync(channel, exchange, cancellationToken).ConfigureAwait(false);
             }
 
-            foreach (var queue in _compiledTopology.Queues)
+            foreach (var queue in _outboundTopology.Queues)
             {
                 await ProvisionQueueAsync(channel, queue, cancellationToken).ConfigureAwait(false);
             }
 
-            foreach (var binding in _compiledTopology.Bindings)
+            foreach (var binding in _outboundTopology.Bindings)
             {
                 await ProvisionBindingAsync(channel, binding, cancellationToken).ConfigureAwait(false);
             }
@@ -62,34 +56,34 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
         catch (OperationCanceledException)
         {
             outcome = "cancelled";
-            activity?.SetTag(MessagePublishingDiagnostics.OutcomeTagName, outcome);
+            activity?.SetTag(OutboundDiagnostics.OutcomeTagName, outcome);
             throw;
         }
         catch
         {
             outcome = "failure";
-            MessagePublishingDiagnostics.TopologyProvisioningFailures.Add(
+            OutboundDiagnostics.TopologyProvisioningFailures.Add(
                 1,
                 new[]
                 {
-                    new KeyValuePair<string, object?>(MessagePublishingDiagnostics.TransportNameTagName, "rabbitmq"),
-                    new KeyValuePair<string, object?>(MessagePublishingDiagnostics.OutcomeTagName, outcome)
+                    new KeyValuePair<string, object?>(OutboundDiagnostics.TransportNameTagName, "rabbitmq"),
+                    new KeyValuePair<string, object?>(OutboundDiagnostics.OutcomeTagName, outcome)
                 }
             );
             activity?.SetStatus(ActivityStatusCode.Error);
-            activity?.SetTag(MessagePublishingDiagnostics.OutcomeTagName, outcome);
+            activity?.SetTag(OutboundDiagnostics.OutcomeTagName, outcome);
             throw;
         }
         finally
         {
             KeyValuePair<string, object?>[] durationTags =
             [
-                new (MessagePublishingDiagnostics.TransportNameTagName, "rabbitmq"),
-                new (MessagePublishingDiagnostics.OutcomeTagName, outcome)
+                new (OutboundDiagnostics.TransportNameTagName, "rabbitmq"),
+                new (OutboundDiagnostics.OutcomeTagName, outcome)
             ];
             var durationMilliseconds = (Stopwatch.GetTimestamp() - startedTimestamp) * 1000d / Stopwatch.Frequency;
-            MessagePublishingDiagnostics.TopologyProvisioningDuration.Record(durationMilliseconds, durationTags);
-            activity?.SetTag(MessagePublishingDiagnostics.OutcomeTagName, outcome);
+            OutboundDiagnostics.TopologyProvisioningDuration.Record(durationMilliseconds, durationTags);
+            activity?.SetTag(OutboundDiagnostics.OutcomeTagName, outcome);
             activity?.Dispose();
         }
     }
@@ -104,9 +98,9 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
 
         return binding switch
         {
-            RabbitMqQueueBindingDefinition { DeclareMode: RabbitMqBindingDeclareMode.None } =>
+            RabbitMqQueueBindingDefinition { BindingMode: RabbitMqBindingMode.Skip } =>
                 Task.CompletedTask,
-            RabbitMqQueueBindingDefinition { DeclareMode: RabbitMqBindingDeclareMode.Ensure } queueBinding =>
+            RabbitMqQueueBindingDefinition { BindingMode: RabbitMqBindingMode.Active } queueBinding =>
                 channel.QueueBindAsync(
                     queueBinding.QueueName,
                     queueBinding.SourceExchangeName,
@@ -115,9 +109,9 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
                     false,
                     cancellationToken
                 ),
-            RabbitMqExchangeBindingDefinition { DeclareMode: RabbitMqBindingDeclareMode.None } =>
+            RabbitMqExchangeBindingDefinition { BindingMode: RabbitMqBindingMode.Skip } =>
                 Task.CompletedTask,
-            RabbitMqExchangeBindingDefinition { DeclareMode: RabbitMqBindingDeclareMode.Ensure } exchangeBinding =>
+            RabbitMqExchangeBindingDefinition { BindingMode: RabbitMqBindingMode.Active } exchangeBinding =>
                 channel.ExchangeBindAsync(
                     exchangeBinding.DestinationExchangeName,
                     exchangeBinding.SourceExchangeName,
@@ -128,13 +122,13 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
                 ),
             RabbitMqQueueBindingDefinition queueBinding => throw new ArgumentOutOfRangeException(
                 nameof(binding),
-                queueBinding.DeclareMode,
-                "Unsupported binding declare mode."
+                queueBinding.BindingMode,
+                "Unsupported binding mode."
             ),
             RabbitMqExchangeBindingDefinition exchangeBinding => throw new ArgumentOutOfRangeException(
                 nameof(binding),
-                exchangeBinding.DeclareMode,
-                "Unsupported binding declare mode."
+                exchangeBinding.BindingMode,
+                "Unsupported binding mode."
             ),
             _ => throw new ArgumentOutOfRangeException(nameof(binding), binding, "Unsupported binding type.")
         };
@@ -150,9 +144,9 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
 
         return exchange.DeclareMode switch
         {
-            RabbitMqDeclareMode.None => Task.CompletedTask,
+            RabbitMqDeclareMode.Skip => Task.CompletedTask,
             RabbitMqDeclareMode.Passive => channel.ExchangeDeclarePassiveAsync(exchange.Name, cancellationToken),
-            RabbitMqDeclareMode.Ensure => channel.ExchangeDeclareAsync(
+            RabbitMqDeclareMode.Active => channel.ExchangeDeclareAsync(
                 exchange.Name,
                 exchange.Type,
                 exchange.Durable,
@@ -178,9 +172,9 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
 
         return queue.DeclareMode switch
         {
-            RabbitMqDeclareMode.None => Task.CompletedTask,
+            RabbitMqDeclareMode.Skip => Task.CompletedTask,
             RabbitMqDeclareMode.Passive => channel.QueueDeclarePassiveAsync(queue.Name, cancellationToken),
-            RabbitMqDeclareMode.Ensure => channel.QueueDeclareAsync(
+            RabbitMqDeclareMode.Active => channel.QueueDeclareAsync(
                 queue.Name,
                 queue.Durable,
                 queue.Exclusive,

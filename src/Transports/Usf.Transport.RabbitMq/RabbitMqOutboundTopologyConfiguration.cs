@@ -5,13 +5,12 @@ using Usf.Transport.RabbitMq.Configuration;
 
 namespace Usf.Transport.RabbitMq;
 
-public sealed record RabbitMqPublishingConfiguration(
-    Func<IServiceProvider, ConnectionFactory>? ConnectionFactoryFactory,
-    RabbitMqChannelPoolingMode ChannelPoolingMode,
-    int MaxChannelsPerTarget,
-    int SharedChannelPoolSize,
+public sealed record RabbitMqOutboundTopologyConfiguration(
+    Func<IServiceProvider, ConnectionFactory>? CreateConnectionFactory,
     IReadOnlyList<RabbitMqExchangeDefinition> Exchanges,
     IReadOnlyList<RabbitMqQueueDefinition> Queues,
     IReadOnlyList<RabbitMqBindingDefinition> Bindings,
-    IReadOnlyList<RabbitMqPublishRouteConfiguration> Routes
+    IReadOnlyList<RabbitMqAddressDefinition> Addresses,
+    IReadOnlyList<RabbitMqChannelGroupDefinition> ChannelGroups,
+    IReadOnlyList<RabbitMqOutboundTargetDefinition> Targets
 );

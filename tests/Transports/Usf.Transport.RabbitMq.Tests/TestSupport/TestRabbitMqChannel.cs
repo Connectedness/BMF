@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,12 +11,16 @@ namespace Usf.Transport.RabbitMq.Tests.TestSupport;
 public sealed class TestRabbitMqChannel
 {
     private readonly IChannel _channel;
+    private readonly IList<string>? _disposalEvents;
+    private readonly string _disposalEventName;
     private AsyncEventHandler<ShutdownEventArgs>? _channelShutdownAsync;
     private ShutdownEventArgs? _closeReason;
 
-    public TestRabbitMqChannel()
+    public TestRabbitMqChannel(IList<string>? disposalEvents = null, string disposalEventName = "channel")
     {
         _channel = RabbitMqDispatchProxy<IChannel>.Create(HandleInvoke);
+        _disposalEvents = disposalEvents;
+        _disposalEventName = disposalEventName;
     }
 
     public Func<ValueTask>? BasicPublishAsyncHandler { get; set; }
@@ -70,10 +75,12 @@ public sealed class TestRabbitMqChannel
             case "DisposeAsync":
                 DisposeAsyncCallCount++;
                 IsOpen = false;
+                _disposalEvents?.Add(_disposalEventName);
                 return default(ValueTask);
             case "Dispose":
                 DisposeCallCount++;
                 IsOpen = false;
+                _disposalEvents?.Add(_disposalEventName);
                 return null;
         }
 

@@ -1,8 +1,7 @@
 namespace Usf.Transport.RabbitMq.Configuration;
 
-public enum RabbitMqDeclareMode
+public enum RabbitMqBindingMode
 {
     Skip = 0,
-    Passive = 1,
-    Active = 2
+    Active = 1
 }

@@ -6,11 +6,11 @@ using Microsoft.Extensions.Hosting;
 
 namespace Usf.Core.Messaging;
 
-public sealed class MessagePublishingHostedService : IHostedService
+public sealed class OutboundTopologyHostedService : IHostedService
 {
-    private readonly IEnumerable<ITopologyProvisioner> _topologyProvisioners;
+    private readonly IEnumerable<IOutboundTopologyProvisioner> _topologyProvisioners;
 
-    public MessagePublishingHostedService(IEnumerable<ITopologyProvisioner> topologyProvisioners) =>
+    public OutboundTopologyHostedService(IEnumerable<IOutboundTopologyProvisioner> topologyProvisioners) =>
         _topologyProvisioners = topologyProvisioners ?? throw new ArgumentNullException(nameof(topologyProvisioners));
 
     public async Task StartAsync(CancellationToken cancellationToken)

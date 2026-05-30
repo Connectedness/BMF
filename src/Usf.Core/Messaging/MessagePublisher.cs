@@ -3,21 +3,24 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Usf.Core.Messaging.Errors;
 
 namespace Usf.Core.Messaging;
 
 public sealed class MessagePublisher : IMessagePublisher
 {
-    private readonly IMessageTopology _messageTopology;
+    private const string SerializedMessageTypeName = "serialized";
 
-    public MessagePublisher(IMessageTopology messageTopology)
+    private readonly IOutboundTopology _outboundTopology;
+
+    public MessagePublisher(IOutboundTopology outboundTopology)
     {
-        _messageTopology = messageTopology ?? throw new ArgumentNullException(nameof(messageTopology));
+        _outboundTopology = outboundTopology ?? throw new ArgumentNullException(nameof(outboundTopology));
     }
 
     public async Task PublishMessageAsync<T>(
         T message,
-        Target? target = null,
+        OutboundTarget? target = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -26,48 +29,89 @@ public sealed class MessagePublisher : IMessagePublisher
             throw new ArgumentNullException(nameof(message));
         }
 
-        var resolvedTarget = target ?? _messageTopology.GetRequiredTarget<T>();
+        var resolvedTarget = target ?? _outboundTopology.GetRequiredTarget<T>();
         var messageTypeName = GetMessageTypeName(typeof(T));
+        await PublishWithDiagnosticsAsync(
+            "usf.outbound.publish",
+            messageTypeName,
+            resolvedTarget,
+            async () =>
+            {
+                if (resolvedTarget is not OutboundTarget<T> typedTarget)
+                {
+                    throw new OutboundTargetTypeMismatchException(
+                        resolvedTarget.Name,
+                        typeof(T),
+                        resolvedTarget.MessageType
+                    );
+                }
+
+                await typedTarget.PublishAsync(message, cancellationToken).ConfigureAwait(false);
+            }
+        ).ConfigureAwait(false);
+    }
+
+    public async Task PublishRawAsync(
+        SerializedMessage message,
+        OutboundTarget target,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (target is null)
+        {
+            throw new ArgumentNullException(nameof(target));
+        }
+
+        var messageTypeName = target.MessageType is null ?
+            SerializedMessageTypeName :
+            GetMessageTypeName(target.MessageType);
+        await PublishWithDiagnosticsAsync(
+            "usf.outbound.publish.raw",
+            messageTypeName,
+            target,
+            async () => await target.PublishSerializedAsync(message, cancellationToken).ConfigureAwait(false)
+        ).ConfigureAwait(false);
+    }
+
+    private static async Task PublishWithDiagnosticsAsync(
+        string activityName,
+        string messageTypeName,
+        OutboundTarget resolvedTarget,
+        Func<Task> publishAsync
+    )
+    {
         var tags = CreateBaseTags(messageTypeName, resolvedTarget.Name, resolvedTarget.TransportName);
-        var activity = MessagePublishingDiagnostics.ActivitySource.StartActivity(
-            "usf.messaging.publish",
+        var activity = OutboundDiagnostics.ActivitySource.StartActivity(
+            activityName,
             ActivityKind.Producer
         );
         var startedTimestamp = Stopwatch.GetTimestamp();
 
         SetCommonTags(activity, messageTypeName, resolvedTarget.Name, resolvedTarget.TransportName);
-        MessagePublishingDiagnostics.PublishAttempts.Add(1, tags);
+        OutboundDiagnostics.PublishAttempts.Add(1, tags);
 
         var outcome = "success";
 
         try
         {
-            if (resolvedTarget is Target<T> typedTarget)
-            {
-                await typedTarget.PublishAsync(message, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                await resolvedTarget.PublishUntypedAsync(message, cancellationToken).ConfigureAwait(false);
-            }
-
+            await publishAsync().ConfigureAwait(false);
             activity?.SetStatus(ActivityStatusCode.Ok);
         }
         catch (OperationCanceledException)
         {
             outcome = "cancelled";
-            activity?.SetTag(MessagePublishingDiagnostics.OutcomeTagName, outcome);
+            activity?.SetTag(OutboundDiagnostics.OutcomeTagName, outcome);
             throw;
         }
         catch
         {
             outcome = "failure";
-            MessagePublishingDiagnostics.PublishFailures.Add(
+            OutboundDiagnostics.PublishFailures.Add(
                 1,
                 CreateBaseTags(messageTypeName, resolvedTarget.Name, resolvedTarget.TransportName, outcome)
             );
             activity?.SetStatus(ActivityStatusCode.Error);
-            activity?.SetTag(MessagePublishingDiagnostics.OutcomeTagName, outcome);
+            activity?.SetTag(OutboundDiagnostics.OutcomeTagName, outcome);
             throw;
         }
         finally
@@ -79,8 +123,8 @@ public sealed class MessagePublisher : IMessagePublisher
                 resolvedTarget.TransportName,
                 outcome
             );
-            MessagePublishingDiagnostics.PublishDuration.Record(durationMilliseconds, durationTags);
-            activity?.SetTag(MessagePublishingDiagnostics.OutcomeTagName, outcome);
+            OutboundDiagnostics.PublishDuration.Record(durationMilliseconds, durationTags);
+            activity?.SetTag(OutboundDiagnostics.OutcomeTagName, outcome);
             activity?.Dispose();
         }
     }
@@ -96,18 +140,18 @@ public sealed class MessagePublisher : IMessagePublisher
         {
             return
             [
-                new KeyValuePair<string, object?>(MessagePublishingDiagnostics.MessageTypeTagName, messageTypeName),
-                new KeyValuePair<string, object?>(MessagePublishingDiagnostics.TargetNameTagName, targetName),
-                new KeyValuePair<string, object?>(MessagePublishingDiagnostics.TransportNameTagName, transportName)
+                new KeyValuePair<string, object?>(OutboundDiagnostics.MessageTypeTagName, messageTypeName),
+                new KeyValuePair<string, object?>(OutboundDiagnostics.TargetNameTagName, targetName),
+                new KeyValuePair<string, object?>(OutboundDiagnostics.TransportNameTagName, transportName)
             ];
         }
 
         return
         [
-            new KeyValuePair<string, object?>(MessagePublishingDiagnostics.MessageTypeTagName, messageTypeName),
-            new KeyValuePair<string, object?>(MessagePublishingDiagnostics.TargetNameTagName, targetName),
-            new KeyValuePair<string, object?>(MessagePublishingDiagnostics.TransportNameTagName, transportName),
-            new KeyValuePair<string, object?>(MessagePublishingDiagnostics.OutcomeTagName, outcome)
+            new KeyValuePair<string, object?>(OutboundDiagnostics.MessageTypeTagName, messageTypeName),
+            new KeyValuePair<string, object?>(OutboundDiagnostics.TargetNameTagName, targetName),
+            new KeyValuePair<string, object?>(OutboundDiagnostics.TransportNameTagName, transportName),
+            new KeyValuePair<string, object?>(OutboundDiagnostics.OutcomeTagName, outcome)
         ];
     }
 
@@ -129,8 +173,8 @@ public sealed class MessagePublisher : IMessagePublisher
         string transportName
     )
     {
-        activity?.SetTag(MessagePublishingDiagnostics.MessageTypeTagName, messageTypeName);
-        activity?.SetTag(MessagePublishingDiagnostics.TargetNameTagName, targetName);
-        activity?.SetTag(MessagePublishingDiagnostics.TransportNameTagName, transportName);
+        activity?.SetTag(OutboundDiagnostics.MessageTypeTagName, messageTypeName);
+        activity?.SetTag(OutboundDiagnostics.TargetNameTagName, targetName);
+        activity?.SetTag(OutboundDiagnostics.TransportNameTagName, transportName);
     }
 }

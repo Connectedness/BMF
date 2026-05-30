@@ -5,9 +5,9 @@ using Usf.Core.Messaging.Errors;
 
 namespace Usf.Core.Messaging;
 
-public abstract class Target
+public abstract class OutboundTarget
 {
-    protected Target(Type messageType, string name, string transportName)
+    protected OutboundTarget(string name, string transportName)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -19,31 +19,35 @@ public abstract class Target
             throw new ArgumentException("The value cannot be null or whitespace.", nameof(transportName));
         }
 
-        MessageType = messageType ?? throw new ArgumentNullException(nameof(messageType));
         Name = name;
         TransportName = transportName;
     }
 
-    public Type MessageType { get; }
+    public virtual Type? MessageType => null;
 
     public string Name { get; }
 
     public string TransportName { get; }
 
-    public abstract Task PublishUntypedAsync(object message, CancellationToken cancellationToken = default);
+    public abstract Task PublishSerializedAsync(
+        SerializedMessage message,
+        CancellationToken cancellationToken = default
+    );
 }
 
-public abstract class Target<T> : Target
+public abstract class OutboundTarget<T> : OutboundTarget
 {
-    protected Target(string name, string transportName, IMessageSerializer serializer)
-        : base(typeof(T), name, transportName)
+    protected OutboundTarget(string name, string transportName, IMessageSerializer serializer)
+        : base(name, transportName)
     {
         Serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
     }
 
+    public sealed override Type MessageType => typeof(T);
+
     protected IMessageSerializer Serializer { get; }
 
-    public async Task PublishAsync(T message, CancellationToken cancellationToken = default)
+    public virtual async Task PublishAsync(T message, CancellationToken cancellationToken = default)
     {
         if (message is null)
         {
@@ -62,27 +66,15 @@ public abstract class Target<T> : Target
             throw new MessageSerializationException(typeof(T), exception);
         }
 
-        await DispatchAsync(message, serializedMessage, cancellationToken).ConfigureAwait(false);
+        await PublishTypedSerializedAsync(message, serializedMessage, cancellationToken).ConfigureAwait(false);
     }
 
-    public sealed override Task PublishUntypedAsync(object message, CancellationToken cancellationToken = default)
-    {
-        if (message is null)
-        {
-            throw new ArgumentNullException(nameof(message));
-        }
-
-        if (message is not T typedMessage)
-        {
-            throw new MessageTargetTypeMismatchException(Name, message.GetType(), typeof(T));
-        }
-
-        return PublishAsync(typedMessage, cancellationToken);
-    }
-
-    protected abstract Task DispatchAsync(
+    protected virtual Task PublishTypedSerializedAsync(
         T message,
         SerializedMessage serializedMessage,
         CancellationToken cancellationToken
-    );
+    )
+    {
+        return PublishSerializedAsync(serializedMessage, cancellationToken);
+    }
 }

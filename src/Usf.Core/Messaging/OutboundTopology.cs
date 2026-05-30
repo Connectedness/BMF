@@ -5,12 +5,15 @@ using Usf.Core.Messaging.Errors;
 
 namespace Usf.Core.Messaging;
 
-public sealed class MessageTopology : IMessageTopology, ITargetRegistry
+public sealed class OutboundTopology : IOutboundTopology
 {
-    private readonly IReadOnlyDictionary<Type, Target> _targetsByMessageType;
-    private readonly IReadOnlyDictionary<string, Target> _targetsByName;
+    private readonly IReadOnlyDictionary<Type, OutboundTarget> _targetsByMessageType;
+    private readonly IReadOnlyDictionary<string, OutboundTarget> _targetsByName;
 
-    public MessageTopology(IDictionary<Type, Target> targetsByMessageType, IDictionary<string, Target> targetsByName)
+    public OutboundTopology(
+        IDictionary<Type, OutboundTarget> targetsByMessageType,
+        IDictionary<string, OutboundTarget> targetsByName
+    )
     {
         if (targetsByMessageType is null)
         {
@@ -23,14 +26,16 @@ public sealed class MessageTopology : IMessageTopology, ITargetRegistry
         }
 
         _targetsByMessageType =
-            new ReadOnlyDictionary<Type, Target>(new Dictionary<Type, Target>(targetsByMessageType));
+            new ReadOnlyDictionary<Type, OutboundTarget>(
+                new Dictionary<Type, OutboundTarget>(targetsByMessageType)
+            );
         _targetsByName =
-            new ReadOnlyDictionary<string, Target>(
-                new Dictionary<string, Target>(targetsByName, StringComparer.Ordinal)
+            new ReadOnlyDictionary<string, OutboundTarget>(
+                new Dictionary<string, OutboundTarget>(targetsByName, StringComparer.Ordinal)
             );
     }
 
-    public Target GetRequiredTarget(Type messageType)
+    public OutboundTarget GetRequiredTarget(Type messageType)
     {
         if (messageType is null)
         {
@@ -39,25 +44,25 @@ public sealed class MessageTopology : IMessageTopology, ITargetRegistry
 
         if (!_targetsByMessageType.TryGetValue(messageType, out var target))
         {
-            throw new MessageTargetNotFoundException(messageType);
+            throw new OutboundTargetNotFoundException(messageType);
         }
 
         return target;
     }
 
-    public Target<T> GetRequiredTarget<T>()
+    public OutboundTarget<T> GetRequiredTarget<T>()
     {
         var target = GetRequiredTarget(typeof(T));
 
-        if (target is not Target<T> typedTarget)
+        if (target is not OutboundTarget<T> typedTarget)
         {
-            throw new MessageTargetTypeMismatchException(target.Name, typeof(T), target.MessageType);
+            throw new OutboundTargetTypeMismatchException(target.Name, typeof(T), target.MessageType);
         }
 
         return typedTarget;
     }
 
-    public bool TryGetTarget(Type messageType, out Target? target)
+    public bool TryGetTarget(Type messageType, out OutboundTarget? target)
     {
         if (messageType is null)
         {
@@ -67,7 +72,7 @@ public sealed class MessageTopology : IMessageTopology, ITargetRegistry
         return _targetsByMessageType.TryGetValue(messageType, out target);
     }
 
-    public Target GetRequiredTarget(string name)
+    public OutboundTarget GetRequiredTarget(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -76,25 +81,25 @@ public sealed class MessageTopology : IMessageTopology, ITargetRegistry
 
         if (!_targetsByName.TryGetValue(name, out var target))
         {
-            throw new MessageTargetNotFoundException(name);
+            throw new OutboundTargetNotFoundException(name);
         }
 
         return target;
     }
 
-    public Target<T> GetRequiredTarget<T>(string name)
+    public OutboundTarget<T> GetRequiredTarget<T>(string name)
     {
         var target = GetRequiredTarget(name);
 
-        if (target is not Target<T> typedTarget)
+        if (target is not OutboundTarget<T> typedTarget)
         {
-            throw new MessageTargetTypeMismatchException(target.Name, typeof(T), target.MessageType);
+            throw new OutboundTargetTypeMismatchException(target.Name, typeof(T), target.MessageType);
         }
 
         return typedTarget;
     }
 
-    public bool TryGetTarget(string name, out Target? target)
+    public bool TryGetTarget(string name, out OutboundTarget? target)
     {
         if (string.IsNullOrWhiteSpace(name))
         {

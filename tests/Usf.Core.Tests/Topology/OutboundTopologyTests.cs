@@ -8,18 +8,18 @@ using Xunit;
 
 namespace Usf.Core.Tests.Topology;
 
-public sealed class MessageTopologyTests
+public sealed class OutboundTopologyTests
 {
     [Fact]
     public void GetRequiredTarget_SupportsNamedTargetLookup()
     {
         var target = new RecordingTarget<SampleMessage>("named", new Utf8JsonMessageSerializer());
-        var topology = new MessageTopology(
-            new Dictionary<Type, Target>
+        var topology = new OutboundTopology(
+            new Dictionary<Type, OutboundTarget>
             {
                 [typeof(SampleMessage)] = target
             },
-            new Dictionary<string, Target>(StringComparer.Ordinal)
+            new Dictionary<string, OutboundTarget>(StringComparer.Ordinal)
             {
                 ["named"] = target
             }

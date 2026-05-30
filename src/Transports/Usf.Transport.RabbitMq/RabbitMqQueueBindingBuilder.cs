@@ -14,7 +14,7 @@ public sealed class RabbitMqQueueBindingBuilder
         SourceExchangeName = RequireText(exchangeName, nameof(exchangeName));
         QueueName = RequireText(queueName, nameof(queueName));
         RoutingKey = routingKey ?? string.Empty;
-        DeclareMode = RabbitMqBindingDeclareMode.Ensure;
+        BindingMode = RabbitMqBindingMode.Active;
     }
 
     public string SourceExchangeName { get; }
@@ -23,11 +23,11 @@ public sealed class RabbitMqQueueBindingBuilder
 
     public string RoutingKey { get; }
 
-    public RabbitMqBindingDeclareMode DeclareMode { get; private set; }
+    public RabbitMqBindingMode BindingMode { get; private set; }
 
-    public RabbitMqQueueBindingBuilder WithDeclareMode(RabbitMqBindingDeclareMode declareMode)
+    public RabbitMqQueueBindingBuilder WithBindingMode(RabbitMqBindingMode bindingMode)
     {
-        DeclareMode = declareMode;
+        BindingMode = bindingMode;
         return this;
     }
 
@@ -43,7 +43,7 @@ public sealed class RabbitMqQueueBindingBuilder
             SourceExchangeName,
             QueueName,
             RoutingKey,
-            DeclareMode,
+            BindingMode,
             new ReadOnlyDictionary<string, object?>(_arguments)
         );
     }

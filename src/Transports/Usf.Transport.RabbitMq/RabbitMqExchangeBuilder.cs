@@ -14,7 +14,7 @@ public sealed class RabbitMqExchangeBuilder
     {
         Name = RequireText(name, nameof(name));
         Type = RequireText(type, nameof(type));
-        DeclareMode = RabbitMqDeclareMode.Ensure;
+        DeclareMode = RabbitMqDeclareMode.Active;
         Durable = true;
     }
 

@@ -5,7 +5,7 @@ using Usf.Core.Messaging;
 
 namespace Usf.Core.Tests.Messaging.TestSupport;
 
-public sealed class RecordingTarget<TMessage> : Target<TMessage>
+public sealed class RecordingTarget<TMessage> : OutboundTarget<TMessage>
 {
     public RecordingTarget(string name, IMessageSerializer serializer)
         : base(name, "test", serializer) { }
@@ -14,14 +14,22 @@ public sealed class RecordingTarget<TMessage> : Target<TMessage>
 
     public List<SerializedMessage> SerializedMessages { get; } = [];
 
-    protected override Task DispatchAsync(
+    public override Task PublishSerializedAsync(
+        SerializedMessage message,
+        CancellationToken cancellationToken = default
+    )
+    {
+        SerializedMessages.Add(message);
+        return Task.CompletedTask;
+    }
+
+    protected override Task PublishTypedSerializedAsync(
         TMessage message,
         SerializedMessage serializedMessage,
         CancellationToken cancellationToken
     )
     {
         Messages.Add(message);
-        SerializedMessages.Add(serializedMessage);
-        return Task.CompletedTask;
+        return PublishSerializedAsync(serializedMessage, cancellationToken);
     }
 }
