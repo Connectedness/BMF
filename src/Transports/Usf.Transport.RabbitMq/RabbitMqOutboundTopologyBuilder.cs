@@ -14,7 +14,7 @@ public sealed class RabbitMqOutboundTopologyBuilder
     private readonly List<RabbitMqQueueDefinition> _queueDefinitions = [];
     private readonly List<RabbitMqOutboundTargetDefinition> _targets = [];
     private Func<IServiceProvider, ConnectionFactory>? _createConnectionFactory;
-    private RabbitMqPublisherConfirmMode _defaultPublisherConfirmMode = RabbitMqPublisherConfirmMode.Confirms;
+    private RabbitMqPublisherConfirmMode _defaultPublisherConfirmMode = RabbitMqPublisherConfirmDefaults.Mode;
     private TimeSpan _defaultPublisherConfirmTimeout = RabbitMqPublisherConfirmDefaults.Timeout;
 
     public RabbitMqOutboundTopologyBuilder UseConnectionFactory(ConnectionFactory connectionFactory)

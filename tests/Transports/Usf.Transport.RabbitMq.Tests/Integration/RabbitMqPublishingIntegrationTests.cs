@@ -360,6 +360,81 @@ public sealed class RabbitMqPublishingIntegrationTests
         }
     }
 
+    [Fact]
+    public async Task PublishMessageAsync_ThrowsNackedDeliveryFailureWhenBrokerRejectsPublish()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var container = new RabbitMqBuilder("public.ecr.aws/docker/library/rabbitmq:3.13-management").Build();
+        await container.StartAsync(cancellationToken);
+
+        try
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<Utf8JsonMessageSerializer>();
+            services.AddRabbitMqOutboundTopology(
+                builder =>
+                {
+                    builder.UseConnectionFactory(
+                        _ => new ConnectionFactory
+                        {
+                            Uri = new Uri(container.GetConnectionString())
+                        }
+                    );
+
+                    builder.Exchange("rejecting-fanout", ExchangeType.Fanout);
+                    builder.Address("rejecting-address", "rejecting-fanout");
+
+                    // A length-bounded queue with reject-publish overflow makes the broker NACK any publish
+                    // once the queue is full. With confirms on (the default), the first awaited publish fills
+                    // the queue, so the second deterministically surfaces as a Nacked delivery failure.
+                    builder.Queue(
+                        "rejecting-queue",
+                        queue => queue
+                           .WithMaxLength(1)
+                           .WithArgument("x-overflow", "reject-publish")
+                    );
+                    builder.QueueBinding("rejecting-fanout", "rejecting-queue");
+
+                    builder.Publish<RabbitMqPublishMessage>(
+                        route => route
+                           .ToFanoutAddress("rejecting-address")
+                           .WithSerializer<Utf8JsonMessageSerializer>()
+                    );
+                }
+            );
+
+            await using var serviceProvider = services.BuildServiceProvider();
+
+            foreach (var hostedService in serviceProvider.GetServices<IHostedService>())
+            {
+                await hostedService.StartAsync(cancellationToken);
+            }
+
+            var publisher = serviceProvider.GetRequiredService<IMessagePublisher>();
+
+            await publisher.PublishMessageAsync(
+                new RabbitMqPublishMessage(48, "accepted"),
+                cancellationToken: cancellationToken
+            );
+
+            var action = async () => await publisher.PublishMessageAsync(
+                new RabbitMqPublishMessage(49, "rejected"),
+                cancellationToken: cancellationToken
+            );
+
+            var exception = (await action.Should().ThrowAsync<MessageDeliveryException>()).Which;
+            exception
+               .TargetName.Should()
+               .Be(typeof(RabbitMqPublishMessage).FullName);
+            exception.Reason.Should().Be(MessageDeliveryFailureReason.Nacked);
+            exception.InnerException.Should().BeAssignableTo<PublishException>();
+        }
+        finally
+        {
+            await container.DisposeAsync();
+        }
+    }
+
     private static async Task<BasicGetResult> GetRequiredMessageAsync(
         IChannel channel,
         string queueName,

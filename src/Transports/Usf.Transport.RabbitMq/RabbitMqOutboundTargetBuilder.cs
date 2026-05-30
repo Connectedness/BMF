@@ -105,10 +105,15 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage>
     /// Requests a delivery failure when RabbitMQ cannot route a published message to a queue.
     /// </summary>
     /// <remarks>
-    /// Mandatory routing requires publisher confirmations on the target's channel group so the returned
-    /// message can be correlated with its publish. Confirmation tracking serializes outstanding publishes
-    /// per channel while awaiting broker outcomes; increase the channel-group size when relaxed ordering
-    /// is acceptable and additional throughput is required.
+    /// Mandatory routing requires publisher confirmations on the target's effective channel group so the
+    /// returned message can be correlated with its publish. A mandatory target whose effective group uses
+    /// <see cref="Configuration.RabbitMqPublisherConfirmMode.FireAndForget" /> is rejected at compile time
+    /// through <see cref="Usf.Core.Messaging.Errors.OutboundTopologyValidationException" />; select
+    /// <see cref="Configuration.RabbitMqPublisherConfirmMode.Confirms" /> on the group (see
+    /// <c>RabbitMqOutboundTopologyBuilder.ChannelGroup</c>) or leave the topology-level default
+    /// (<c>WithDefaultPublisherConfirmMode</c>) on confirms. Confirmation tracking serializes outstanding
+    /// publishes per channel while awaiting broker outcomes; increase the channel-group size when relaxed
+    /// ordering is acceptable and additional throughput is required.
     /// </remarks>
     public RabbitMqOutboundTargetBuilder<TMessage> Mandatory(bool mandatory = true)
     {

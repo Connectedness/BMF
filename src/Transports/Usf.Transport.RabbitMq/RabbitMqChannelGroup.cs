@@ -14,7 +14,7 @@ public sealed class RabbitMqChannelGroup : IAsyncDisposable, IDisposable
         string name,
         int maximumChannelCount,
         Func<CancellationToken, Task<IChannel>> channelFactory,
-        RabbitMqPublisherConfirmMode publisherConfirmMode = RabbitMqPublisherConfirmMode.Confirms,
+        RabbitMqPublisherConfirmMode publisherConfirmMode = RabbitMqPublisherConfirmDefaults.Mode,
         TimeSpan? publisherConfirmTimeout = null
     )
     {
