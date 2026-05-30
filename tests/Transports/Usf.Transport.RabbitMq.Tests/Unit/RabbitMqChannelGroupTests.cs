@@ -42,12 +42,7 @@ public sealed class RabbitMqChannelGroupTests
         builder
            .WithDefaultPublisherConfirmMode(RabbitMqPublisherConfirmMode.FireAndForget)
            .WithDefaultPublisherConfirmTimeout(TimeSpan.FromSeconds(7))
-           .ChannelGroup(
-                "best-effort",
-                3,
-                RabbitMqPublisherConfirmMode.FireAndForget,
-                TimeSpan.FromSeconds(11)
-            );
+           .ChannelGroup("confirmed", 3, RabbitMqPublisherConfirmMode.Confirms, TimeSpan.FromSeconds(11));
 
         var configuration = builder.Build();
 
@@ -56,12 +51,41 @@ public sealed class RabbitMqChannelGroupTests
         configuration.ChannelGroups.Should().ContainSingle()
            .Which.Should().Be(
                 new RabbitMqChannelGroupDefinition(
-                    "best-effort",
+                    "confirmed",
                     3,
-                    RabbitMqPublisherConfirmMode.FireAndForget,
+                    RabbitMqPublisherConfirmMode.Confirms,
                     TimeSpan.FromSeconds(11)
                 )
             );
+    }
+
+    [Fact]
+    public void RabbitMqOutboundTopologyCompiler_AppliesTopologyPublisherConfirmDefaultToExplicitChannelGroups()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<Utf8JsonMessageSerializer>();
+        services.AddRabbitMqOutboundTopology(
+            builder =>
+            {
+                builder.UseConnectionFactory(static _ => new ConnectionFactory());
+                builder.WithDefaultPublisherConfirmMode(RabbitMqPublisherConfirmMode.FireAndForget);
+                builder.Exchange("orders", ExchangeType.Fanout);
+                builder.Address("orders-address", "orders");
+                builder.ChannelGroup("shared", 2);
+                builder.Publish<ValidationMessageA>(
+                    target => target
+                       .ToFanoutAddress("orders-address")
+                       .UseChannelGroup("shared")
+                       .WithSerializer<Utf8JsonMessageSerializer>()
+                );
+            }
+        );
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var topology = serviceProvider.GetRequiredService<RabbitMqOutboundTopology>();
+
+        topology.ChannelGroups.Should().ContainSingle()
+           .Which.PublisherConfirmMode.Should().Be(RabbitMqPublisherConfirmMode.FireAndForget);
     }
 
     [Fact]

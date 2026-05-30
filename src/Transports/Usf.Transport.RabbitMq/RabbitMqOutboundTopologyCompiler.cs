@@ -45,6 +45,7 @@ public static class RabbitMqOutboundTopologyCompiler
         {
             var channelGroup = CreateChannelGroup(
                 channelGroupDefinition,
+                configuration.DefaultPublisherConfirmMode,
                 configuration.DefaultPublisherConfirmTimeout,
                 () => topology!
             );
@@ -136,17 +137,20 @@ public static class RabbitMqOutboundTopologyCompiler
 
     private static RabbitMqChannelGroup CreateChannelGroup(
         RabbitMqChannelGroupDefinition definition,
+        RabbitMqPublisherConfirmMode defaultPublisherConfirmMode,
         TimeSpan? defaultPublisherConfirmTimeout,
         Func<RabbitMqOutboundTopology> getTopology
     )
     {
+        var publisherConfirmMode = definition.PublisherConfirmMode ?? defaultPublisherConfirmMode;
+
         return new RabbitMqChannelGroup(
             definition.Name,
             definition.MaximumChannelCount,
             async cancellationToken => await getTopology()
-               .CreateChannelAsync(definition.PublisherConfirmMode, cancellationToken)
+               .CreateChannelAsync(publisherConfirmMode, cancellationToken)
                .ConfigureAwait(false),
-            definition.PublisherConfirmMode,
+            publisherConfirmMode,
             definition.PublisherConfirmTimeout ?? defaultPublisherConfirmTimeout
         );
     }
@@ -167,12 +171,8 @@ public static class RabbitMqOutboundTopologyCompiler
         }
 
         var implicitChannelGroup = CreateChannelGroup(
-            new RabbitMqChannelGroupDefinition(
-                $"$implicit:{channelGroups.Count}:{targetName}",
-                1,
-                defaultPublisherConfirmMode,
-                defaultPublisherConfirmTimeout
-            ),
+            new RabbitMqChannelGroupDefinition($"$implicit:{channelGroups.Count}:{targetName}", 1),
+            defaultPublisherConfirmMode,
             defaultPublisherConfirmTimeout,
             getTopology
         );
@@ -389,7 +389,8 @@ public static class RabbitMqOutboundTopologyCompiler
                 );
             }
 
-            if (!Enum.IsDefined(typeof(RabbitMqPublisherConfirmMode), channelGroup.PublisherConfirmMode))
+            if (channelGroup.PublisherConfirmMode is not null &&
+                !Enum.IsDefined(typeof(RabbitMqPublisherConfirmMode), channelGroup.PublisherConfirmMode.Value))
             {
                 validationErrors.Add(
                     $"Channel group '{channelGroup.Name}' uses unsupported publisher confirm mode '{channelGroup.PublisherConfirmMode}'."
@@ -578,7 +579,7 @@ public static class RabbitMqOutboundTopologyCompiler
 
         if (channelGroupsByName.TryGetValue(target.ChannelGroupName!, out var channelGroup))
         {
-            publisherConfirmMode = channelGroup.PublisherConfirmMode;
+            publisherConfirmMode = channelGroup.PublisherConfirmMode ?? defaultPublisherConfirmMode;
             return true;
         }
 

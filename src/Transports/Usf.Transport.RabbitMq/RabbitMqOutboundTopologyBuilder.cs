@@ -114,7 +114,7 @@ public sealed class RabbitMqOutboundTopologyBuilder
     public RabbitMqOutboundTopologyBuilder ChannelGroup(
         string name,
         int maximumChannelCount,
-        RabbitMqPublisherConfirmMode publisherConfirmMode = RabbitMqPublisherConfirmMode.Confirms,
+        RabbitMqPublisherConfirmMode? publisherConfirmMode = null,
         TimeSpan? publisherConfirmTimeout = null
     )
     {
@@ -127,7 +127,10 @@ public sealed class RabbitMqOutboundTopologyBuilder
             );
         }
 
-        ValidatePublisherConfirmMode(publisherConfirmMode, nameof(publisherConfirmMode));
+        if (publisherConfirmMode is not null)
+        {
+            ValidatePublisherConfirmMode(publisherConfirmMode.Value, nameof(publisherConfirmMode));
+        }
 
         if (publisherConfirmTimeout is not null)
         {
