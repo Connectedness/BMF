@@ -5,5 +5,9 @@ namespace Usf.Core.Messaging;
 
 public interface IMessageSerializer
 {
-    ValueTask<SerializedMessage> SerializeAsync<T>(T message, CancellationToken cancellationToken = default);
+    ValueTask<CloudEventEnvelope> SerializeAsync<T>(
+        T message,
+        in CloudEventMetadata metadata,
+        CancellationToken cancellationToken = default
+    );
 }

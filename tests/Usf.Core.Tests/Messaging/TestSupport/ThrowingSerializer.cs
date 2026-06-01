@@ -14,7 +14,11 @@ public sealed class ThrowingSerializer : IMessageSerializer
         _exception = exception;
     }
 
-    public ValueTask<SerializedMessage> SerializeAsync<T>(T message, CancellationToken cancellationToken = default)
+    public ValueTask<CloudEventEnvelope> SerializeAsync<T>(
+        T message,
+        in CloudEventMetadata metadata,
+        CancellationToken cancellationToken = default
+    )
     {
         throw _exception;
     }

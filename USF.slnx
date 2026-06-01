@@ -23,6 +23,7 @@
     </Folder>
     <Folder Name="/src/">
         <File Path="src\Directory.Build.props" />
+        <Project Path="src/Usf.Abstractions/Usf.Abstractions.csproj" />
         <Project Path="src/Usf.Core/Usf.Core.csproj" />
     </Folder>
     <Folder Name="/src/Transports/">

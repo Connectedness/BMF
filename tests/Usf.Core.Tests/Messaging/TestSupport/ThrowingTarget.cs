@@ -22,4 +22,13 @@ public sealed class ThrowingTarget<TMessage> : OutboundTarget<TMessage>
     {
         return Task.FromException(_exception);
     }
+
+    protected override Task PublishTypedCloudEventAsync(
+        TMessage message,
+        CloudEventEnvelope envelope,
+        CancellationToken cancellationToken
+    )
+    {
+        return Task.FromException(_exception);
+    }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Usf.Core.Messaging;
 using Usf.Core.Messaging.Errors;
 
@@ -6,6 +7,8 @@ namespace Usf.Core.Tests.Messaging.TestSupport;
 
 public sealed class EmptyOutboundTopology : IOutboundTopology
 {
+    public IReadOnlyCollection<OutboundTarget> Targets => [];
+
     public OutboundTarget GetRequiredTarget(Type messageType)
     {
         throw new OutboundTargetNotFoundException(messageType);

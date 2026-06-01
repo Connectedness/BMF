@@ -18,7 +18,7 @@ public sealed class MessagePublisherTests
     public async Task PublishMessageAsync_UsesTopologyResolvedTarget_WhenNoExplicitTargetIsProvided()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
-        var target = new RecordingTarget<SampleMessage>("default", new Utf8JsonMessageSerializer());
+        var target = new RecordingTarget<SampleMessage>("default", CloudEventsTestFactory.CreateSerializer());
         var topology = new OutboundTopology(
             new Dictionary<Type, OutboundTarget>
             {
@@ -26,43 +26,75 @@ public sealed class MessagePublisherTests
             },
             new Dictionary<string, OutboundTarget>(StringComparer.Ordinal)
         );
-        var publisher = new MessagePublisher(topology);
+        var publisher = new MessagePublisher(topology, CloudEventsTestFactory.CreateRegistry());
         var message = new SampleMessage("hello");
 
         await publisher.PublishMessageAsync(message, cancellationToken: cancellationToken);
 
         target.Messages.Should().ContainSingle().Which.Should().Be(message);
-        var serializedMessage = target.SerializedMessages.Should().ContainSingle().Which;
-        Encoding.UTF8.GetString(serializedMessage.Body).Should().Be("{\"Value\":\"hello\"}");
-        serializedMessage.ContentType.Should().Be("application/json");
-        serializedMessage.ContentEncoding.Should().Be("utf-8");
-        serializedMessage.Headers.Should().BeEmpty();
-        serializedMessage.MessageId.Should().BeNull();
-        serializedMessage.CorrelationId.Should().BeNull();
+        var envelope = target.CloudEventEnvelopes.Should().ContainSingle().Which;
+        Encoding.UTF8.GetString(envelope.Data).Should().Be("{\"Value\":\"hello\"}");
+        envelope.Type.Should().Be(CloudEventsTestFactory.SampleDiscriminator);
+        envelope.Source.Should().Be("/tests/core");
+        envelope.DataContentType.Should().Be("application/json");
     }
 
     [Fact]
     public async Task PublishMessageAsync_UsesExplicitTarget_WhenProvided()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
-        var explicitTarget = new RecordingTarget<SampleMessage>("explicit", new Utf8JsonMessageSerializer());
-        var publisher = new MessagePublisher(new EmptyOutboundTopology());
+        var explicitTarget = new RecordingTarget<SampleMessage>("explicit", CloudEventsTestFactory.CreateSerializer());
+        var publisher = new MessagePublisher(new EmptyOutboundTopology(), CloudEventsTestFactory.CreateRegistry());
         var message = new SampleMessage("hello");
 
         await publisher.PublishMessageAsync(message, explicitTarget, cancellationToken);
 
         explicitTarget.Messages.Should().ContainSingle().Which.Should().Be(message);
-        Encoding.UTF8.GetString(explicitTarget.SerializedMessages.Should().ContainSingle().Which.Body)
+        Encoding.UTF8.GetString(explicitTarget.CloudEventEnvelopes.Should().ContainSingle().Which.Data)
            .Should()
            .Be("{\"Value\":\"hello\"}");
     }
 
     [Fact]
+    public async Task PublishMessageAsync_UsesExplicitMetadata_ForMessagesThatCannotImplementICloudEvent()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var registry = CloudEventsTestFactory.CreateRegistry(
+            new KeyValuePair<Type, string>(typeof(ThirdPartyMessage), "tests.third-party")
+        );
+        var serializer = new CloudEventMessageSerializer(
+            registry,
+            new Utf8JsonPayloadCodec(),
+            new CloudEventsOptions { Source = "/tests/core" }
+        );
+        var target = new RecordingTarget<ThirdPartyMessage>("third-party", serializer);
+        var publisher = new MessagePublisher(new EmptyOutboundTopology(), registry);
+        CloudEventMetadata metadata = new (
+            Guid.Parse("f39b562b-b846-48e6-a693-4108015e7c82"),
+            new DateTimeOffset(2026, 5, 31, 12, 34, 56, TimeSpan.Zero),
+            "subject"
+        );
+
+        await publisher.PublishMessageAsync(
+            new ThirdPartyMessage("hello"),
+            in metadata,
+            target,
+            cancellationToken
+        );
+
+        var envelope = target.CloudEventEnvelopes.Should().ContainSingle().Which;
+        envelope.Id.Should().Be("f39b562b-b846-48e6-a693-4108015e7c82");
+        envelope.Subject.Should().Be("subject");
+        envelope.Type.Should().Be("tests.third-party");
+    }
+
+    [Fact]
     public async Task PublishMessageAsync_RejectsNullMessages()
     {
-        var publisher = new MessagePublisher(new EmptyOutboundTopology());
+        var publisher = new MessagePublisher(new EmptyOutboundTopology(), CloudEventsTestFactory.CreateRegistry());
+        var metadata = default(CloudEventMetadata);
 
-        var action = async () => await publisher.PublishMessageAsync<string>(null!);
+        var action = async () => await publisher.PublishMessageAsync<string>(null!, in metadata);
 
         await action.Should().ThrowAsync<ArgumentNullException>().WithParameterName("message");
     }
@@ -70,7 +102,7 @@ public sealed class MessagePublisherTests
     [Fact]
     public async Task PublishMessageAsync_ThrowsWhenNoTargetIsConfigured()
     {
-        var publisher = new MessagePublisher(new EmptyOutboundTopology());
+        var publisher = new MessagePublisher(new EmptyOutboundTopology(), CloudEventsTestFactory.CreateRegistry());
 
         var action = async () => await publisher.PublishMessageAsync(new SampleMessage("hello"));
 
@@ -80,8 +112,8 @@ public sealed class MessagePublisherTests
     [Fact]
     public async Task PublishMessageAsync_ThrowsWhenExplicitTargetDoesNotMatchMessageType()
     {
-        var target = new RecordingTarget<OtherMessage>("other", new Utf8JsonMessageSerializer());
-        var publisher = new MessagePublisher(new EmptyOutboundTopology());
+        var target = new RecordingTarget<OtherMessage>("other", CloudEventsTestFactory.CreateSerializer());
+        var publisher = new MessagePublisher(new EmptyOutboundTopology(), CloudEventsTestFactory.CreateRegistry());
 
         var action = async () => await publisher.PublishMessageAsync(new SampleMessage("hello"), target);
 
@@ -96,7 +128,7 @@ public sealed class MessagePublisherTests
             "raw",
             new ThrowingSerializer(new InvalidOperationException("serializer should not run"))
         );
-        var publisher = new MessagePublisher(new EmptyOutboundTopology());
+        var publisher = new MessagePublisher(new EmptyOutboundTopology(), CloudEventsTestFactory.CreateRegistry());
         SerializedMessage message = new (
             "prepared"u8.ToArray(),
             "application/custom",
@@ -118,8 +150,8 @@ public sealed class MessagePublisherTests
     [Fact]
     public async Task PublishRawAsync_RejectsMessagesWithoutABody()
     {
-        var target = new RecordingTarget<SampleMessage>("raw", new Utf8JsonMessageSerializer());
-        var publisher = new MessagePublisher(new EmptyOutboundTopology());
+        var target = new RecordingTarget<SampleMessage>("raw", CloudEventsTestFactory.CreateSerializer());
+        var publisher = new MessagePublisher(new EmptyOutboundTopology(), CloudEventsTestFactory.CreateRegistry());
 
         var action = async () => await publisher.PublishRawAsync(default, target);
 
@@ -149,10 +181,10 @@ public sealed class MessagePublisherTests
         );
         var target = new ThrowingTarget<SampleMessage>(
             "target",
-            new Utf8JsonMessageSerializer(),
+            CloudEventsTestFactory.CreateSerializer(),
             deliveryException
         );
-        var publisher = new MessagePublisher(new EmptyOutboundTopology());
+        var publisher = new MessagePublisher(new EmptyOutboundTopology(), CloudEventsTestFactory.CreateRegistry());
 
         var action = async () => await publisher.PublishMessageAsync(new SampleMessage("hello"), target);
 
@@ -163,6 +195,12 @@ public sealed class MessagePublisherTests
         );
         measurements[0].Should().Contain(
             new KeyValuePair<string, object?>(OutboundDiagnostics.DeliveryFailureReasonTagName, "returned")
+        );
+        measurements[0].Should().Contain(
+            new KeyValuePair<string, object?>(
+                OutboundDiagnostics.MessageTypeTagName,
+                CloudEventsTestFactory.SampleDiscriminator
+            )
         );
     }
 }

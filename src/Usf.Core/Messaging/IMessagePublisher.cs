@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Usf.Abstractions;
 
 namespace Usf.Core.Messaging;
 
@@ -7,6 +8,13 @@ public interface IMessagePublisher
 {
     Task PublishMessageAsync<T>(
         T message,
+        OutboundTarget? target = null,
+        CancellationToken cancellationToken = default
+    ) where T : ICloudEvent;
+
+    Task PublishMessageAsync<T>(
+        T message,
+        in CloudEventMetadata metadata,
         OutboundTarget? target = null,
         CancellationToken cancellationToken = default
     );

@@ -1,32 +1,25 @@
 using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Usf.Core.Messaging.Serialization;
 
-public sealed class Utf8JsonMessageSerializer : IMessageSerializer
+public sealed class Utf8JsonPayloadCodec : IPayloadCodec
 {
-    private static readonly IReadOnlyDictionary<string, string?> EmptyHeaders =
-        new Dictionary<string, string?>(0, StringComparer.Ordinal);
-
     private static readonly JsonSerializerOptions DefaultSerializerOptions = CreateDefaultSerializerOptions();
 
     private readonly JsonSerializerOptions _serializerOptions;
 
-    public Utf8JsonMessageSerializer()
-        : this(DefaultSerializerOptions) { }
+    public Utf8JsonPayloadCodec() : this(DefaultSerializerOptions) { }
 
-    public Utf8JsonMessageSerializer(JsonSerializerOptions serializerOptions)
+    public Utf8JsonPayloadCodec(JsonSerializerOptions serializerOptions)
     {
         _serializerOptions = serializerOptions is null ?
             throw new ArgumentNullException(nameof(serializerOptions)) :
             new JsonSerializerOptions(serializerOptions);
     }
 
-    public ValueTask<SerializedMessage> SerializeAsync<T>(T message, CancellationToken cancellationToken = default)
+    public EncodedPayload Encode<T>(T message)
     {
         if (message is null)
         {
@@ -40,16 +33,7 @@ public sealed class Utf8JsonMessageSerializer : IMessageSerializer
             JsonSerializer.SerializeToUtf8Bytes(message, (JsonTypeInfo<T>) declaredTypeInfo) :
             JsonSerializer.SerializeToUtf8Bytes(message, GetRequiredTypeInfo(runtimeType));
 
-        SerializedMessage serializedMessage = new (
-            utf8Bytes,
-            "application/json",
-            "utf-8",
-            EmptyHeaders,
-            null,
-            null
-        );
-
-        return new ValueTask<SerializedMessage>(serializedMessage);
+        return new EncodedPayload(utf8Bytes, "application/json");
     }
 
     private JsonTypeInfo GetRequiredTypeInfo(Type type)
@@ -60,7 +44,7 @@ public sealed class Utf8JsonMessageSerializer : IMessageSerializer
         }
 
         throw new InvalidOperationException(
-            $"JsonTypeInfo metadata for type '{type}' was not provided by TypeInfoResolver of type '{GetResolverDisplayName()}'. If using source generation, ensure that all root types passed to the serializer have been annotated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically."
+            $"JsonTypeInfo metadata for type '{type}' was not provided by TypeInfoResolver of type '{GetResolverDisplayName()}'. If using source generation, ensure that all root types passed to the codec have been annotated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically."
         );
     }
 
@@ -69,9 +53,8 @@ public sealed class Utf8JsonMessageSerializer : IMessageSerializer
         return _serializerOptions.TypeInfoResolver?.GetType().FullName ?? "<null>";
     }
 
-    // The two helpers below mirror Microsoft.AspNetCore.Http.JsonSerializerExtensions:
-    // if the declared type is sealed, a value type, or has explicit polymorphism options
-    // configured, its JsonTypeInfo is trusted to handle the runtime instance correctly.
+    // Mirrors Microsoft.AspNetCore.Http.JsonSerializerExtensions so runtime-type selection stays aligned
+    // with the serializer's declared-type polymorphism behavior.
     private static bool ShouldUseWith(JsonTypeInfo declaredTypeInfo, Type runtimeType) =>
         declaredTypeInfo.Type == runtimeType || HasKnownPolymorphism(declaredTypeInfo);
 
@@ -81,5 +64,4 @@ public sealed class Utf8JsonMessageSerializer : IMessageSerializer
         declaredTypeInfo.PolymorphismOptions is not null;
 
     private static JsonSerializerOptions CreateDefaultSerializerOptions() => JsonSerializerOptions.Default;
-
 }

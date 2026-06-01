@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
+using Usf.Abstractions;
 using Usf.Core.Messaging;
 using Usf.Core.Messaging.Errors;
 using Usf.Transport.RabbitMq.Configuration;
@@ -12,6 +13,11 @@ namespace Usf.Transport.RabbitMq;
 
 public abstract class RabbitMqOutboundTarget<TMessage> : OutboundTarget<TMessage>
 {
+    /// <summary>
+    /// Prefixes CloudEvents attributes carried as AMQP application headers by the AMQP protocol binding.
+    /// </summary>
+    public const string CloudEventsHeaderPrefix = "cloudEvents:";
+
     private readonly RabbitMqChannelGroup _channelGroup;
     private readonly string _exchangeName;
     private readonly bool _isMandatory;
@@ -43,14 +49,14 @@ public abstract class RabbitMqOutboundTarget<TMessage> : OutboundTarget<TMessage
         );
     }
 
-    protected sealed override Task PublishTypedSerializedAsync(
+    protected sealed override Task PublishTypedCloudEventAsync(
         TMessage message,
-        SerializedMessage serializedMessage,
+        CloudEventEnvelope envelope,
         CancellationToken cancellationToken
     )
     {
         return DispatchAsync(
-            serializedMessage,
+            envelope,
             GetRoutingKey(message),
             GetRouteHeaders(message),
             cancellationToken
@@ -84,12 +90,43 @@ public abstract class RabbitMqOutboundTarget<TMessage> : OutboundTarget<TMessage
         CancellationToken cancellationToken
     )
     {
+        await DispatchAsync(
+                serializedMessage.Body,
+                CreateBasicProperties(serializedMessage, routeHeaders),
+                routingKey,
+                cancellationToken
+            )
+           .ConfigureAwait(false);
+    }
+
+    private async Task DispatchAsync(
+        CloudEventEnvelope envelope,
+        string routingKey,
+        IReadOnlyDictionary<string, object?> routeHeaders,
+        CancellationToken cancellationToken
+    )
+    {
+        await DispatchAsync(
+                envelope.Data,
+                CreateBasicProperties(envelope, routeHeaders),
+                routingKey,
+                cancellationToken
+            )
+           .ConfigureAwait(false);
+    }
+
+    private async Task DispatchAsync(
+        ReadOnlyMemory<byte> body,
+        BasicProperties properties,
+        string routingKey,
+        CancellationToken cancellationToken
+    )
+    {
         await using var lease = await _channelGroup.AcquireAsync(cancellationToken).ConfigureAwait(false);
-        var properties = CreateBasicProperties(serializedMessage, routeHeaders);
 
         if (_channelGroup.PublisherConfirmMode == RabbitMqPublisherConfirmMode.FireAndForget)
         {
-            await PublishAsync(lease.Channel, properties, serializedMessage.Body, routingKey, cancellationToken)
+            await PublishAsync(lease.Channel, properties, body, routingKey, cancellationToken)
                .ConfigureAwait(false);
             return;
         }
@@ -106,7 +143,7 @@ public abstract class RabbitMqOutboundTarget<TMessage> : OutboundTarget<TMessage
             await PublishAsync(
                     lease.Channel,
                     properties,
-                    serializedMessage.Body,
+                    body,
                     routingKey,
                     linkedCancellationTokenSource.Token
                 )
@@ -179,6 +216,64 @@ public abstract class RabbitMqOutboundTarget<TMessage> : OutboundTarget<TMessage
 
         properties.Headers = headers;
         return properties;
+    }
+
+    /// <summary>
+    /// Applies the CloudEvents v1.0 AMQP binary content-mode binding over AMQP 0.9.1.
+    /// </summary>
+    private static BasicProperties CreateBasicProperties(
+        CloudEventEnvelope envelope,
+        IReadOnlyDictionary<string, object?> routeHeaders
+    )
+    {
+        BasicProperties properties = new ()
+        {
+            ContentType = envelope.DataContentType,
+            MessageId = envelope.Id
+        };
+
+        var extensionCount = envelope.Extensions?.Count ?? 0;
+        Dictionary<string, object?> headers = new (
+            routeHeaders.Count + extensionCount + 7,
+            StringComparer.Ordinal
+        );
+
+        foreach (var header in routeHeaders)
+        {
+            headers[header.Key] = header.Value;
+        }
+
+        if (envelope.Extensions is not null)
+        {
+            foreach (var extension in envelope.Extensions)
+            {
+                headers[GetCloudEventsHeaderName(extension.Key)] = extension.Value;
+            }
+        }
+
+        headers[GetCloudEventsHeaderName(CloudEventAttributeNames.Id)] = envelope.Id;
+        headers[GetCloudEventsHeaderName(CloudEventAttributeNames.SpecVersion)] = envelope.SpecVersion;
+        headers[GetCloudEventsHeaderName(CloudEventAttributeNames.Source)] = envelope.Source;
+        headers[GetCloudEventsHeaderName(CloudEventAttributeNames.Type)] = envelope.Type;
+        headers[GetCloudEventsHeaderName(CloudEventAttributeNames.Time)] = envelope.Time.ToString("O");
+
+        if (envelope.Subject is not null)
+        {
+            headers[GetCloudEventsHeaderName(CloudEventAttributeNames.Subject)] = envelope.Subject;
+        }
+
+        if (envelope.DataSchema is not null)
+        {
+            headers[GetCloudEventsHeaderName(CloudEventAttributeNames.DataSchema)] = envelope.DataSchema;
+        }
+
+        properties.Headers = headers;
+        return properties;
+    }
+
+    private static string GetCloudEventsHeaderName(string attributeName)
+    {
+        return $"{CloudEventsHeaderPrefix}{attributeName}";
     }
 
     private static class EmptyHeaders

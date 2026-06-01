@@ -8,11 +8,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="IsExternalInit" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Polyfill" PrivateAssets="all" />
     <PackageReference Include="RabbitMQ.Client" />
-    <PackageReference Include="Required" PrivateAssets="all" />
     <PackageReference Include="System.Threading.Channels" />
   </ItemGroup>
 </Project>

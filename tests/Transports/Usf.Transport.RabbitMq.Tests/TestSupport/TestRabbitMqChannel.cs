@@ -28,6 +28,10 @@ public sealed class TestRabbitMqChannel
 
     public int BasicPublishCallCount { get; private set; }
 
+    public ReadOnlyMemory<byte> LastPublishedBody { get; private set; }
+
+    public BasicProperties? LastPublishedProperties { get; private set; }
+
     public ShutdownEventArgs? CloseReason { get; private set; }
 
     public int DisposeAsyncCallCount { get; private set; }
@@ -101,6 +105,8 @@ public sealed class TestRabbitMqChannel
                 return null;
             case "BasicPublishAsync":
                 BasicPublishCallCount++;
+                LastPublishedProperties = (BasicProperties) arguments![3]!;
+                LastPublishedBody = (ReadOnlyMemory<byte>) arguments[4]!;
                 return BasicPublishAsyncHandler?.Invoke((CancellationToken) arguments![^1]!) ?? default(ValueTask);
             case "DisposeAsync":
                 DisposeAsyncCallCount++;

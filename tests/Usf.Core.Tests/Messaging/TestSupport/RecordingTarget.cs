@@ -12,6 +12,8 @@ public sealed class RecordingTarget<TMessage> : OutboundTarget<TMessage>
 
     public List<TMessage> Messages { get; } = [];
 
+    public List<CloudEventEnvelope> CloudEventEnvelopes { get; } = [];
+
     public List<SerializedMessage> SerializedMessages { get; } = [];
 
     public override Task PublishSerializedAsync(
@@ -23,13 +25,14 @@ public sealed class RecordingTarget<TMessage> : OutboundTarget<TMessage>
         return Task.CompletedTask;
     }
 
-    protected override Task PublishTypedSerializedAsync(
+    protected override Task PublishTypedCloudEventAsync(
         TMessage message,
-        SerializedMessage serializedMessage,
+        CloudEventEnvelope envelope,
         CancellationToken cancellationToken
     )
     {
         Messages.Add(message);
-        return PublishSerializedAsync(serializedMessage, cancellationToken);
+        CloudEventEnvelopes.Add(envelope);
+        return Task.CompletedTask;
     }
 }

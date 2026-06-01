@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Usf.Core.Messaging.Errors;
 
 namespace Usf.Core.Messaging;
@@ -33,7 +34,10 @@ public sealed class OutboundTopology : IOutboundTopology
             new ReadOnlyDictionary<string, OutboundTarget>(
                 new Dictionary<string, OutboundTarget>(targetsByName, StringComparer.Ordinal)
             );
+        Targets = _targetsByMessageType.Values.Concat(_targetsByName.Values).Distinct().ToArray();
     }
+
+    public IReadOnlyCollection<OutboundTarget> Targets { get; }
 
     public OutboundTarget GetRequiredTarget(Type messageType)
     {

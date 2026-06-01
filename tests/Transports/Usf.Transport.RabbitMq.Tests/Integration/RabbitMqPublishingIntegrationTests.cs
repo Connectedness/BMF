@@ -42,8 +42,7 @@ public sealed class RabbitMqPublishingIntegrationTests
             );
 
             var services = new ServiceCollection();
-            services.AddSingleton<Utf8JsonMessageSerializer>();
-            services.AddSingleton<RabbitMqIntegrationSerializer>();
+            services.AddTestCloudEvents();
             services.AddRabbitMqOutboundTopology(
                 builder =>
                 {
@@ -95,38 +94,38 @@ public sealed class RabbitMqPublishingIntegrationTests
                     builder.Publish<RabbitMqPublishMessage>(
                         route => route
                            .ToDirectAddress("orders-direct-address", "orders.created")
-                           .WithSerializer<RabbitMqIntegrationSerializer>()
+                           .WithSerializer<CloudEventMessageSerializer>()
                     );
                     builder.Publish<RabbitMqAuditMessage>(
                         route => route
                            .ToDirectAddress("orders-direct-address", "orders.audit")
-                           .WithSerializer<Utf8JsonMessageSerializer>()
+                           .WithSerializer<CloudEventMessageSerializer>()
                     );
                     builder.PublishNamed<RabbitMqPublishMessage>(
                         "topic-target",
                         route => route
                            .ToTopicAddress("orders-topic-address", static message => $"orders.{message.Name}")
-                           .WithSerializer<RabbitMqIntegrationSerializer>()
+                           .WithSerializer<CloudEventMessageSerializer>()
                     );
                     builder.PublishNamed<RabbitMqPublishMessage>(
                         "fanout-target",
                         route => route
                            .ToFanoutAddress("orders-fanout-address")
-                           .WithSerializer<RabbitMqIntegrationSerializer>()
+                           .WithSerializer<CloudEventMessageSerializer>()
                     );
                     builder.PublishNamed<RabbitMqPublishMessage>(
                         "headers-target",
                         route => route
                            .ToHeadersAddress("orders-headers-address")
-                           .WithHeader("tenant", "route-tenant")
+                           .WithHeader("tenant", "tenant-headers")
                            .WithHeader("region", "us")
-                           .WithSerializer<RabbitMqIntegrationSerializer>()
+                           .WithSerializer<CloudEventMessageSerializer>()
                     );
                     builder.PublishNamed<RabbitMqPublishMessage>(
                         "exchange-binding-target",
                         route => route
                            .ToDirectAddress("orders-upstream-address", "orders.exchange")
-                           .WithSerializer<RabbitMqIntegrationSerializer>()
+                           .WithSerializer<CloudEventMessageSerializer>()
                     );
                 }
             );
@@ -141,8 +140,12 @@ public sealed class RabbitMqPublishingIntegrationTests
             var publisher = serviceProvider.GetRequiredService<IMessagePublisher>();
             var targetRegistry = serviceProvider.GetRequiredService<IOutboundTargetRegistry>();
 
+            var directId = Guid.Parse("7e8ee037-b02f-4c6f-a0ed-9530a342da45");
+            var directTime = new DateTimeOffset(2026, 5, 31, 12, 34, 56, TimeSpan.Zero);
+            CloudEventMetadata directMetadata = new (directId, directTime, "order-42");
             await publisher.PublishMessageAsync(
                 new RabbitMqPublishMessage(42, "created"),
+                in directMetadata,
                 cancellationToken: cancellationToken
             );
             await publisher.PublishMessageAsync(
@@ -193,8 +196,26 @@ public sealed class RabbitMqPublishingIntegrationTests
             Encoding.UTF8.GetString(topicMessage.Body.ToArray()).Should().Be("{\"Id\":43,\"Name\":\"topic\"}");
             Encoding.UTF8.GetString(fanoutMessage.Body.ToArray()).Should().Be("{\"Id\":44,\"Name\":\"fanout\"}");
             Encoding.UTF8.GetString(headersMessage.Body.ToArray()).Should().Be("{\"Id\":45,\"Name\":\"headers\"}");
-            Encoding.UTF8.GetString(exchangeBindingMessage.Body.ToArray()).Should()
-               .Be("{\"Id\":46,\"Name\":\"exchange\"}");
+            Encoding.UTF8.GetString(exchangeBindingMessage.Body.ToArray())
+               .Should().Be("{\"Id\":46,\"Name\":\"exchange\"}");
+
+            directMessage.BasicProperties.Should().NotBeNull();
+            directMessage.BasicProperties.ContentType.Should().Be("application/json");
+            directMessage.BasicProperties.MessageId.Should().Be(directId.ToString("D"));
+            directMessage.BasicProperties.Headers.Should().NotBeNull();
+            ExtractHeaderValue(directMessage.BasicProperties.Headers!, "cloudEvents:id")
+               .Should().Be(directId.ToString("D"));
+            ExtractHeaderValue(directMessage.BasicProperties.Headers!, "cloudEvents:specversion").Should().Be("1.0");
+            ExtractHeaderValue(directMessage.BasicProperties.Headers!, "cloudEvents:source")
+               .Should().Be("/tests/rabbitmq");
+            ExtractHeaderValue(directMessage.BasicProperties.Headers!, "cloudEvents:type")
+               .Should().Be(RabbitMqCloudEventsTestFactory.PublishMessageDiscriminator);
+            ExtractHeaderValue(directMessage.BasicProperties.Headers!, "cloudEvents:time")
+               .Should().Be(directTime.ToString("O"));
+            ExtractHeaderValue(directMessage.BasicProperties.Headers!, "cloudEvents:subject")
+               .Should().Be("order-42");
+            ExtractHeaderValue(directMessage.BasicProperties.Headers!, "cloudEvents:dataschema")
+               .Should().Be("/schemas/rabbitmq-publish");
 
             headersMessage.BasicProperties.Should().NotBeNull();
             headersMessage.BasicProperties.Headers.Should().NotBeNull();
@@ -230,7 +251,7 @@ public sealed class RabbitMqPublishingIntegrationTests
         try
         {
             var services = new ServiceCollection();
-            services.AddSingleton<Utf8JsonMessageSerializer>();
+            services.AddTestCloudEvents();
             services.AddRabbitMqOutboundTopology(
                 builder =>
                 {
@@ -249,7 +270,7 @@ public sealed class RabbitMqPublishingIntegrationTests
                     builder.Publish<RabbitMqPublishMessage>(
                         route => route
                            .ToFanoutAddress("raw-address")
-                           .WithSerializer<Utf8JsonMessageSerializer>()
+                           .WithSerializer<CloudEventMessageSerializer>()
                     );
                 }
             );
@@ -316,7 +337,7 @@ public sealed class RabbitMqPublishingIntegrationTests
         try
         {
             var services = new ServiceCollection();
-            services.AddSingleton<Utf8JsonMessageSerializer>();
+            services.AddTestCloudEvents();
             services.AddRabbitMqOutboundTopology(
                 builder =>
                 {
@@ -333,7 +354,7 @@ public sealed class RabbitMqPublishingIntegrationTests
                         route => route
                            .ToFanoutAddress("unroutable-address")
                            .Mandatory()
-                           .WithSerializer<Utf8JsonMessageSerializer>()
+                           .WithSerializer<CloudEventMessageSerializer>()
                     );
                 }
             );
@@ -375,7 +396,7 @@ public sealed class RabbitMqPublishingIntegrationTests
         try
         {
             var services = new ServiceCollection();
-            services.AddSingleton<Utf8JsonMessageSerializer>();
+            services.AddTestCloudEvents();
             services.AddRabbitMqOutboundTopology(
                 builder =>
                 {
@@ -403,7 +424,7 @@ public sealed class RabbitMqPublishingIntegrationTests
                     builder.Publish<RabbitMqPublishMessage>(
                         route => route
                            .ToFanoutAddress("rejecting-address")
-                           .WithSerializer<Utf8JsonMessageSerializer>()
+                           .WithSerializer<CloudEventMessageSerializer>()
                     );
                 }
             );
@@ -455,7 +476,7 @@ public sealed class RabbitMqPublishingIntegrationTests
             var connectionString = container.GetConnectionString();
             var mappedPort = container.GetMappedPublicPort(5672);
             var services = new ServiceCollection();
-            services.AddSingleton<Utf8JsonMessageSerializer>();
+            services.AddTestCloudEvents();
             services.AddRabbitMqOutboundTopology(
                 builder =>
                 {
@@ -481,7 +502,7 @@ public sealed class RabbitMqPublishingIntegrationTests
                         route => route
                            .ToFanoutAddress("recovering-address")
                            .UseChannelGroup("recovering-group")
-                           .WithSerializer<Utf8JsonMessageSerializer>()
+                           .WithSerializer<CloudEventMessageSerializer>()
                     );
                 }
             );

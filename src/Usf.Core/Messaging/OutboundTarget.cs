@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Usf.Abstractions;
 using Usf.Core.Messaging.Errors;
 
 namespace Usf.Core.Messaging;
@@ -47,18 +48,41 @@ public abstract class OutboundTarget<T> : OutboundTarget
 
     protected IMessageSerializer Serializer { get; }
 
-    public virtual async Task PublishAsync(T message, CancellationToken cancellationToken = default)
+    public Task PublishAsync(T message, CancellationToken cancellationToken = default)
+    {
+        if (message is not ICloudEvent cloudEvent)
+        {
+            throw new CloudEventMetadataException(
+                "id",
+                "Implement ICloudEvent or derive from BaseCloudEvent, or call PublishAsync with explicit CloudEventMetadata."
+            );
+        }
+
+        var metadata = CloudEventMetadata.From(cloudEvent);
+        return PublishAsync(message, in metadata, cancellationToken);
+    }
+
+    public Task PublishAsync(
+        T message,
+        in CloudEventMetadata metadata,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return PublishCoreAsync(message, metadata, cancellationToken);
+    }
+
+    private async Task PublishCoreAsync(T message, CloudEventMetadata metadata, CancellationToken cancellationToken)
     {
         if (message is null)
         {
             throw new ArgumentNullException(nameof(message));
         }
 
-        SerializedMessage serializedMessage;
+        CloudEventEnvelope envelope;
 
         try
         {
-            serializedMessage = await Serializer.SerializeAsync(message, cancellationToken).ConfigureAwait(false);
+            envelope = await Serializer.SerializeAsync(message, in metadata, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException &&
                                           exception is not MessageSerializationException)
@@ -66,15 +90,12 @@ public abstract class OutboundTarget<T> : OutboundTarget
             throw new MessageSerializationException(typeof(T), exception);
         }
 
-        await PublishTypedSerializedAsync(message, serializedMessage, cancellationToken).ConfigureAwait(false);
+        await PublishTypedCloudEventAsync(message, envelope, cancellationToken).ConfigureAwait(false);
     }
 
-    protected virtual Task PublishTypedSerializedAsync(
+    protected abstract Task PublishTypedCloudEventAsync(
         T message,
-        SerializedMessage serializedMessage,
+        CloudEventEnvelope envelope,
         CancellationToken cancellationToken
-    )
-    {
-        return PublishSerializedAsync(serializedMessage, cancellationToken);
-    }
+    );
 }

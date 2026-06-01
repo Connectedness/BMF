@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Usf.Core.Messaging;
-using Usf.Core.Messaging.Serialization;
 using Usf.Core.Tests.Messaging.TestSupport;
 using Xunit;
 
@@ -13,7 +12,7 @@ public sealed class OutboundTopologyTests
     [Fact]
     public void GetRequiredTarget_SupportsNamedTargetLookup()
     {
-        var target = new RecordingTarget<SampleMessage>("named", new Utf8JsonMessageSerializer());
+        var target = new RecordingTarget<SampleMessage>("named", CloudEventsTestFactory.CreateSerializer());
         var topology = new OutboundTopology(
             new Dictionary<Type, OutboundTarget>
             {

@@ -63,7 +63,7 @@ public sealed class RabbitMqChannelGroupTests
     public void RabbitMqOutboundTopologyCompiler_AppliesTopologyPublisherConfirmDefaultToExplicitChannelGroups()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<Utf8JsonMessageSerializer>();
+        services.AddTestCloudEvents();
         services.AddRabbitMqOutboundTopology(
             builder =>
             {
@@ -76,7 +76,7 @@ public sealed class RabbitMqChannelGroupTests
                     target => target
                        .ToFanoutAddress("orders-address")
                        .UseChannelGroup("shared")
-                       .WithSerializer<Utf8JsonMessageSerializer>()
+                       .WithSerializer<CloudEventMessageSerializer>()
                 );
             }
         );
@@ -320,7 +320,7 @@ public sealed class RabbitMqChannelGroupTests
         );
         var target = new RabbitMqFanoutOutboundTarget<ValidationMessageA>(
             "target",
-            new Utf8JsonMessageSerializer(),
+            RabbitMqCloudEventsTestFactory.CreateSerializer(),
             channelGroup,
             "exchange",
             false
@@ -358,7 +358,7 @@ public sealed class RabbitMqChannelGroupTests
         );
         var target = new RabbitMqFanoutOutboundTarget<ValidationMessageA>(
             "target",
-            new Utf8JsonMessageSerializer(),
+            RabbitMqCloudEventsTestFactory.CreateSerializer(),
             channelGroup,
             "exchange",
             false
@@ -389,7 +389,7 @@ public sealed class RabbitMqChannelGroupTests
         );
         var target = new RabbitMqFanoutOutboundTarget<ValidationMessageA>(
             "target",
-            new Utf8JsonMessageSerializer(),
+            RabbitMqCloudEventsTestFactory.CreateSerializer(),
             channelGroup,
             "exchange",
             false
@@ -423,7 +423,7 @@ public sealed class RabbitMqChannelGroupTests
         );
         var target = new RabbitMqFanoutOutboundTarget<ValidationMessageA>(
             "target",
-            new Utf8JsonMessageSerializer(),
+            RabbitMqCloudEventsTestFactory.CreateSerializer(),
             channelGroup,
             "exchange",
             false
@@ -451,7 +451,7 @@ public sealed class RabbitMqChannelGroupTests
         );
         var target = new RabbitMqFanoutOutboundTarget<ValidationMessageA>(
             "target",
-            new Utf8JsonMessageSerializer(),
+            RabbitMqCloudEventsTestFactory.CreateSerializer(),
             channelGroup,
             "exchange",
             true
@@ -460,7 +460,8 @@ public sealed class RabbitMqChannelGroupTests
             new OutboundTopology(
                 new Dictionary<Type, OutboundTarget>(),
                 new Dictionary<string, OutboundTarget>(StringComparer.Ordinal)
-            )
+            ),
+            RabbitMqCloudEventsTestFactory.CreateRegistry()
         );
         SerializedMessage message = new (
             "body"u8.ToArray(),
@@ -477,6 +478,54 @@ public sealed class RabbitMqChannelGroupTests
         deliveryException.TargetName.Should().Be("target");
         deliveryException.Reason.Should().Be(MessageDeliveryFailureReason.Returned);
         deliveryException.InnerException.Should().BeSameAs(publishException);
+    }
+
+    [Fact]
+    public async Task RabbitMqOutboundTarget_BindsCloudEventExtensionsToPrefixedApplicationHeaders()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var channel = new TestRabbitMqChannel();
+        await using var channelGroup = new RabbitMqChannelGroup(
+            "group",
+            1,
+            _ => Task.FromResult(channel.Object)
+        );
+        CloudEventEnvelope envelope = new (
+            "1.0",
+            "93f0208d-10fe-47fc-a3e4-daed821f80b7",
+            "/tests/rabbitmq",
+            "tests.extension",
+            new DateTimeOffset(2026, 5, 31, 12, 34, 56, TimeSpan.Zero),
+            null,
+            "application/custom",
+            null,
+            "body"u8.ToArray(),
+            new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                ["traceparent"] = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+            }
+        );
+        var target = new RabbitMqFanoutOutboundTarget<ValidationMessageA>(
+            "target",
+            new FixedEnvelopeSerializer(envelope),
+            channelGroup,
+            "exchange",
+            false
+        );
+
+        await target.PublishAsync(new ValidationMessageA("value"), cancellationToken);
+
+        channel.LastPublishedProperties.Should().NotBeNull();
+        channel.LastPublishedProperties!.ContentType.Should().Be("application/custom");
+        channel.LastPublishedProperties.MessageId.Should().Be(envelope.Id);
+        channel.LastPublishedProperties.Headers.Should().NotBeNull();
+        channel.LastPublishedProperties.Headers.Should().ContainKey("cloudEvents:id")
+           .WhoseValue.Should()
+           .Be(envelope.Id);
+        channel.LastPublishedProperties.Headers.Should().ContainKey("cloudEvents:traceparent")
+           .WhoseValue.Should()
+           .Be("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01");
+        channel.LastPublishedBody.ToArray().Should().Equal("body"u8.ToArray());
     }
 
     [Fact]
@@ -770,7 +819,7 @@ public sealed class RabbitMqChannelGroupTests
     public void RabbitMqOutboundTopologyCompiler_RejectsChannelGroupsThatNoTargetReferences()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<Utf8JsonMessageSerializer>();
+        services.AddTestCloudEvents();
         services.AddRabbitMqOutboundTopology(
             builder =>
             {
@@ -783,7 +832,7 @@ public sealed class RabbitMqChannelGroupTests
                     target => target
                        .ToFanoutAddress("orders-address")
                        .UseChannelGroup("referenced")
-                       .WithSerializer<Utf8JsonMessageSerializer>()
+                       .WithSerializer<CloudEventMessageSerializer>()
                 );
             }
         );
@@ -804,7 +853,7 @@ public sealed class RabbitMqChannelGroupTests
         using var loggerFactory = new RecordingLoggerFactory(loggerProvider);
         var services = new ServiceCollection();
         services.AddSingleton<ILoggerFactory>(loggerFactory);
-        services.AddSingleton<Utf8JsonMessageSerializer>();
+        services.AddTestCloudEvents();
         services.AddRabbitMqOutboundTopology(
             builder =>
             {
@@ -816,7 +865,7 @@ public sealed class RabbitMqChannelGroupTests
                     target => target
                        .ToFanoutAddress("orders-address")
                        .UseChannelGroup("shared")
-                       .WithSerializer<Utf8JsonMessageSerializer>()
+                       .WithSerializer<CloudEventMessageSerializer>()
                 );
             }
         );
@@ -835,7 +884,7 @@ public sealed class RabbitMqChannelGroupTests
     public void RabbitMqOutboundTopologyCompiler_AssignsExplicitChannelGroupToEveryReferencingTarget()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<Utf8JsonMessageSerializer>();
+        services.AddTestCloudEvents();
         services.AddRabbitMqOutboundTopology(
             builder =>
             {
@@ -847,21 +896,21 @@ public sealed class RabbitMqChannelGroupTests
                     target => target
                        .ToFanoutAddress("orders-address")
                        .UseChannelGroup("shared")
-                       .WithSerializer<Utf8JsonMessageSerializer>()
+                       .WithSerializer<CloudEventMessageSerializer>()
                 );
                 builder.PublishNamed<ValidationMessageA>(
                     "secondary",
                     target => target
                        .ToFanoutAddress("orders-address")
                        .UseChannelGroup("shared")
-                       .WithSerializer<Utf8JsonMessageSerializer>()
+                       .WithSerializer<CloudEventMessageSerializer>()
                 );
                 builder.PublishNamed<ValidationMessageA>(
                     "tertiary",
                     target => target
                        .ToFanoutAddress("orders-address")
                        .UseChannelGroup("shared")
-                       .WithSerializer<Utf8JsonMessageSerializer>()
+                       .WithSerializer<CloudEventMessageSerializer>()
                 );
             }
         );
@@ -879,7 +928,7 @@ public sealed class RabbitMqChannelGroupTests
     public void RabbitMqOutboundTopologyCompiler_CreatesImplicitPrivateSingleChannelGroupsPerTarget()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<Utf8JsonMessageSerializer>();
+        services.AddTestCloudEvents();
         services.AddRabbitMqOutboundTopology(
             builder =>
             {
@@ -887,15 +936,15 @@ public sealed class RabbitMqChannelGroupTests
                 builder.Exchange("orders", ExchangeType.Fanout);
                 builder.Address("orders-address", "orders");
                 builder.Publish<ValidationMessageA>(
-                    target => target.ToFanoutAddress("orders-address").WithSerializer<Utf8JsonMessageSerializer>()
+                    target => target.ToFanoutAddress("orders-address").WithSerializer<CloudEventMessageSerializer>()
                 );
                 builder.PublishNamed<ValidationMessageA>(
                     "secondary",
-                    target => target.ToFanoutAddress("orders-address").WithSerializer<Utf8JsonMessageSerializer>()
+                    target => target.ToFanoutAddress("orders-address").WithSerializer<CloudEventMessageSerializer>()
                 );
                 builder.PublishNamed<ValidationMessageA>(
                     "tertiary",
-                    target => target.ToFanoutAddress("orders-address").WithSerializer<Utf8JsonMessageSerializer>()
+                    target => target.ToFanoutAddress("orders-address").WithSerializer<CloudEventMessageSerializer>()
                 );
             }
         );
@@ -976,5 +1025,24 @@ public sealed class RabbitMqChannelGroupTests
 
         var field = rabbitMqTargetType!.GetField("_channelGroup", BindingFlags.Instance | BindingFlags.NonPublic);
         return (RabbitMqChannelGroup) field!.GetValue(target)!;
+    }
+
+    private sealed class FixedEnvelopeSerializer : IMessageSerializer
+    {
+        private readonly CloudEventEnvelope _envelope;
+
+        public FixedEnvelopeSerializer(CloudEventEnvelope envelope)
+        {
+            _envelope = envelope;
+        }
+
+        public ValueTask<CloudEventEnvelope> SerializeAsync<T>(
+            T message,
+            in CloudEventMetadata metadata,
+            CancellationToken cancellationToken = default
+        )
+        {
+            return new ValueTask<CloudEventEnvelope>(_envelope);
+        }
     }
 }

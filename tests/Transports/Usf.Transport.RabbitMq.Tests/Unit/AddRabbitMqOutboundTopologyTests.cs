@@ -1,6 +1,9 @@
 using System;
+using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using Usf.Core.Messaging;
 using Usf.Core.Messaging.Errors;
@@ -13,6 +16,56 @@ namespace Usf.Transport.RabbitMq.Tests.Unit;
 
 public sealed class AddRabbitMqOutboundTopologyTests
 {
+    [Fact]
+    public void AddCloudEvents_WiresRegistryPayloadCodecAndSerializer()
+    {
+        var services = new ServiceCollection();
+        services.AddCloudEvents(
+            options => options.Source = "/tests",
+            contracts => contracts.Map<ValidationMessageA>("tests.validation-a")
+        );
+        using var serviceProvider = services.BuildServiceProvider();
+
+        serviceProvider.GetRequiredService<IPayloadCodec>().Should().BeOfType<Utf8JsonPayloadCodec>();
+        serviceProvider.GetRequiredService<IMessageSerializer>().Should().BeOfType<CloudEventMessageSerializer>();
+        serviceProvider
+           .GetRequiredService<IMessageContractRegistry>()
+           .GetDiscriminator(typeof(ValidationMessageA))
+           .Should().Be("tests.validation-a");
+    }
+
+    [Fact]
+    public async Task OutboundTopologyHostedService_StartAsyncRejectsUnregisteredTypedTargetBeforeProvisioning()
+    {
+        var services = new ServiceCollection();
+        services.AddCloudEvents(options => options.Source = "/tests", static _ => { });
+        services.AddRabbitMqOutboundTopology(
+            builder =>
+            {
+                builder.UseConnectionFactory(static _ => new ConnectionFactory());
+                builder.Exchange("orders", ExchangeType.Fanout);
+                builder.Address("orders-address", "orders");
+                builder.Publish<ValidationMessageA>(
+                    target => target
+                       .ToFanoutAddress("orders-address")
+                       .WithSerializer<CloudEventMessageSerializer>()
+                );
+            }
+        );
+        await using var serviceProvider = services.BuildServiceProvider();
+        var hostedService = serviceProvider
+           .GetServices<IHostedService>()
+           .OfType<OutboundTopologyHostedService>()
+           .Single();
+
+        var action = async () => await hostedService.StartAsync(TestContext.Current.CancellationToken);
+
+        var exception = (await action.Should().ThrowAsync<OutboundTopologyValidationException>()).Which;
+        exception.ValidationErrors.Should().ContainSingle().Which.Should().Be(
+            "Outbound target 'Usf.Transport.RabbitMq.Tests.TestSupport.ValidationMessageA' publishes unregistered CloudEvents message type 'Usf.Transport.RabbitMq.Tests.TestSupport.ValidationMessageA'. Register its canonical discriminator with MessageContractRegistryBuilder.Map<T>(...) or MapOutbound<T>(...)."
+        );
+    }
+
     [Fact]
     public void AddRabbitMqOutboundTopology_ReportsDeterministicValidationErrors()
     {
@@ -84,7 +137,7 @@ public sealed class AddRabbitMqOutboundTopologyTests
     public void AddRabbitMqOutboundTopology_CompilesDistinctTargetTypesForRabbitMqRoutes()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<Utf8JsonMessageSerializer>();
+        services.AddTestCloudEvents();
         services.AddRabbitMqOutboundTopology(
             builder =>
             {
@@ -100,26 +153,26 @@ public sealed class AddRabbitMqOutboundTopologyTests
                 builder.Publish<ValidationMessageA>(
                     target => target
                        .ToDirectAddress("direct-address", "direct.route")
-                       .WithSerializer<Utf8JsonMessageSerializer>()
+                       .WithSerializer<CloudEventMessageSerializer>()
                 );
                 builder.PublishNamed<ValidationMessageA>(
                     "topic-target",
                     target => target
                        .ToTopicAddress("topic-address", static message => $"topic.{message.Value}")
-                       .WithSerializer<Utf8JsonMessageSerializer>()
+                       .WithSerializer<CloudEventMessageSerializer>()
                 );
                 builder.PublishNamed<ValidationMessageA>(
                     "fanout-target",
                     target => target
                        .ToFanoutAddress("fanout-address")
-                       .WithSerializer<Utf8JsonMessageSerializer>()
+                       .WithSerializer<CloudEventMessageSerializer>()
                 );
                 builder.PublishNamed<ValidationMessageA>(
                     "headers-target",
                     target => target
                        .ToHeadersAddress("headers-address")
                        .WithHeader("region", "eu")
-                       .WithSerializer<Utf8JsonMessageSerializer>()
+                       .WithSerializer<CloudEventMessageSerializer>()
                 );
             }
         );
@@ -146,7 +199,7 @@ public sealed class AddRabbitMqOutboundTopologyTests
     public void AddRabbitMqOutboundTopology_RejectsMandatoryTargetsUsingFireAndForgetPublishing()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<Utf8JsonMessageSerializer>();
+        services.AddTestCloudEvents();
         services.AddRabbitMqOutboundTopology(
             builder =>
             {
@@ -159,7 +212,7 @@ public sealed class AddRabbitMqOutboundTopologyTests
                     target => target
                        .ToFanoutAddress("orders-address")
                        .Mandatory()
-                       .WithSerializer<Utf8JsonMessageSerializer>()
+                       .WithSerializer<CloudEventMessageSerializer>()
                 );
                 builder.PublishNamed<ValidationMessageA>(
                     "shared-best-effort",
@@ -167,7 +220,7 @@ public sealed class AddRabbitMqOutboundTopologyTests
                        .ToFanoutAddress("orders-address")
                        .UseChannelGroup("best-effort")
                        .Mandatory()
-                       .WithSerializer<Utf8JsonMessageSerializer>()
+                       .WithSerializer<CloudEventMessageSerializer>()
                 );
             }
         );
