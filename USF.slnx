@@ -8,6 +8,7 @@
         <File Path="ai-plans\0001-5-publisher-confirms-and-mandatory-routing.md" />
         <File Path="ai-plans\0001-6-rabbitmq-automatic-reconnect.md" />
         <File Path="ai-plans\0001-7-cloudevents-serialization.md" />
+        <File Path="ai-plans\0001-8-publish-trace-and-span-ids.md" />
         <File Path="ai-plans\AGENTS.md" />
     </Folder>
     <Folder Name="/SolutionItems/">
