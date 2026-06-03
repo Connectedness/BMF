@@ -10,6 +10,7 @@
         <File Path="ai-plans\0001-7-cloudevents-serialization.md" />
         <File Path="ai-plans\0001-8-publish-trace-and-span-ids.md" />
         <File Path="ai-plans\0001-9-multi-bus-support.md" />
+        <File Path="ai-plans\0001-plan-deviations.md" />
         <File Path="ai-plans\AGENTS.md" />
     </Folder>
     <Folder Name="/SolutionItems/">
