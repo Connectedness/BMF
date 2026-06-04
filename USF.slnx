@@ -11,7 +11,7 @@
         <File Path="USF.sln.DotSettings" />
     </Folder>
     <Folder Name="/src/">
-        <File Path="src\Directory.Build.props" />
+        <File Path="src/Directory.Build.props" />
         <Project Path="src/Usf.Abstractions/Usf.Abstractions.csproj" />
         <Project Path="src/Usf.Core/Usf.Core.csproj" />
     </Folder>
@@ -22,8 +22,8 @@
         <Project Path="src/Transports/Usf.Transport.RabbitMq/Usf.Transport.RabbitMq.csproj" />
     </Folder>
     <Folder Name="/tests/">
-        <File Path="tests\AGENTS.md" />
-        <File Path="tests\Directory.Build.props" />
+        <File Path="tests/AGENTS.md" />
+        <File Path="tests/Directory.Build.props" />
         <Project Path="tests/Usf.Core.Tests/Usf.Core.Tests.csproj" />
     </Folder>
     <Folder Name="/tests/Transports/">
