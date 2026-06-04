@@ -11,10 +11,18 @@ namespace Usf.Transport.RabbitMq;
 public sealed class RabbitMqConnectionProvider : IAsyncDisposable, IDisposable
 {
     private readonly Func<CancellationToken, Task<IConnection>> _createConnectionAsync;
-    private readonly SemaphoreSlim _gate = new (1, 1);
+
     private readonly ILogger _logger;
-    private volatile Task<IConnection>? _connectionTask;
-    private int _disposed;
+
+    // The SemaphoreSlim is intentionally not disposed of in this class. SemaphoreSlim only needs to be disposed of
+    // when its AvailableWaitHandle property is accessed - this creates a ManuelResetEvent under the covers which
+    // has a finalizer and needs to be disposed of. We don't do this here, the provider is a sealed class, and the
+    // semaphore is private readonly. This allows us to use the semaphore in subsequent calls to Dispose(Async) without
+    // introducing a more complex disposal mechanism (like a state machine) that disposes the semaphore, too.
+    // See https://stackoverflow.com/questions/32033416/do-i-need-to-dispose-a-semaphoreslim
+    private readonly SemaphoreSlim _semaphore = new (1, 1);
+    private Task<IConnection>? _connectionTask;
+    private bool _disposed;
 
     public RabbitMqConnectionProvider(
         Func<CancellationToken, Task<IConnection>> createConnectionAsync,
@@ -28,86 +36,95 @@ public sealed class RabbitMqConnectionProvider : IAsyncDisposable, IDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        await _semaphore.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+
+        try
         {
-            return;
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            if (_connectionTask is not null && _connectionTask.Status == TaskStatus.RanToCompletion)
+            {
+                var connection = await _connectionTask.ConfigureAwait(false);
+                Unsubscribe(connection);
+
+                if (connection is IAsyncDisposable asyncDisposable)
+                {
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    connection.Dispose();
+                }
+            }
         }
-
-        _gate.Dispose();
-
-        if (_connectionTask is not null && _connectionTask.Status == TaskStatus.RanToCompletion)
+        finally
         {
-            var connection = await _connectionTask.ConfigureAwait(false);
-            Unsubscribe(connection);
-
-            if (connection is IAsyncDisposable asyncDisposable)
-            {
-                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
-            }
-            else
-            {
-                connection.Dispose();
-            }
+            _semaphore.Release();
         }
     }
 
     public void Dispose()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        _semaphore.Wait();
+
+        try
         {
-            return;
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            if (_connectionTask is not null && _connectionTask.Status == TaskStatus.RanToCompletion)
+            {
+                var connection = _connectionTask.Result;
+                Unsubscribe(connection);
+                connection.Dispose();
+            }
         }
-
-        _gate.Dispose();
-
-        if (_connectionTask is not null && _connectionTask.Status == TaskStatus.RanToCompletion)
+        finally
         {
-            var connection = _connectionTask.Result;
-            Unsubscribe(connection);
-            connection.Dispose();
+            _semaphore.Release();
         }
     }
 
     public async Task<IConnection> GetConnectionAsync(CancellationToken cancellationToken)
     {
-        ThrowIfDisposed();
-
-        var existingTask = _connectionTask;
-
-        if (existingTask is not null)
-        {
-            return await existingTask.ConfigureAwait(false);
-        }
-
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
             ThrowIfDisposed();
 
-            if (_connectionTask is null)
-            {
-                _connectionTask = CreateConnectionAsync(cancellationToken);
-            }
+            _connectionTask ??= CreateConnectionAsync(cancellationToken);
 
-            return await _connectionTask.ConfigureAwait(false);
-        }
-        catch
-        {
-            // A failed creation attempt must not poison the provider: clear the cached task so the
-            // next acquisition retries instead of replaying the same faulted task forever.
-            _connectionTask = null;
-            throw;
+            try
+            {
+                return await _connectionTask.ConfigureAwait(false);
+            }
+            catch
+            {
+                // A failed creation attempt must not poison the provider: clear the cached task so the
+                // next acquisition retries instead of replaying the same faulted task forever.
+                _connectionTask = null;
+                throw;
+            }
         }
         finally
         {
-            _gate.Release();
+            _semaphore.Release();
         }
     }
 
     private void ThrowIfDisposed()
     {
-        if (Volatile.Read(ref _disposed) != 0)
+        if (_disposed)
         {
             throw new ObjectDisposedException(nameof(RabbitMqConnectionProvider));
         }
