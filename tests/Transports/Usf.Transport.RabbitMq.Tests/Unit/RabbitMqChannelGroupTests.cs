@@ -292,6 +292,17 @@ public sealed class RabbitMqChannelGroupTests
         await action.Should().ThrowAsync<OperationCanceledException>();
     }
 
+    [Fact]
+    public void RabbitMqChannelLease_ChannelThrowsClearErrorWhenDefaultConstructed()
+    {
+        var lease = default(RabbitMqChannelLease);
+
+        Action act = () => _ = lease.Channel;
+
+        var exception = act.Should().Throw<InvalidOperationException>().Which;
+        exception.Message.Should().Be("RabbitMqChannelLease must not be the default instance");
+    }
+
     [Theory]
     [InlineData(false, MessageDeliveryFailureReason.Nacked)]
     [InlineData(true, MessageDeliveryFailureReason.Returned)]
@@ -682,6 +693,99 @@ public sealed class RabbitMqChannelGroupTests
 
         resolved.Should().OnlyContain(resolvedConnection => ReferenceEquals(resolvedConnection, connection.Object));
         createCallCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task RabbitMqConnectionProvider_DisposeAsyncWaitsForInFlightConnectionRequest()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var connection = new TestRabbitMqConnection();
+        using ManualResetEventSlim factoryEntered = new ();
+        using ManualResetEventSlim allowFactoryReturn = new ();
+        var provider = new RabbitMqConnectionProvider(
+            _ =>
+            {
+                factoryEntered.Set();
+                allowFactoryReturn.Wait(cancellationToken);
+                return Task.FromResult(connection.Object);
+            }
+        );
+        var first = Task.Run(
+            async () => await provider.GetConnectionAsync(cancellationToken),
+            cancellationToken
+        );
+
+        try
+        {
+            factoryEntered.Wait(cancellationToken);
+            var disposeTask = provider.DisposeAsync().AsTask();
+
+            disposeTask.IsCompleted.Should().BeFalse();
+            allowFactoryReturn.Set();
+            var resolved = await first;
+            await disposeTask;
+            Func<Task> getAfterDispose = async () => await provider.GetConnectionAsync(cancellationToken);
+
+            resolved.Should().BeSameAs(connection.Object);
+            connection.DisposeAsyncCallCount.Should().Be(1);
+            var exception = (await getAfterDispose.Should().ThrowAsync<ObjectDisposedException>()).Which;
+            exception.ObjectName.Should().Be(nameof(RabbitMqConnectionProvider));
+        }
+        finally
+        {
+            allowFactoryReturn.Set();
+        }
+    }
+
+    [Fact]
+    public async Task RabbitMqConnectionProvider_SynchronousDisposeWaitsForInFlightConnectionRequest()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var connection = new TestRabbitMqConnection();
+        using ManualResetEventSlim factoryEntered = new ();
+        using ManualResetEventSlim allowFactoryReturn = new ();
+        using ManualResetEventSlim disposeStarted = new ();
+        var provider = new RabbitMqConnectionProvider(
+            _ =>
+            {
+                factoryEntered.Set();
+                allowFactoryReturn.Wait(cancellationToken);
+                return Task.FromResult(connection.Object);
+            }
+        );
+        var first = Task.Run(
+            async () => await provider.GetConnectionAsync(cancellationToken),
+            cancellationToken
+        );
+
+        try
+        {
+            factoryEntered.Wait(cancellationToken);
+            var disposeTask = Task.Run(
+                () =>
+                {
+                    disposeStarted.Set();
+                    provider.Dispose();
+                },
+                cancellationToken
+            );
+            disposeStarted.Wait(cancellationToken);
+
+            disposeTask.IsCompleted.Should().BeFalse();
+            allowFactoryReturn.Set();
+            var resolved = await first;
+            await disposeTask;
+            Func<Task> getAfterDispose = async () => await provider.GetConnectionAsync(cancellationToken);
+
+            resolved.Should().BeSameAs(connection.Object);
+            connection.DisposeCallCount.Should().Be(1);
+            var exception = (await getAfterDispose.Should().ThrowAsync<ObjectDisposedException>()).Which;
+            exception.ObjectName.Should().Be(nameof(RabbitMqConnectionProvider));
+        }
+        finally
+        {
+            allowFactoryReturn.Set();
+        }
     }
 
     [Fact]

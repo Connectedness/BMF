@@ -7,18 +7,17 @@ namespace Usf.Transport.RabbitMq;
 public readonly struct RabbitMqChannelLease : IAsyncDisposable
 {
     private readonly IRabbitMqChannelPool? _pool;
-    private readonly IChannel? _channel;
 
     public RabbitMqChannelLease(IRabbitMqChannelPool pool, IChannel channel, object? state = null, long token = 0)
     {
         _pool = pool ?? throw new ArgumentNullException(nameof(pool));
-        _channel = channel ?? throw new ArgumentNullException(nameof(channel));
+        Channel = channel ?? throw new ArgumentNullException(nameof(channel));
         State = state;
         Token = token;
     }
 
     public IChannel Channel =>
-        _channel ?? throw new ObjectDisposedException(nameof(RabbitMqChannelLease));
+        field ?? throw new InvalidOperationException("RabbitMqChannelLease must not be the default instance");
 
     public object? State { get; }
 
