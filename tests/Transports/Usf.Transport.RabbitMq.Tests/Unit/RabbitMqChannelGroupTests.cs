@@ -335,7 +335,7 @@ public sealed class RabbitMqChannelGroupTests
             "target",
             RabbitMqCloudEventsTestFactory.CreateSerializer(),
             RabbitMqCloudEventsTestFactory.CreateRegistry(),
-            TopologyName.Default,
+            Topology.DefaultName,
             channelGroup,
             "exchange",
             false
@@ -378,7 +378,7 @@ public sealed class RabbitMqChannelGroupTests
             "target",
             RabbitMqCloudEventsTestFactory.CreateSerializer(),
             RabbitMqCloudEventsTestFactory.CreateRegistry(),
-            TopologyName.Default,
+            Topology.DefaultName,
             channelGroup,
             "exchange",
             false
@@ -414,7 +414,7 @@ public sealed class RabbitMqChannelGroupTests
             "target",
             RabbitMqCloudEventsTestFactory.CreateSerializer(),
             RabbitMqCloudEventsTestFactory.CreateRegistry(),
-            TopologyName.Default,
+            Topology.DefaultName,
             channelGroup,
             "exchange",
             false
@@ -453,7 +453,7 @@ public sealed class RabbitMqChannelGroupTests
             "target",
             RabbitMqCloudEventsTestFactory.CreateSerializer(),
             RabbitMqCloudEventsTestFactory.CreateRegistry(),
-            TopologyName.Default,
+            Topology.DefaultName,
             channelGroup,
             "exchange",
             false
@@ -486,19 +486,12 @@ public sealed class RabbitMqChannelGroupTests
             "target",
             RabbitMqCloudEventsTestFactory.CreateSerializer(),
             RabbitMqCloudEventsTestFactory.CreateRegistry(),
-            TopologyName.Default,
+            Topology.DefaultName,
             channelGroup,
             "exchange",
             true
         );
-        var publisher = new MessagePublisher(
-            new TopologyDefinition(
-                TopologyName.Default,
-                new Dictionary<Type, OutboundTarget>(),
-                new Dictionary<string, OutboundTarget>(StringComparer.Ordinal),
-                new Dictionary<string, InboundEndpoint>(StringComparer.Ordinal)
-            )
-        );
+        var publisher = new MessagePublisher(new EmptyTopology());
         SerializedMessage message = new (
             "body"u8.ToArray(),
             null,
@@ -530,7 +523,7 @@ public sealed class RabbitMqChannelGroupTests
             "target",
             RabbitMqCloudEventsTestFactory.CreateSerializer(),
             RabbitMqCloudEventsTestFactory.CreateRegistry(),
-            TopologyName.Default,
+            Topology.DefaultName,
             channelGroup,
             "exchange",
             false,
@@ -566,7 +559,7 @@ public sealed class RabbitMqChannelGroupTests
             "target",
             RabbitMqCloudEventsTestFactory.CreateSerializer(),
             RabbitMqCloudEventsTestFactory.CreateRegistry(),
-            TopologyName.Default,
+            Topology.DefaultName,
             channelGroup,
             "exchange",
             false,
@@ -598,7 +591,7 @@ public sealed class RabbitMqChannelGroupTests
             "target",
             RabbitMqCloudEventsTestFactory.CreateSerializer(),
             RabbitMqCloudEventsTestFactory.CreateRegistry(),
-            TopologyName.Default,
+            Topology.DefaultName,
             channelGroup,
             "exchange",
             false,
@@ -635,7 +628,7 @@ public sealed class RabbitMqChannelGroupTests
             "target",
             RabbitMqCloudEventsTestFactory.CreateSerializer(),
             RabbitMqCloudEventsTestFactory.CreateRegistry(),
-            TopologyName.Default,
+            Topology.DefaultName,
             channelGroup,
             "exchange",
             false,
@@ -686,7 +679,7 @@ public sealed class RabbitMqChannelGroupTests
             "target",
             new FixedEnvelopeSerializer(envelope),
             RabbitMqCloudEventsTestFactory.CreateRegistry(),
-            TopologyName.Default,
+            Topology.DefaultName,
             channelGroup,
             "exchange",
             false
@@ -721,7 +714,7 @@ public sealed class RabbitMqChannelGroupTests
             "target",
             RabbitMqCloudEventsTestFactory.CreateSerializer(),
             RabbitMqCloudEventsTestFactory.CreateRegistry(),
-            TopologyName.Default,
+            Topology.DefaultName,
             channelGroup,
             "exchange",
             false,
@@ -733,14 +726,7 @@ public sealed class RabbitMqChannelGroupTests
                 ["tenant"] = "tenant-route"
             }
         );
-        var publisher = new MessagePublisher(
-            new TopologyDefinition(
-                TopologyName.Default,
-                new Dictionary<Type, OutboundTarget>(),
-                new Dictionary<string, OutboundTarget>(StringComparer.Ordinal),
-                new Dictionary<string, InboundEndpoint>(StringComparer.Ordinal)
-            )
-        );
+        var publisher = new MessagePublisher(new EmptyTopology());
         Activity? producerActivity = null;
         using var parentActivity = new Activity("parent").SetIdFormat(ActivityIdFormat.W3C);
         parentActivity.TraceStateString = "vendor=value";
@@ -796,19 +782,12 @@ public sealed class RabbitMqChannelGroupTests
             "target",
             RabbitMqCloudEventsTestFactory.CreateSerializer(),
             RabbitMqCloudEventsTestFactory.CreateRegistry(),
-            TopologyName.Default,
+            Topology.DefaultName,
             channelGroup,
             "exchange",
             false
         );
-        var publisher = new MessagePublisher(
-            new TopologyDefinition(
-                TopologyName.Default,
-                new Dictionary<Type, OutboundTarget>(),
-                new Dictionary<string, OutboundTarget>(StringComparer.Ordinal),
-                new Dictionary<string, InboundEndpoint>(StringComparer.Ordinal)
-            )
-        );
+        var publisher = new MessagePublisher(new EmptyTopology());
         SerializedMessage message = new (
             "body"u8.ToArray(),
             null,
@@ -1329,7 +1308,7 @@ public sealed class RabbitMqChannelGroupTests
             );
         using var serviceProvider = services.BuildServiceProvider();
 
-        _ = serviceProvider.GetRequiredKeyedService<RabbitMqTopology>(new TopologyName("empty"));
+        _ = serviceProvider.GetRequiredKeyedService<RabbitMqTopology>("empty");
 
         loggerProvider.Entries.Should().Contain(
             entry => entry.LogLevel == LogLevel.Warning &&
@@ -1458,8 +1437,8 @@ public sealed class RabbitMqChannelGroupTests
         channelSource.SetChannelBudget(worstCaseChannelCount, description);
 
         return new RabbitMqTopology(
-            new TopologyDefinition(
-                TopologyName.Default,
+            Topology.DefaultName,
+            TopologyData.PrepareTopologyDataStructures(
                 new Dictionary<Type, OutboundTarget>(),
                 new Dictionary<string, OutboundTarget>(StringComparer.Ordinal),
                 new Dictionary<string, InboundEndpoint>(StringComparer.Ordinal)
@@ -1497,7 +1476,7 @@ public sealed class RabbitMqChannelGroupTests
             static _ => true
         );
 
-        return compiler.Compile(TopologyName.Default, configuration, connectionProvider);
+        return compiler.Compile(Topology.DefaultName, configuration, connectionProvider);
     }
 
     private static RabbitMqChannelGroup GetChannelGroup(OutboundTarget target)
@@ -1512,6 +1491,18 @@ public sealed class RabbitMqChannelGroupTests
 
         var field = rabbitMqTargetType!.GetField("_channelGroup", BindingFlags.Instance | BindingFlags.NonPublic);
         return (RabbitMqChannelGroup) field!.GetValue(target)!;
+    }
+
+    private sealed class EmptyTopology : Topology
+    {
+        public EmptyTopology() : base(
+            DefaultName,
+            TopologyData.PrepareTopologyDataStructures(
+                new Dictionary<Type, OutboundTarget>(),
+                new Dictionary<string, OutboundTarget>(StringComparer.Ordinal),
+                new Dictionary<string, InboundEndpoint>(StringComparer.Ordinal)
+            )
+        ) { }
     }
 
     private sealed class FixedEnvelopeSerializer : IMessageSerializer
