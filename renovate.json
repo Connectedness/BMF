@@ -6,6 +6,9 @@
   "addLabels": [
     "renovate"
   ],
+  "major": {
+    "dependencyDashboardApproval": true
+  },
   "packageRules": [
     {
       "matchPackageNames": [
