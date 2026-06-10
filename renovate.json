@@ -6,7 +6,16 @@
   "addLabels": [
     "renovate"
   ],
+  "major": {
+    "dependencyDashboardApproval": true
+  },
   "packageRules": [
+    {
+      "matchManagers": [
+        "nuget"
+      ],
+      "rangeStrategy": "pin"
+    },
     {
       "matchPackageNames": [
         "FluentAssertions"
