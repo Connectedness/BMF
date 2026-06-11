@@ -18,10 +18,11 @@
       "rangeStrategy": "bump"
     },
     {
+      "description": "Allow FluentAssertions updates within v7 only",
       "matchPackageNames": [
         "FluentAssertions"
       ],
-      "enabled": false
+      "allowedVersions": "<8"
     },
     {
       "groupName": "Test SDK/MTP",
