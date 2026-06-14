@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,7 +17,7 @@ namespace Usf.Transport.RabbitMq;
 /// connection provider, and the channel source. A topology owns exactly one
 /// <see cref="RabbitMqConnectionProvider" />; register separate topology instances when separate publisher and
 /// consumer connections are wanted, preferably via
-/// <see cref="RabbitMqTransportModule.AddRabbitMqOutboundTopology(UsfBuilder, Action{IRabbitMqOutboundTopologyBuilder})" />
+/// <see cref="RabbitMqTransportModule.AddRabbitMqOutboundTopology(UsfBuilder, System.Action{Usf.Transport.RabbitMq.IRabbitMqOutboundTopologyBuilder}(Usf.Transport.RabbitMq.IRabbitMqOutboundTopologyBuilder))" />
 /// and <see cref="RabbitMqTransportModule.AddRabbitMqInboundTopology(UsfBuilder, Action{IRabbitMqInboundTopologyBuilder})" />.
 /// </summary>
 public sealed class RabbitMqTopology : Topology, IAsyncDisposable, IDisposable
@@ -147,7 +148,11 @@ public sealed class RabbitMqTopology : Topology, IAsyncDisposable, IDisposable
         return _channelSource.GetConnectionAsync(cancellationToken);
     }
 
-    public bool TryDispatch(string queueName, string discriminator, out RabbitMqInboundEndpoint? endpoint)
+    public bool TryGetEndpoint(
+        string queueName,
+        string discriminator,
+        [NotNullWhen(true)] out RabbitMqInboundEndpoint? endpoint
+    )
     {
         return _dispatchIndex.TryGetValue(new InboundEndpointSelectionKey(queueName, discriminator), out endpoint);
     }

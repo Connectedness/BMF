@@ -152,8 +152,8 @@ public sealed class AddRabbitMqConsumeTopologyTests
 
         var topology = serviceProvider.GetRequiredService<RabbitMqTopology>();
 
-        topology.TryDispatch("inbound", "tests.current", out var currentEndpoint).Should().BeTrue();
-        topology.TryDispatch("inbound", "tests.legacy", out var legacyEndpoint).Should().BeTrue();
+        topology.TryGetEndpoint("inbound", "tests.current", out var currentEndpoint).Should().BeTrue();
+        topology.TryGetEndpoint("inbound", "tests.legacy", out var legacyEndpoint).Should().BeTrue();
         currentEndpoint.Should().BeSameAs(legacyEndpoint);
         currentEndpoint!.Name.Should().Be("inbound:tests.current");
     }

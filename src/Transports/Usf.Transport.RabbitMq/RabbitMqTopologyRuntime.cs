@@ -63,12 +63,11 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
 
             for (var index = 0; index < channelGroup.MaximumChannelCount; index++)
             {
-                var channel = await _topology.CreateChannelAsync(
-                        channelGroup.CreateChannelOptions(),
-                        cancellationToken
-                    )
+                var channel = await _topology
+                   .CreateChannelAsync(channelGroup.CreateChannelOptions(), cancellationToken)
                    .ConfigureAwait(false);
-                await channel.BasicQosAsync(
+                await channel
+                   .BasicQosAsync(
                         prefetchSize: 0,
                         prefetchCount: channelGroup.PrefetchCount,
                         global: false,
@@ -80,9 +79,9 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
                 foreach (var endpoint in endpoints)
                 {
                     var consumer = new AsyncEventingBasicConsumer(channel);
-                    consumer.ReceivedAsync += (_, eventArgs) =>
-                        OnReceivedAsync(endpoint, channel, eventArgs);
-                    var consumerTag = await channel.BasicConsumeAsync(
+                    consumer.ReceivedAsync += (_, eventArgs) => OnReceivedAsync(endpoint, channel, eventArgs);
+                    var consumerTag = await channel
+                       .BasicConsumeAsync(
                             queue: endpoint.QueueName,
                             autoAck: false,
                             consumerTag: string.Empty,
@@ -186,8 +185,7 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
 
         try
         {
-            await ProcessDeliveryAsync(subscribedEndpoint, acknowledgement, eventArgs)
-               .ConfigureAwait(false);
+            await ProcessDeliveryAsync(subscribedEndpoint, acknowledgement, eventArgs).ConfigureAwait(false);
         }
         finally
         {
@@ -240,29 +238,23 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
             var inspector = (IInboundMessageInspector) scope.ServiceProvider.GetRequiredService(
                 subscribedEndpoint.InspectorType
             );
-            var inspection = await inspector.InspectAsync(transportMessage, cancellationToken)
-               .ConfigureAwait(false);
+            var inspectResult = await inspector.InspectAsync(transportMessage, cancellationToken).ConfigureAwait(false);
 
-            if (!_topology.TryDispatch(
-                    subscribedEndpoint.QueueName,
-                    inspection.Discriminator,
-                    out var endpoint
-                ) ||
-                endpoint is null)
+            if (!_topology.TryGetEndpoint(subscribedEndpoint.QueueName, inspectResult.Discriminator, out var endpoint))
             {
                 throw new UnknownInboundMessageException(
                     subscribedEndpoint.QueueName,
-                    inspection.Discriminator
+                    inspectResult.Discriminator
                 );
             }
 
-            if (endpoint.MessageType != inspection.MessageType &&
-                !endpoint.MessageType.IsAssignableFrom(inspection.MessageType))
+            if (endpoint.MessageType != inspectResult.MessageType &&
+                !endpoint.MessageType.IsAssignableFrom(inspectResult.MessageType))
             {
                 throw new UnknownInboundMessageException(
                     subscribedEndpoint.QueueName,
-                    inspection.Discriminator,
-                    $"Inbound message discriminator '{inspection.Discriminator}' resolved to '{inspection.MessageType}', but endpoint '{endpoint.Name}' handles '{endpoint.MessageType}'."
+                    inspectResult.Discriminator,
+                    $"Inbound message discriminator '{inspectResult.Discriminator}' resolved to '{inspectResult.MessageType}', but endpoint '{endpoint.Name}' handles '{endpoint.MessageType}'."
                 );
             }
 
@@ -274,10 +266,10 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
                 cancellationToken
             )
             {
-                Message = inspection.Message
+                Message = inspectResult.Message
             };
 
-            if (inspection.Envelope is CloudEventEnvelope envelope)
+            if (inspectResult.Envelope is { } envelope)
             {
                 context.SetItem(CloudEventsContextKeys.Envelope, envelope);
             }
