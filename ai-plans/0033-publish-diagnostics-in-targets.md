@@ -1,0 +1,29 @@
+# Publish Diagnostics in Targets
+
+## Rationale
+
+Direct `OutboundTarget<T>` publishing is an explicitly supported path, but diagnostics currently live in `MessagePublisher`. Move publish instrumentation into the target layer so publisher-mediated publishes and direct target publishes emit the same activities and metrics without double-counting.
+
+## Acceptance Criteria
+
+- [ ] Publish diagnostics move from `MessagePublisher` into `OutboundTarget`, covering typed publishes and raw serialized publishes.
+- [ ] `PublishSerializedAsync` becomes a sealed template method over an abstract core method so raw publishes are always instrumented by the base target layer.
+- [ ] Typed `OutboundTarget<T>.PublishAsync` paths are instrumented by the target layer across the full publish (serialization through transport dispatch), so serialization failures and cancellations are captured exactly as today.
+- [ ] `MessagePublisher` keeps target resolution and explicit-target topology validation, then delegates without wrapping publish calls in diagnostics.
+- [ ] Publisher-mediated publishes and direct target publishes produce one activity, one attempt count, and one duration measurement per publish attempt, plus exactly one failure count per non-cancellation failed publish attempt.
+- [ ] Existing success, cancellation, serialization failure, and delivery failure diagnostic tags remain consistent with current publisher-owned diagnostics.
+- [ ] Automated tests need to be written.
+
+## Technical Details
+
+Move the diagnostics template from `MessagePublisher.PublishWithDiagnosticsAsync` to the non-generic `OutboundTarget` base. The base target should own activity creation, common tags, `PublishAttempts`, `PublishFailures`, `PublishDuration`, cancellation outcome handling, and delivery failure reason tagging. Keep the observable tag names and metric dimensions compatible with the current `OutboundDiagnostics` behavior.
+
+Change raw publish dispatch so `OutboundTarget.PublishSerializedAsync` is sealed and invokes diagnostics around an abstract `PublishSerializedCoreAsync`. Update all concrete targets and test doubles that currently override `PublishSerializedAsync`, including RabbitMQ targets, benchmark targets, `RecordingTarget`, and `ThrowingTarget`, to override the core method instead. The base's raw path derives the `usf.outbound.message.type` tag from the target (reproducing the current `GetMessageTypeName(target)`), distinct from the typed path's discriminator.
+
+For typed publishing, keep validation and serialization behavior in `OutboundTarget<T>.PublishAsync` / `PublishCoreAsync`, and instrument the entire `PublishCoreAsync` path — serialization through the transport-specific `PublishTypedCloudEventAsync` dispatch — with the target-owned diagnostics, so serialization failures (`outcome="failure"`, no delivery reason) and cancellations are recorded exactly as the current publisher-owned diagnostics do. Use the target's discriminator lookup for typed message type names and preserve existing serialization exception behavior.
+
+Simplify `MessagePublisher` after target-owned diagnostics are in place. `PublishRawAsync` should validate the explicit target and serialized message shape, run `ValidateExplicitTargetTopology`, and call `target.PublishSerializedAsync`. Typed publishing should resolve the target, validate explicit topology, verify target type compatibility, gather discriminator/data schema as needed, and call `typedTarget.PublishAsync` without starting activities or recording metrics.
+
+Update diagnostics tests to cover direct typed target publishing, direct raw target publishing, publisher-mediated typed publishing, publisher-mediated raw publishing, cancellation, serialization failures, delivery failures, and absence of nested activities or doubled metrics when publishing through `IMessagePublisher`.
+
+Scope: this plan overlaps #30 / `0030-capability-typed-routing-keys` on `OutboundTarget<T>.PublishCoreAsync`, `MessagePublisher`, `RecordingTarget`, and the RabbitMQ targets; implement it after #30 so `PublishCoreAsync` is the shared `protected` funnel that this plan instruments — the two compose cleanly once sequenced.
