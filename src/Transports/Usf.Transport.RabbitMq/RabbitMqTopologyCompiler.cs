@@ -76,7 +76,7 @@ public sealed class RabbitMqTopologyCompiler
             effectiveMessageContracts,
             channelSource
         );
-        var (inboundChannelGroups, endpoints, endpointsByName, dispatchIndex) = CompileInbound(
+        var (inboundChannelGroups, consumers, endpoints, endpointsByName, dispatchIndex) = CompileInbound(
             topologyName,
             configuration,
             effectiveMessageContracts
@@ -103,6 +103,7 @@ public sealed class RabbitMqTopologyCompiler
             outboundChannelGroups.AsReadOnly(),
             targets.AsReadOnly(),
             inboundChannelGroups.AsReadOnly(),
+            consumers.AsReadOnly(),
             endpoints.AsReadOnly(),
             new ReadOnlyDictionary<InboundEndpointSelectionKey, RabbitMqInboundEndpoint>(dispatchIndex),
             BuildPipeline(configuration),
@@ -375,6 +376,7 @@ public sealed class RabbitMqTopologyCompiler
 
     private (
         List<RabbitMqInboundChannelGroup> ChannelGroups,
+        List<RabbitMqInboundConsumer> Consumers,
         List<RabbitMqInboundEndpoint> Endpoints,
         Dictionary<string, InboundEndpoint> EndpointsByName,
         Dictionary<InboundEndpointSelectionKey, RabbitMqInboundEndpoint> DispatchIndex
@@ -389,6 +391,7 @@ public sealed class RabbitMqTopologyCompiler
         Dictionary<string, InboundEndpoint> endpointsByName = new (StringComparer.Ordinal);
         Dictionary<InboundEndpointSelectionKey, RabbitMqInboundEndpoint> dispatchIndex =
             new (InboundEndpointSelectionKeyComparer.Instance);
+        List<RabbitMqInboundConsumer> consumers = [];
         List<RabbitMqInboundEndpoint> endpoints = [];
 
         foreach (var channelGroupDefinition in OrderInboundChannelGroups(configuration.InboundChannelGroups))
@@ -398,39 +401,53 @@ public sealed class RabbitMqTopologyCompiler
             channelGroups.Add(channelGroup);
         }
 
-        foreach (var handlerDefinition in OrderHandlers(configuration.Handlers))
+        foreach (var consumerDefinition in OrderConsumers(configuration.Consumers))
         {
-            var canonicalDiscriminator = effectiveMessageContracts.GetDiscriminator(handlerDefinition.MessageType);
-            var inboundDiscriminators = effectiveMessageContracts.GetInboundDiscriminators(
-                handlerDefinition.MessageType
-            );
-            var endpointName = handlerDefinition.EndpointName ??
-                               $"{handlerDefinition.QueueName}:{canonicalDiscriminator}";
             var channelGroup = ResolveInboundChannelGroup(
-                handlerDefinition,
-                endpointName,
+                consumerDefinition,
                 explicitChannelGroupsByName,
                 channelGroups
             );
-            var endpoint = CreateEndpoint(
-                handlerDefinition,
-                topologyName,
-                endpointName,
-                canonicalDiscriminator,
-                channelGroup
-            );
+            List<RabbitMqInboundEndpoint> consumerEndpoints = [];
 
-            endpoints.Add(endpoint);
-            endpointsByName.Add(endpoint.Name, endpoint);
-
-            foreach (var discriminator in inboundDiscriminators)
+            foreach (var handlerDefinition in OrderHandlers(consumerDefinition.Handlers))
             {
-                var dispatchKey = new InboundEndpointSelectionKey(handlerDefinition.QueueName, discriminator);
-                dispatchIndex.Add(dispatchKey, endpoint);
+                var canonicalDiscriminator = effectiveMessageContracts.GetDiscriminator(handlerDefinition.MessageType);
+                var inboundDiscriminators = effectiveMessageContracts.GetInboundDiscriminators(
+                    handlerDefinition.MessageType
+                );
+                var endpointName = handlerDefinition.EndpointName ??
+                                   $"{consumerDefinition.QueueName}:{canonicalDiscriminator}";
+                var endpoint = CreateEndpoint(
+                    handlerDefinition,
+                    topologyName,
+                    endpointName,
+                    canonicalDiscriminator
+                );
+
+                endpoints.Add(endpoint);
+                consumerEndpoints.Add(endpoint);
+                endpointsByName.Add(endpoint.Name, endpoint);
+
+                foreach (var discriminator in inboundDiscriminators)
+                {
+                    var dispatchKey = new InboundEndpointSelectionKey(consumerDefinition.QueueName, discriminator);
+                    dispatchIndex.Add(dispatchKey, endpoint);
+                }
             }
+
+            consumers.Add(
+                new RabbitMqInboundConsumer(
+                    consumerDefinition.QueueName,
+                    consumerDefinition.InspectorType,
+                    consumerDefinition.CopyBody,
+                    channelGroup,
+                    consumerEndpoints.AsReadOnly()
+                )
+            );
         }
 
-        return (channelGroups, endpoints, endpointsByName, dispatchIndex);
+        return (channelGroups, consumers, endpoints, endpointsByName, dispatchIndex);
     }
 
     private static IEnumerable<RabbitMqInboundChannelGroupDefinition> OrderInboundChannelGroups(
@@ -440,13 +457,19 @@ public sealed class RabbitMqTopologyCompiler
         return channelGroups.OrderBy(static channelGroup => channelGroup.Name, StringComparer.Ordinal);
     }
 
+    private static IEnumerable<RabbitMqInboundConsumerDefinition> OrderConsumers(
+        IReadOnlyList<RabbitMqInboundConsumerDefinition> consumers
+    )
+    {
+        return consumers.OrderBy(static consumer => consumer.QueueName, StringComparer.Ordinal);
+    }
+
     private static IEnumerable<RabbitMqInboundHandlerDefinition> OrderHandlers(
         IReadOnlyList<RabbitMqInboundHandlerDefinition> handlers
     )
     {
         return handlers
-           .OrderBy(static handler => handler.QueueName, StringComparer.Ordinal)
-           .ThenBy(static handler => handler.MessageType.AssemblyQualifiedName, StringComparer.Ordinal)
+           .OrderBy(static handler => handler.MessageType.AssemblyQualifiedName, StringComparer.Ordinal)
            .ThenBy(static handler => handler.EndpointName ?? string.Empty, StringComparer.Ordinal);
     }
 
@@ -463,22 +486,21 @@ public sealed class RabbitMqTopologyCompiler
     }
 
     private static RabbitMqInboundChannelGroup ResolveInboundChannelGroup(
-        RabbitMqInboundHandlerDefinition handlerDefinition,
-        string endpointName,
+        RabbitMqInboundConsumerDefinition consumerDefinition,
         IReadOnlyDictionary<string, RabbitMqInboundChannelGroup> explicitChannelGroupsByName,
         ICollection<RabbitMqInboundChannelGroup> channelGroups
     )
     {
-        if (!string.IsNullOrWhiteSpace(handlerDefinition.ChannelGroupName))
+        if (!string.IsNullOrWhiteSpace(consumerDefinition.ChannelGroupName))
         {
-            return explicitChannelGroupsByName[handlerDefinition.ChannelGroupName!];
+            return explicitChannelGroupsByName[consumerDefinition.ChannelGroupName!];
         }
 
         var implicitChannelGroup = new RabbitMqInboundChannelGroup(
-            $"{RabbitMqInboundChannelGroupDefinition.ReservedImplicitNamePrefix}{channelGroups.Count}:{endpointName}",
-            handlerDefinition.ChannelCount,
-            handlerDefinition.PrefetchCount,
-            handlerDefinition.ConsumerDispatchConcurrency
+            $"{RabbitMqInboundChannelGroupDefinition.ReservedImplicitNamePrefix}{channelGroups.Count}:{consumerDefinition.QueueName}",
+            consumerDefinition.ChannelCount,
+            consumerDefinition.PrefetchCount,
+            consumerDefinition.ConsumerDispatchConcurrency
         );
         channelGroups.Add(implicitChannelGroup);
         return implicitChannelGroup;
@@ -488,14 +510,13 @@ public sealed class RabbitMqTopologyCompiler
         RabbitMqInboundHandlerDefinition handlerDefinition,
         string topologyName,
         string endpointName,
-        string discriminator,
-        RabbitMqInboundChannelGroup channelGroup
+        string discriminator
     )
     {
         var closedMethod = CreateEndpointMethod.MakeGenericMethod(handlerDefinition.MessageType);
         return (RabbitMqInboundEndpoint) closedMethod.Invoke(
             null,
-            [handlerDefinition, topologyName, endpointName, discriminator, channelGroup]
+            [handlerDefinition, topologyName, endpointName, discriminator]
         )!;
     }
 
@@ -503,8 +524,7 @@ public sealed class RabbitMqTopologyCompiler
         RabbitMqInboundHandlerDefinition handlerDefinition,
         string topologyName,
         string endpointName,
-        string discriminator,
-        RabbitMqInboundChannelGroup channelGroup
+        string discriminator
     )
     {
         return new RabbitMqInboundEndpoint<TMessage>(
@@ -514,11 +534,7 @@ public sealed class RabbitMqTopologyCompiler
             handlerDefinition.DeserializerType,
             discriminator,
             handlerDefinition.HandlerInvocation,
-            handlerDefinition.AckMode,
-            handlerDefinition.QueueName,
-            handlerDefinition.CopyBody,
-            handlerDefinition.InspectorType,
-            channelGroup
+            handlerDefinition.AckMode
         );
     }
 
@@ -633,10 +649,10 @@ public sealed class RabbitMqTopologyCompiler
 
         // Inbound validation.
         ValidateInboundChannelGroupDefinitions(configuration.InboundChannelGroups, validationErrors);
-        ValidateInboundChannelGroupUsage(configuration.InboundChannelGroups, configuration.Handlers, validationErrors);
+        ValidateInboundChannelGroupUsage(configuration.InboundChannelGroups, configuration.Consumers, validationErrors);
         ValidatePipeline(configuration, validationErrors);
-        ValidateHandlers(
-            configuration.Handlers,
+        ValidateConsumers(
+            configuration.Consumers,
             queuesByName,
             inboundChannelGroupsByName,
             effectiveMessageContracts,
@@ -1041,14 +1057,14 @@ public sealed class RabbitMqTopologyCompiler
 
     private static void ValidateInboundChannelGroupUsage(
         IReadOnlyList<RabbitMqInboundChannelGroupDefinition> channelGroups,
-        IReadOnlyList<RabbitMqInboundHandlerDefinition> handlers,
+        IReadOnlyList<RabbitMqInboundConsumerDefinition> consumers,
         ICollection<string> validationErrors
     )
     {
         var referencedChannelGroups = new HashSet<string>(
-            handlers
-               .Where(static handler => !string.IsNullOrWhiteSpace(handler.ChannelGroupName))
-               .Select(static handler => handler.ChannelGroupName!),
+            consumers
+               .Where(static consumer => !string.IsNullOrWhiteSpace(consumer.ChannelGroupName))
+               .Select(static consumer => consumer.ChannelGroupName!),
             StringComparer.Ordinal
         );
 
@@ -1066,8 +1082,8 @@ public sealed class RabbitMqTopologyCompiler
         }
     }
 
-    private void ValidateHandlers(
-        IReadOnlyList<RabbitMqInboundHandlerDefinition> handlers,
+    private void ValidateConsumers(
+        IReadOnlyList<RabbitMqInboundConsumerDefinition> consumers,
         IReadOnlyDictionary<string, RabbitMqQueueDefinition> queuesByName,
         IReadOnlyDictionary<string, RabbitMqInboundChannelGroupDefinition> channelGroupsByName,
         IMessageContractRegistry effectiveMessageContracts,
@@ -1076,79 +1092,106 @@ public sealed class RabbitMqTopologyCompiler
     {
         Dictionary<string, RabbitMqInboundHandlerDefinition> endpointNames = new (StringComparer.Ordinal);
         HashSet<InboundEndpointSelectionKey> dispatchKeys = new (InboundEndpointSelectionKeyComparer.Instance);
+        HashSet<string> queueNames = new (StringComparer.Ordinal);
 
-        foreach (var handlersForQueue in handlers.GroupBy(static handler => handler.QueueName, StringComparer.Ordinal))
+        foreach (var consumer in OrderConsumers(consumers))
         {
-            if (handlersForQueue.Select(static handler => handler.CopyBody).Distinct().Skip(1).Any())
+            if (!queueNames.Add(consumer.QueueName))
             {
                 validationErrors.Add(
-                    $"Inbound endpoints for queue '{handlersForQueue.Key}' disagree on zero-copy body configuration. All handlers for a queue must use the same setting."
-                );
-            }
-        }
-
-        foreach (var handler in OrderHandlers(handlers))
-        {
-            if (!queuesByName.ContainsKey(handler.QueueName))
-            {
-                validationErrors.Add(
-                    $"Inbound endpoint for message '{GetTypeName(handler.MessageType)}' references unknown queue '{handler.QueueName}'."
+                    $"Queue '{consumer.QueueName}' is configured by multiple Consume(...) calls."
                 );
             }
 
-            if (!string.IsNullOrWhiteSpace(handler.ChannelGroupName) &&
-                !channelGroupsByName.ContainsKey(handler.ChannelGroupName!))
+            if (consumer.Handlers.Count == 0)
+            {
+                validationErrors.Add($"Consume('{consumer.QueueName}') declares no handlers.");
+            }
+
+            if (!queuesByName.ContainsKey(consumer.QueueName))
             {
                 validationErrors.Add(
-                    $"Inbound endpoint for message '{GetTypeName(handler.MessageType)}' references unknown channel group '{handler.ChannelGroupName}'."
+                    $"Inbound consumer references unknown queue '{consumer.QueueName}'."
                 );
             }
 
-            ValidateServiceRegistrations(handler, validationErrors);
-            ValidateAckMode(handler, validationErrors);
-
-            IReadOnlyCollection<string> inboundDiscriminators;
-            string canonicalDiscriminator;
-
-            try
-            {
-                canonicalDiscriminator = effectiveMessageContracts.GetDiscriminator(handler.MessageType);
-                inboundDiscriminators = effectiveMessageContracts.GetInboundDiscriminators(handler.MessageType);
-            }
-            catch (MessageContractNotRegisteredException)
+            if (!string.IsNullOrWhiteSpace(consumer.ChannelGroupName) &&
+                !channelGroupsByName.ContainsKey(consumer.ChannelGroupName!))
             {
                 validationErrors.Add(
-                    $"Inbound endpoint for message '{GetTypeName(handler.MessageType)}' consumes unregistered CloudEvents message type. Register its canonical discriminator with MessageContractRegistryBuilder.Map<T>(...)."
+                    $"Inbound consumer for queue '{consumer.QueueName}' references unknown channel group '{consumer.ChannelGroupName}'."
                 );
-                continue;
             }
 
-            if (inboundDiscriminators.Count == 0)
+            ValidateInspectorRegistration(consumer, validationErrors);
+
+            foreach (var handler in OrderHandlers(consumer.Handlers))
             {
-                validationErrors.Add(
-                    $"Inbound endpoint for message '{GetTypeName(handler.MessageType)}' has no inbound CloudEvents discriminators. Use MessageContractRegistryBuilder.Map<T>(...) instead of MapOutbound<T>(...)."
-                );
-                continue;
-            }
+                ValidateServiceRegistrations(handler, validationErrors);
+                ValidateAckMode(handler, validationErrors);
 
-            var endpointName = handler.EndpointName ?? $"{handler.QueueName}:{canonicalDiscriminator}";
+                IReadOnlyCollection<string> inboundDiscriminators;
+                string canonicalDiscriminator;
 
-            if (!endpointNames.TryAdd(endpointName, handler))
-            {
-                validationErrors.Add($"Inbound endpoint name '{endpointName}' is configured multiple times.");
-            }
-
-            foreach (var discriminator in inboundDiscriminators)
-            {
-                var dispatchKey = new InboundEndpointSelectionKey(handler.QueueName, discriminator);
-
-                if (!dispatchKeys.Add(dispatchKey))
+                try
+                {
+                    canonicalDiscriminator = effectiveMessageContracts.GetDiscriminator(handler.MessageType);
+                    inboundDiscriminators = effectiveMessageContracts.GetInboundDiscriminators(handler.MessageType);
+                }
+                catch (MessageContractNotRegisteredException)
                 {
                     validationErrors.Add(
-                        $"Inbound endpoint discriminator '{discriminator}' is configured multiple times for queue '{handler.QueueName}'."
+                        $"Inbound endpoint for message '{GetTypeName(handler.MessageType)}' consumes unregistered CloudEvents message type. Register its canonical discriminator with MessageContractRegistryBuilder.Map<T>(...)."
                     );
+                    continue;
+                }
+
+                if (inboundDiscriminators.Count == 0)
+                {
+                    validationErrors.Add(
+                        $"Inbound endpoint for message '{GetTypeName(handler.MessageType)}' has no inbound CloudEvents discriminators. Use MessageContractRegistryBuilder.Map<T>(...) instead of MapOutbound<T>(...)."
+                    );
+                    continue;
+                }
+
+                var endpointName = handler.EndpointName ?? $"{consumer.QueueName}:{canonicalDiscriminator}";
+
+                if (!endpointNames.TryAdd(endpointName, handler))
+                {
+                    validationErrors.Add($"Inbound endpoint name '{endpointName}' is configured multiple times.");
+                }
+
+                foreach (var discriminator in inboundDiscriminators)
+                {
+                    var dispatchKey = new InboundEndpointSelectionKey(consumer.QueueName, discriminator);
+
+                    if (!dispatchKeys.Add(dispatchKey))
+                    {
+                        validationErrors.Add(
+                            $"Inbound endpoint discriminator '{discriminator}' is configured multiple times for queue '{consumer.QueueName}'."
+                        );
+                    }
                 }
             }
+        }
+    }
+
+    private void ValidateInspectorRegistration(
+        RabbitMqInboundConsumerDefinition consumer,
+        ICollection<string> validationErrors
+    )
+    {
+        if (!typeof(IInboundMessageInspector).IsAssignableFrom(consumer.InspectorType))
+        {
+            validationErrors.Add(
+                $"Inbound inspector '{consumer.InspectorType}' for queue '{consumer.QueueName}' does not implement '{typeof(IInboundMessageInspector)}'."
+            );
+        }
+        else if (!_isServiceRegistered(consumer.InspectorType))
+        {
+            validationErrors.Add(
+                $"Inbound inspector '{consumer.InspectorType}' for queue '{consumer.QueueName}' is not registered."
+            );
         }
     }
 
@@ -1176,13 +1219,6 @@ public sealed class RabbitMqTopologyCompiler
                 $"Inbound deserializer '{handler.DeserializerType}' for message '{GetTypeName(handler.MessageType)}' is not registered."
             );
         }
-
-        if (!_isServiceRegistered(handler.InspectorType))
-        {
-            validationErrors.Add(
-                $"Inbound inspector '{handler.InspectorType}' for queue '{handler.QueueName}' is not registered."
-            );
-        }
     }
 
     private void ValidatePipeline(
@@ -1190,7 +1226,7 @@ public sealed class RabbitMqTopologyCompiler
         ICollection<string> validationErrors
     )
     {
-        if (configuration.Handlers.Count == 0)
+        if (configuration.Consumers.Count == 0)
         {
             return;
         }

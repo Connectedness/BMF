@@ -183,8 +183,12 @@ public sealed class AddRabbitMqConsumeTopologyTests
             );
         await using var serviceProvider = services.BuildServiceProvider();
         var topology = serviceProvider.GetRequiredService<RabbitMqTopology>();
-        var firstEndpoint = topology.Endpoints.Single(static endpoint => endpoint.QueueName == "first");
-        var secondEndpoint = topology.Endpoints.Single(static endpoint => endpoint.QueueName == "second");
+        var firstEndpoint = topology
+           .Consumers.Single(static consumer => consumer.QueueName == "first")
+           .Endpoints.Single();
+        var secondEndpoint = topology
+           .Consumers.Single(static consumer => consumer.QueueName == "second")
+           .Endpoints.Single();
         using var scope = serviceProvider.CreateScope();
         var message = new ValidationMessageA("value");
         var firstContext = CreateContext(firstEndpoint, scope.ServiceProvider, message);
@@ -249,7 +253,7 @@ public sealed class AddRabbitMqConsumeTopologyTests
     [Fact]
     public void Handle_RejectsInterfaceAndAbstractHandlerTypes()
     {
-        var builder = new RabbitMqInboundEndpointBuilder("inbound");
+        var builder = new RabbitMqInboundConsumerBuilder("inbound");
 
         var interfaceAction = () => builder.Handle<ValidationMessageA, IValidationMessageAHandler>();
         var abstractAction = () => builder.Handle<ValidationMessageA, AbstractValidationMessageAHandler>();
@@ -348,16 +352,17 @@ public sealed class AddRabbitMqConsumeTopologyTests
             );
         using var serviceProvider = services.BuildServiceProvider();
 
-        var endpoint = serviceProvider.GetRequiredService<RabbitMqTopology>()
-           .Endpoints.Should().ContainSingle().Which;
+        var topology = serviceProvider.GetRequiredService<RabbitMqTopology>();
+        var consumer = topology.Consumers.Should().ContainSingle().Which;
+        var endpoint = consumer.Endpoints.Should().ContainSingle().Which;
 
-        endpoint.InspectorType.Should().Be(typeof(RawInspector));
+        consumer.InspectorType.Should().Be(typeof(RawInspector));
         endpoint.DeserializerType.Should().Be(typeof(RawDeserializer));
-        endpoint.ChannelGroup.Name.Should().Be("shared");
-        endpoint.ChannelGroup.MaximumChannelCount.Should().Be(3);
-        endpoint.ChannelGroup.PrefetchCount.Should().Be(7);
-        endpoint.ChannelGroup.ConsumerDispatchConcurrency.Should().Be(2);
-        endpoint.CopyBody.Should().BeTrue();
+        consumer.ChannelGroup.Name.Should().Be("shared");
+        consumer.ChannelGroup.MaximumChannelCount.Should().Be(3);
+        consumer.ChannelGroup.PrefetchCount.Should().Be(7);
+        consumer.ChannelGroup.ConsumerDispatchConcurrency.Should().Be(2);
+        consumer.CopyBody.Should().BeTrue();
     }
 
     [Fact]
@@ -389,7 +394,7 @@ public sealed class AddRabbitMqConsumeTopologyTests
     }
 
     [Fact]
-    public void AddRabbitMqTopology_AppliesZeroCopyBodyToEndpoint()
+    public void AddRabbitMqTopology_AppliesQueueSettingsRegardlessOfHandleCallOrder()
     {
         var services = new ServiceCollection();
         services.AddTestCloudEvents()
@@ -401,21 +406,62 @@ public sealed class AddRabbitMqConsumeTopologyTests
                     builder.Consume(
                         "inbound",
                         endpoint => endpoint
-                           .ZeroCopyBody()
                            .Handle<ValidationMessageA, ValidationMessageAHandler>()
+                           .ZeroCopyBody()
+                           .PrefetchCount(7)
+                           .Concurrency(3)
+                           .ChannelCount(2)
+                           .UseInspector<RawInspector>()
+                           .Handle<ValidationMessageB, ValidationMessageBHandler>()
+                    );
+                }
+            );
+        services.AddSingleton<RawInspector>();
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var consumer = serviceProvider.GetRequiredService<RabbitMqTopology>()
+           .Consumers.Should().ContainSingle().Which;
+
+        consumer.Endpoints.Should().HaveCount(2);
+        consumer.InspectorType.Should().Be(typeof(RawInspector));
+        consumer.CopyBody.Should().BeFalse();
+        consumer.ChannelGroup.MaximumChannelCount.Should().Be(2);
+        consumer.ChannelGroup.PrefetchCount.Should().Be(7);
+        consumer.ChannelGroup.ConsumerDispatchConcurrency.Should().Be(3);
+    }
+
+    [Fact]
+    public void Compile_CoalescesHandlersForOneQueueIntoOneConsumerAndOneImplicitChannelGroup()
+    {
+        var services = new ServiceCollection();
+        services.AddTestCloudEvents()
+           .AddRabbitMqTopology(
+                builder =>
+                {
+                    builder.UseConnectionFactory(static _ => new ConnectionFactory());
+                    builder.Queue("inbound");
+                    builder.Consume(
+                        "inbound",
+                        endpoint => endpoint
+                           .Handle<ValidationMessageA, ValidationMessageAHandler>()
+                           .Handle<ValidationMessageB, ValidationMessageBHandler>()
                     );
                 }
             );
         using var serviceProvider = services.BuildServiceProvider();
 
-        var endpoint = serviceProvider.GetRequiredService<RabbitMqTopology>()
-           .Endpoints.Should().ContainSingle().Which;
+        var topology = serviceProvider.GetRequiredService<RabbitMqTopology>();
+        var consumer = topology.Consumers.Should().ContainSingle().Which;
 
-        endpoint.CopyBody.Should().BeFalse();
+        consumer.Endpoints.Should().HaveCount(2);
+        topology.Endpoints.Should().HaveCount(2);
+        topology.InboundChannelGroups.Should().ContainSingle().Which.Should().BeSameAs(consumer.ChannelGroup);
+        consumer.ChannelGroup.MaximumChannelCount.Should().Be(1);
+        consumer.ChannelGroup.PrefetchCount.Should().Be(1);
     }
 
     [Fact]
-    public void Compile_RejectsMixedZeroCopySettingsForSameQueue()
+    public void Compile_RejectsMultipleConsumeCallsForOneQueue()
     {
         var services = new ServiceCollection();
         services.AddTestCloudEvents()
@@ -426,10 +472,11 @@ public sealed class AddRabbitMqConsumeTopologyTests
                     builder.Queue("inbound");
                     builder.Consume(
                         "inbound",
-                        endpoint => endpoint
-                           .Handle<ValidationMessageA, ValidationMessageAHandler>()
-                           .ZeroCopyBody()
-                           .Handle<ValidationMessageB, ValidationMessageBHandler>()
+                        consumer => consumer.Handle<ValidationMessageA, ValidationMessageAHandler>()
+                    );
+                    builder.Consume(
+                        "inbound",
+                        consumer => consumer.Handle<ValidationMessageB, ValidationMessageBHandler>()
                     );
                 }
             );
@@ -437,10 +484,58 @@ public sealed class AddRabbitMqConsumeTopologyTests
 
         Action action = () => _ = serviceProvider.GetRequiredService<RabbitMqTopology>();
 
-        var exception = action.Should().Throw<TopologyValidationException>().Which;
-        exception.ValidationErrors.Should().Contain(
-            "Inbound endpoints for queue 'inbound' disagree on zero-copy body configuration. All handlers for a queue must use the same setting."
-        );
+        action.Should().Throw<TopologyValidationException>()
+           .Which.ValidationErrors.Should().Contain("Queue 'inbound' is configured by multiple Consume(...) calls.");
+    }
+
+    [Fact]
+    public void Compile_RejectsConsumeWithoutHandlers()
+    {
+        var services = new ServiceCollection();
+        services.AddTestCloudEvents()
+           .AddRabbitMqTopology(
+                builder =>
+                {
+                    builder.UseConnectionFactory(static _ => new ConnectionFactory());
+                    builder.Queue("inbound");
+                    builder.Consume("inbound", static _ => { });
+                }
+            );
+        using var serviceProvider = services.BuildServiceProvider();
+
+        Action action = () => _ = serviceProvider.GetRequiredService<RabbitMqTopology>();
+
+        action
+           .Should().Throw<TopologyValidationException>()
+           .Which.ValidationErrors.Should().Contain("Consume('inbound') declares no handlers.");
+    }
+
+    [Fact]
+    public void Compile_ChannelCountCreatesOneConsumerWithMatchingChannelCount()
+    {
+        var services = new ServiceCollection();
+        services.AddTestCloudEvents()
+           .AddRabbitMqTopology(
+                builder =>
+                {
+                    builder.UseConnectionFactory(static _ => new ConnectionFactory());
+                    builder.Queue("inbound");
+                    builder.Consume(
+                        "inbound",
+                        consumer => consumer
+                           .ChannelCount(4)
+                           .Handle<ValidationMessageA, ValidationMessageAHandler>()
+                    );
+                }
+            );
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var topology = serviceProvider.GetRequiredService<RabbitMqTopology>();
+
+        topology
+           .Consumers.Should().ContainSingle()
+           .Which.ChannelGroup.MaximumChannelCount.Should().Be(4);
+        topology.InboundChannelGroups.Should().ContainSingle();
     }
 
     [Fact]
@@ -448,7 +543,8 @@ public sealed class AddRabbitMqConsumeTopologyTests
     {
         const string consumerTopologyName = "rabbitmq-consumers";
         var services = new ServiceCollection();
-        services.AddTestCloudEvents()
+        services
+           .AddTestCloudEvents()
            .AddRabbitMqTopology(
                 builder =>
                 {
@@ -480,7 +576,8 @@ public sealed class AddRabbitMqConsumeTopologyTests
         registry.Names.Should().BeEquivalentTo(Topology.DefaultName, consumerTopologyName);
 
         // The default topology is the publish topology and has the outbound target.
-        registry.GetRequiredTopology(Topology.DefaultName)
+        registry
+           .GetRequiredTopology(Topology.DefaultName)
            .GetRequiredTarget<ValidationMessageA>()
            .TopologyName.Should().Be(Topology.DefaultName);
 

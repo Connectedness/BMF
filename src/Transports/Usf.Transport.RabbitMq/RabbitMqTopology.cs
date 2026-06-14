@@ -48,6 +48,7 @@ public sealed class RabbitMqTopology : Topology, IAsyncDisposable, IDisposable
         IReadOnlyList<RabbitMqChannelGroup> outboundChannelGroups,
         IReadOnlyList<OutboundTarget> targets,
         IReadOnlyList<RabbitMqInboundChannelGroup> inboundChannelGroups,
+        IReadOnlyList<RabbitMqInboundConsumer> consumers,
         IReadOnlyList<RabbitMqInboundEndpoint> endpoints,
         IReadOnlyDictionary<InboundEndpointSelectionKey, RabbitMqInboundEndpoint> dispatchIndex,
         MessageDelegate pipeline,
@@ -65,6 +66,7 @@ public sealed class RabbitMqTopology : Topology, IAsyncDisposable, IDisposable
         OutboundChannelGroups = outboundChannelGroups ?? throw new ArgumentNullException(nameof(outboundChannelGroups));
         Targets = targets ?? throw new ArgumentNullException(nameof(targets));
         InboundChannelGroups = inboundChannelGroups ?? throw new ArgumentNullException(nameof(inboundChannelGroups));
+        Consumers = consumers ?? throw new ArgumentNullException(nameof(consumers));
         Endpoints = endpoints ?? throw new ArgumentNullException(nameof(endpoints));
         _dispatchIndex = dispatchIndex ?? throw new ArgumentNullException(nameof(dispatchIndex));
         Pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
@@ -89,14 +91,16 @@ public sealed class RabbitMqTopology : Topology, IAsyncDisposable, IDisposable
 
     public IReadOnlyList<RabbitMqInboundChannelGroup> InboundChannelGroups { get; }
 
+    public IReadOnlyList<RabbitMqInboundConsumer> Consumers { get; }
+
     public IReadOnlyList<RabbitMqInboundEndpoint> Endpoints { get; }
 
     public MessageDelegate Pipeline { get; }
 
     public TimeSpan ShutdownTimeout { get; }
 
-    public IEnumerable<IGrouping<RabbitMqInboundChannelGroup, RabbitMqInboundEndpoint>> EndpointsByChannelGroup =>
-        Endpoints.GroupBy(static endpoint => endpoint.ChannelGroup);
+    public IEnumerable<IGrouping<RabbitMqInboundChannelGroup, RabbitMqInboundConsumer>> ConsumersByChannelGroup =>
+        Consumers.GroupBy(static consumer => consumer.ChannelGroup);
 
     public async ValueTask DisposeAsync()
     {

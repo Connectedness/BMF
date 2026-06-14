@@ -26,8 +26,8 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
 {
     private readonly List<RabbitMqAddressDefinition> _addressDefinitions = [];
     private readonly List<RabbitMqBindingDefinition> _bindingDefinitions = [];
+    private readonly List<RabbitMqInboundConsumerDefinition> _consumers = [];
     private readonly List<RabbitMqExchangeDefinition> _exchangeDefinitions = [];
-    private readonly List<RabbitMqInboundHandlerDefinition> _handlers = [];
 
     private readonly List<RabbitMqInboundChannelGroupDefinition> _inboundChannelGroupDefinitions = [];
     private readonly List<RabbitMqChannelGroupDefinition> _outboundChannelGroupDefinitions = [];
@@ -88,7 +88,7 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
 
     IRabbitMqInboundTopologyBuilder IRabbitMqInboundTopologyBuilder.Consume(
         string queueName,
-        Action<RabbitMqInboundEndpointBuilder> configure
+        Action<RabbitMqInboundConsumerBuilder> configure
     ) => Consume(queueName, configure);
 
     IRabbitMqInboundTopologyBuilder IRabbitMqInboundTopologyBuilder.ConfigureInboundPipeline(
@@ -418,7 +418,7 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
     /// <inheritdoc cref="IRabbitMqInboundTopologyBuilder.Consume" />
     public RabbitMqTopologyBuilder Consume(
         string queueName,
-        Action<RabbitMqInboundEndpointBuilder> configure
+        Action<RabbitMqInboundConsumerBuilder> configure
     )
     {
         if (configure is null)
@@ -426,9 +426,9 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
             throw new ArgumentNullException(nameof(configure));
         }
 
-        RabbitMqInboundEndpointBuilder builder = new (queueName);
+        RabbitMqInboundConsumerBuilder builder = new (queueName);
         configure(builder);
-        _handlers.AddRange(builder.Build());
+        _consumers.Add(builder.Build());
         return this;
     }
 
@@ -479,7 +479,7 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
             _outboundChannelGroupDefinitions.AsReadOnly(),
             _targets.AsReadOnly(),
             _inboundChannelGroupDefinitions.AsReadOnly(),
-            _handlers.AsReadOnly(),
+            _consumers.AsReadOnly(),
             _deserializationMiddlewareType,
             _configurePipeline,
             _shutdownTimeout,

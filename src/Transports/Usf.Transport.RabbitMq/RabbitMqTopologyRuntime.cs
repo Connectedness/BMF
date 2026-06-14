@@ -16,7 +16,7 @@ namespace Usf.Transport.RabbitMq;
 
 /// <summary>
 /// The active consumer runtime for a RabbitMQ topology that contains inbound endpoints. It opens consumer
-/// channels, starts <c>BasicConsume</c> for each endpoint, and drains in-flight handlers on stop. It does not
+/// channels, starts <c>BasicConsume</c> for each queue consumer, and drains in-flight handlers on stop. It does not
 /// dispose the topology itself - the topology is a container-owned singleton whose connection may still be
 /// used for publishing during graceful shutdown. It is registered as an <see cref="ITopologyRuntime" /> only
 /// for topology instances that contain inbound endpoints, and is started by the shared
@@ -56,10 +56,10 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
 
         _stoppingCancellationTokenSource = new CancellationTokenSource();
 
-        foreach (var endpointGroup in _topology.EndpointsByChannelGroup)
+        foreach (var consumerGroup in _topology.ConsumersByChannelGroup)
         {
-            var channelGroup = endpointGroup.Key;
-            var endpoints = endpointGroup.ToArray();
+            var channelGroup = consumerGroup.Key;
+            var consumers = consumerGroup.ToArray();
 
             for (var index = 0; index < channelGroup.MaximumChannelCount; index++)
             {
@@ -76,13 +76,13 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
                    .ConfigureAwait(false);
                 _channels.Add(channel);
 
-                foreach (var endpoint in endpoints)
+                foreach (var inboundConsumer in consumers)
                 {
                     var consumer = new AsyncEventingBasicConsumer(channel);
-                    consumer.ReceivedAsync += (_, eventArgs) => OnReceivedAsync(endpoint, channel, eventArgs);
+                    consumer.ReceivedAsync += (_, eventArgs) => OnReceivedAsync(inboundConsumer, channel, eventArgs);
                     var consumerTag = await channel
                        .BasicConsumeAsync(
-                            queue: endpoint.QueueName,
+                            queue: inboundConsumer.QueueName,
                             autoAck: false,
                             consumerTag: string.Empty,
                             noLocal: false,
@@ -173,7 +173,7 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
     }
 
     private async Task OnReceivedAsync(
-        RabbitMqInboundEndpoint subscribedEndpoint,
+        RabbitMqInboundConsumer consumer,
         IChannel channel,
         BasicDeliverEventArgs eventArgs
     )
@@ -185,7 +185,7 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
 
         try
         {
-            await ProcessDeliveryAsync(subscribedEndpoint, acknowledgement, eventArgs).ConfigureAwait(false);
+            await ProcessDeliveryAsync(consumer, acknowledgement, eventArgs).ConfigureAwait(false);
         }
         finally
         {
@@ -195,7 +195,7 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
     }
 
     private async Task ProcessDeliveryAsync(
-        RabbitMqInboundEndpoint subscribedEndpoint,
+        RabbitMqInboundConsumer consumer,
         RabbitMqMessageAcknowledgement acknowledgement,
         BasicDeliverEventArgs eventArgs
     )
@@ -219,10 +219,10 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
         // client only keeps valid for the duration of this delivery callback. The opt-in is therefore only sound
         // because we fully await the entire processing pipeline below before returning: the transport message and its
         // body never outlive this method. Any future change that offloads delivery past this callback (e.g. queuing
-        // eventArgs to a background worker pool) would silently corrupt every zero-copy endpoint and must instead force
-        // a copy or reject zero-copy endpoints at topology compilation.
+        // eventArgs to a background worker pool) would silently corrupt every zero-copy consumer and must instead force
+        // a copy or reject zero-copy consumers at topology compilation.
         var transportMessage = new RabbitMqTransportMessage(
-            subscribedEndpoint.QueueName,
+            consumer.QueueName,
             eventArgs.ConsumerTag,
             eventArgs.DeliveryTag,
             eventArgs.Redelivered,
@@ -230,20 +230,20 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
             eventArgs.RoutingKey,
             eventArgs.BasicProperties,
             eventArgs.Body,
-            subscribedEndpoint.CopyBody
+            consumer.CopyBody
         );
 
         try
         {
             var inspector = (IInboundMessageInspector) scope.ServiceProvider.GetRequiredService(
-                subscribedEndpoint.InspectorType
+                consumer.InspectorType
             );
             var inspectResult = await inspector.InspectAsync(transportMessage, cancellationToken).ConfigureAwait(false);
 
-            if (!_topology.TryGetEndpoint(subscribedEndpoint.QueueName, inspectResult.Discriminator, out var endpoint))
+            if (!_topology.TryGetEndpoint(consumer.QueueName, inspectResult.Discriminator, out var endpoint))
             {
                 throw new UnknownInboundMessageException(
-                    subscribedEndpoint.QueueName,
+                    consumer.QueueName,
                     inspectResult.Discriminator
                 );
             }
@@ -252,7 +252,7 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
                 !endpoint.MessageType.IsAssignableFrom(inspectResult.MessageType))
             {
                 throw new UnknownInboundMessageException(
-                    subscribedEndpoint.QueueName,
+                    consumer.QueueName,
                     inspectResult.Discriminator,
                     $"Inbound message discriminator '{inspectResult.Discriminator}' resolved to '{inspectResult.MessageType}', but endpoint '{endpoint.Name}' handles '{endpoint.MessageType}'."
                 );
@@ -282,7 +282,7 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
             _logger.LogWarning(
                 exception,
                 "RabbitMQ inbound delivery failed for queue {QueueName} and delivery tag {DeliveryTag}",
-                subscribedEndpoint.QueueName,
+                consumer.QueueName,
                 eventArgs.DeliveryTag
             );
             await acknowledgement.NackAsync(requeue: false, CancellationToken.None).ConfigureAwait(false);

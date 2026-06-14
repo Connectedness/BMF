@@ -13,11 +13,7 @@ public abstract class RabbitMqInboundEndpoint : InboundEndpoint
         Type deserializerType,
         string discriminator,
         MessageDelegate handlerInvocation,
-        MessageAckMode ackMode,
-        string queueName,
-        bool copyBody,
-        Type inspectorType,
-        RabbitMqInboundChannelGroup channelGroup
+        MessageAckMode ackMode
     )
         : base(
             name,
@@ -29,39 +25,7 @@ public abstract class RabbitMqInboundEndpoint : InboundEndpoint
             discriminator,
             handlerInvocation,
             ackMode
-        )
-    {
-        QueueName = RequireText(queueName, nameof(queueName));
-        CopyBody = copyBody;
-        InspectorType = inspectorType ?? throw new ArgumentNullException(nameof(inspectorType));
-        ChannelGroup = channelGroup ?? throw new ArgumentNullException(nameof(channelGroup));
-
-        if (!typeof(IInboundMessageInspector).IsAssignableFrom(InspectorType))
-        {
-            throw new ArgumentException(
-                $"Inspector type '{InspectorType}' must implement '{typeof(IInboundMessageInspector)}'.",
-                nameof(inspectorType)
-            );
-        }
-    }
-
-    public string QueueName { get; }
-
-    public bool CopyBody { get; }
-
-    public Type InspectorType { get; }
-
-    public RabbitMqInboundChannelGroup ChannelGroup { get; }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
-    }
+        ) { }
 }
 
 public sealed class RabbitMqInboundEndpoint<TMessage> : RabbitMqInboundEndpoint
@@ -73,11 +37,7 @@ public sealed class RabbitMqInboundEndpoint<TMessage> : RabbitMqInboundEndpoint
         Type deserializerType,
         string discriminator,
         MessageDelegate handlerInvocation,
-        MessageAckMode ackMode,
-        string queueName,
-        bool copyBody,
-        Type inspectorType,
-        RabbitMqInboundChannelGroup channelGroup
+        MessageAckMode ackMode
     )
         : base(
             name,
@@ -87,11 +47,7 @@ public sealed class RabbitMqInboundEndpoint<TMessage> : RabbitMqInboundEndpoint
             deserializerType,
             discriminator,
             handlerInvocation,
-            ackMode,
-            queueName,
-            copyBody,
-            inspectorType,
-            channelGroup
+            ackMode
         )
     {
         if (!typeof(IMessageHandler<TMessage>).IsAssignableFrom(handlerType))

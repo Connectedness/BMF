@@ -5,7 +5,7 @@ using Usf.Core.Messaging.Serialization;
 
 namespace Usf.Transport.RabbitMq;
 
-public sealed class RabbitMqInboundEndpointBuilder
+public sealed class RabbitMqInboundConsumerBuilder
 {
     private readonly List<RabbitMqInboundHandlerDefinition> _handlers = [];
     private readonly string _queueName;
@@ -18,12 +18,12 @@ public sealed class RabbitMqInboundEndpointBuilder
     private Type _inspectorType = typeof(CloudEventsInboundMessageInspector);
     private ushort _prefetchCount = 1;
 
-    public RabbitMqInboundEndpointBuilder(string queueName)
+    public RabbitMqInboundConsumerBuilder(string queueName)
     {
         _queueName = RequireText(queueName, nameof(queueName));
     }
 
-    public RabbitMqInboundEndpointBuilder PrefetchCount(ushort prefetchCount)
+    public RabbitMqInboundConsumerBuilder PrefetchCount(ushort prefetchCount)
     {
         if (prefetchCount == 0)
         {
@@ -38,7 +38,7 @@ public sealed class RabbitMqInboundEndpointBuilder
         return this;
     }
 
-    public RabbitMqInboundEndpointBuilder Concurrency(ushort consumerDispatchConcurrency)
+    public RabbitMqInboundConsumerBuilder Concurrency(ushort consumerDispatchConcurrency)
     {
         if (consumerDispatchConcurrency == 0)
         {
@@ -53,7 +53,7 @@ public sealed class RabbitMqInboundEndpointBuilder
         return this;
     }
 
-    public RabbitMqInboundEndpointBuilder ChannelCount(int channelCount)
+    public RabbitMqInboundConsumerBuilder ChannelCount(int channelCount)
     {
         if (channelCount < 1)
         {
@@ -68,27 +68,27 @@ public sealed class RabbitMqInboundEndpointBuilder
         return this;
     }
 
-    public RabbitMqInboundEndpointBuilder UseChannelGroup(string channelGroupName)
+    public RabbitMqInboundConsumerBuilder UseChannelGroup(string channelGroupName)
     {
         _channelGroupName = RequireText(channelGroupName, nameof(channelGroupName));
         return this;
     }
 
-    public RabbitMqInboundEndpointBuilder UseInspector<TInspector>()
+    public RabbitMqInboundConsumerBuilder UseInspector<TInspector>()
         where TInspector : class, IInboundMessageInspector
     {
         _inspectorType = typeof(TInspector);
         return this;
     }
 
-    public RabbitMqInboundEndpointBuilder WithDeserializer<TDeserializer>()
+    public RabbitMqInboundConsumerBuilder WithDeserializer<TDeserializer>()
         where TDeserializer : class, IMessageDeserializer
     {
         _deserializerType = typeof(TDeserializer);
         return this;
     }
 
-    public RabbitMqInboundEndpointBuilder WithAckMode(MessageAckMode ackMode)
+    public RabbitMqInboundConsumerBuilder WithAckMode(MessageAckMode ackMode)
     {
         if (!Enum.IsDefined(typeof(MessageAckMode), ackMode))
         {
@@ -99,7 +99,7 @@ public sealed class RabbitMqInboundEndpointBuilder
         return this;
     }
 
-    public RabbitMqInboundEndpointBuilder ManualAck()
+    public RabbitMqInboundConsumerBuilder ManualAck()
     {
         return WithAckMode(MessageAckMode.Manual);
     }
@@ -111,9 +111,9 @@ public sealed class RabbitMqInboundEndpointBuilder
     /// The transport message body and any value derived from it without copying, including
     /// <see cref="CloudEventEnvelope.Data" />, are valid only until the message handler completes. The message must
     /// not be retained and processing must not be offloaded past the handler's lifetime. Violations read reused
-    /// buffer contents rather than throwing. All handlers for the same queue must use the same setting.
+    /// buffer contents rather than throwing.
     /// </remarks>
-    public RabbitMqInboundEndpointBuilder ZeroCopyBody()
+    public RabbitMqInboundConsumerBuilder ZeroCopyBody()
     {
         _copyBody = false;
         return this;
@@ -125,7 +125,7 @@ public sealed class RabbitMqInboundEndpointBuilder
     /// calling <c>AddRabbitMq*Topology</c> to choose a different lifetime; auto-registration yields to an existing
     /// registration.
     /// </summary>
-    public RabbitMqInboundEndpointBuilder Handle<TMessage, THandler>()
+    public RabbitMqInboundConsumerBuilder Handle<TMessage, THandler>()
         where THandler : class, IMessageHandler<TMessage>
     {
         return HandleNamed<TMessage, THandler>(endpointName: null);
@@ -137,7 +137,7 @@ public sealed class RabbitMqInboundEndpointBuilder
     /// before calling <c>AddRabbitMq*Topology</c> to choose a different lifetime; auto-registration yields to an
     /// existing registration.
     /// </summary>
-    public RabbitMqInboundEndpointBuilder HandleNamed<TMessage, THandler>(string? endpointName)
+    public RabbitMqInboundConsumerBuilder HandleNamed<TMessage, THandler>(string? endpointName)
         where THandler : class, IMessageHandler<TMessage>
     {
         if (typeof(THandler).IsInterface || typeof(THandler).IsAbstract)
@@ -150,27 +150,29 @@ public sealed class RabbitMqInboundEndpointBuilder
 
         _handlers.Add(
             new RabbitMqInboundHandlerDefinition(
-                _queueName,
                 endpointName,
                 typeof(TMessage),
                 typeof(THandler),
                 MessageHandlerInvocation.Create<TMessage, THandler>(),
                 _deserializerType,
-                _inspectorType,
-                _channelGroupName,
-                _channelCount,
-                _prefetchCount,
-                _consumerDispatchConcurrency,
-                _copyBody,
                 _ackMode
             )
         );
         return this;
     }
 
-    internal IReadOnlyList<RabbitMqInboundHandlerDefinition> Build()
+    internal RabbitMqInboundConsumerDefinition Build()
     {
-        return _handlers.AsReadOnly();
+        return new RabbitMqInboundConsumerDefinition(
+            _queueName,
+            _inspectorType,
+            _channelGroupName,
+            _channelCount,
+            _prefetchCount,
+            _consumerDispatchConcurrency,
+            _copyBody,
+            _handlers.AsReadOnly()
+        );
     }
 
     private static string RequireText(string value, string parameterName)

@@ -20,7 +20,7 @@ public sealed record RabbitMqTopologyConfiguration(
     IReadOnlyList<RabbitMqChannelGroupDefinition> OutboundChannelGroups,
     IReadOnlyList<RabbitMqOutboundTargetDefinition> Targets,
     IReadOnlyList<RabbitMqInboundChannelGroupDefinition> InboundChannelGroups,
-    IReadOnlyList<RabbitMqInboundHandlerDefinition> Handlers,
+    IReadOnlyList<RabbitMqInboundConsumerDefinition> Consumers,
     Type DeserializationMiddlewareType,
     Action<MessagePipelineBuilder>? ConfigurePipeline,
     TimeSpan ShutdownTimeout,
@@ -29,5 +29,5 @@ public sealed record RabbitMqTopologyConfiguration(
     MessageContractRegistry? MessageContractDialect = null
 )
 {
-    public bool HasInboundEndpoints => Handlers.Count > 0;
+    public bool HasInboundEndpoints => Consumers.Count > 0;
 }

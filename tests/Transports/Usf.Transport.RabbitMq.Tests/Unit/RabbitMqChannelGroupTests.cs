@@ -1098,7 +1098,7 @@ public sealed class RabbitMqChannelGroupTests
         };
         await using var topology = CreateTopology(
             new RabbitMqConnectionProvider(_ => Task.FromResult(connection.Object)),
-            Array.Empty<RabbitMqChannelGroup>(),
+            [],
             4,
             "2 channel groups"
         );
@@ -1127,7 +1127,7 @@ public sealed class RabbitMqChannelGroupTests
         };
         await using var topology = CreateTopology(
             new RabbitMqConnectionProvider(_ => Task.FromResult(connection.Object)),
-            Array.Empty<RabbitMqChannelGroup>(),
+            [],
             50,
             "channel group 'shared' max 50"
         );
@@ -1149,7 +1149,7 @@ public sealed class RabbitMqChannelGroupTests
         connection.EnqueueChannel(fireAndForgetChannel.Object);
         await using var topology = CreateTopology(
             new RabbitMqConnectionProvider(_ => Task.FromResult(connection.Object)),
-            Array.Empty<RabbitMqChannelGroup>(),
+            [],
             0,
             "no channel groups"
         );
@@ -1173,14 +1173,14 @@ public sealed class RabbitMqChannelGroupTests
         services.AddSingleton(
             new RabbitMqTopologyConfiguration(
                 static _ => new ConnectionFactory(),
-                Array.Empty<RabbitMqExchangeDefinition>(),
-                Array.Empty<RabbitMqQueueDefinition>(),
-                Array.Empty<RabbitMqBindingDefinition>(),
-                Array.Empty<RabbitMqAddressDefinition>(),
+                [],
+                [],
+                [],
+                [],
                 [new RabbitMqChannelGroupDefinition("invalid", 0)],
-                Array.Empty<RabbitMqOutboundTargetDefinition>(),
-                Array.Empty<RabbitMqInboundChannelGroupDefinition>(),
-                Array.Empty<RabbitMqInboundHandlerDefinition>(),
+                [],
+                [],
+                [],
                 typeof(MessageDeserializationMiddleware),
                 null,
                 TimeSpan.FromSeconds(30)
@@ -1205,14 +1205,14 @@ public sealed class RabbitMqChannelGroupTests
         services.AddSingleton(
             new RabbitMqTopologyConfiguration(
                 static _ => new ConnectionFactory(),
-                Array.Empty<RabbitMqExchangeDefinition>(),
-                Array.Empty<RabbitMqQueueDefinition>(),
-                Array.Empty<RabbitMqBindingDefinition>(),
-                Array.Empty<RabbitMqAddressDefinition>(),
+                [],
+                [],
+                [],
+                [],
                 [new RabbitMqChannelGroupDefinition("$implicit:user-defined", 1)],
-                Array.Empty<RabbitMqOutboundTargetDefinition>(),
-                Array.Empty<RabbitMqInboundChannelGroupDefinition>(),
-                Array.Empty<RabbitMqInboundHandlerDefinition>(),
+                [],
+                [],
+                [],
                 typeof(MessageDeserializationMiddleware),
                 null,
                 TimeSpan.FromSeconds(30)
@@ -1444,14 +1444,15 @@ public sealed class RabbitMqChannelGroupTests
                 new Dictionary<string, InboundEndpoint>(StringComparer.Ordinal)
             ),
             RabbitMqCloudEventsTestFactory.CreateRegistry(),
-            Array.Empty<RabbitMqExchangeDefinition>(),
-            Array.Empty<RabbitMqQueueDefinition>(),
-            Array.Empty<RabbitMqBindingDefinition>(),
-            Array.Empty<RabbitMqAddressDefinition>(),
+            [],
+            [],
+            [],
+            [],
             channelGroups,
-            Array.Empty<OutboundTarget>(),
-            Array.Empty<RabbitMqInboundChannelGroup>(),
-            Array.Empty<RabbitMqInboundEndpoint>(),
+            [],
+            [],
+            [],
+            [],
             new Dictionary<InboundEndpointSelectionKey, RabbitMqInboundEndpoint>(
                 InboundEndpointSelectionKeyComparer.Instance
             ),

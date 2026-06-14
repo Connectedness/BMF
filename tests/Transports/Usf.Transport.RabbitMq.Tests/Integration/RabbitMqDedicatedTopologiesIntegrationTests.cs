@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -17,6 +18,140 @@ namespace Usf.Transport.RabbitMq.Tests.Integration;
 
 public sealed class RabbitMqDedicatedTopologiesIntegrationTests
 {
+    [Fact]
+    public async Task QueueScopedConsumers_DispatchMixedTypesAndUseChannelCountForParallelism()
+    {
+        const string exchangeName = "queue-scoped-events";
+        const string mixedQueue = "queue-scoped-mixed";
+        const string parallelQueue = "queue-scoped-parallel";
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var container = new RabbitMqBuilder("public.ecr.aws/docker/library/rabbitmq:3.13.7-management").Build();
+        await container.StartAsync(cancellationToken);
+
+        try
+        {
+            MixedMessageSink mixedSink = new ();
+            ParallelHandlerProbe parallelProbe = new ();
+            var services = new ServiceCollection();
+            services.AddSingleton(mixedSink);
+            services.AddSingleton(parallelProbe);
+            services
+               .AddTestCloudEvents()
+               .AddRabbitMqTopology(
+                    builder =>
+                    {
+                        builder.UseConnectionFactory(
+                            _ => new ConnectionFactory
+                            {
+                                Uri = new Uri(container.GetConnectionString())
+                            }
+                        );
+                        builder.Exchange(exchangeName, ExchangeType.Direct);
+                        builder.Queue(mixedQueue);
+                        builder.Queue(parallelQueue);
+                        builder.QueueBinding(exchangeName, mixedQueue, "validation-a");
+                        builder.QueueBinding(exchangeName, mixedQueue, "validation-b");
+                        builder.QueueBinding(exchangeName, parallelQueue, "parallel");
+                        builder.Address("events", exchangeName);
+                        builder.PublishNamed<ValidationMessageA>(
+                            "validation-a",
+                            target => target
+                               .ToDirectAddress("events", "validation-a")
+                               .WithSerializer<CloudEventMessageSerializer>()
+                        );
+                        builder.PublishNamed<ValidationMessageB>(
+                            "validation-b",
+                            target => target
+                               .ToDirectAddress("events", "validation-b")
+                               .WithSerializer<CloudEventMessageSerializer>()
+                        );
+                        builder.PublishNamed<ValidationMessageA>(
+                            "parallel",
+                            target => target
+                               .ToDirectAddress("events", "parallel")
+                               .WithSerializer<CloudEventMessageSerializer>()
+                        );
+                        builder.Consume(
+                            mixedQueue,
+                            consumer => consumer
+                               .Handle<ValidationMessageA, MixedValidationMessageAHandler>()
+                               .Handle<ValidationMessageB, MixedValidationMessageBHandler>()
+                        );
+                        builder.Consume(
+                            parallelQueue,
+                            consumer => consumer
+                               .ChannelCount(2)
+                               .PrefetchCount(1)
+                               .Handle<ValidationMessageA, ParallelValidationMessageAHandler>()
+                        );
+                    }
+                );
+
+            await using var serviceProvider = services.BuildServiceProvider();
+            var hostedServices = serviceProvider.GetServices<IHostedService>().ToArray();
+
+            try
+            {
+                foreach (var hostedService in hostedServices)
+                {
+                    await hostedService.StartAsync(cancellationToken);
+                }
+
+                var topology = serviceProvider.GetRequiredService<RabbitMqTopology>();
+                var publisher = serviceProvider.GetRequiredService<IMessagePublisher>();
+                await publisher.PublishMessageAsync(
+                    new ValidationMessageA("a"),
+                    topology.GetRequiredTarget<ValidationMessageA>("validation-a"),
+                    cancellationToken
+                );
+                await publisher.PublishMessageAsync(
+                    new ValidationMessageB("b"),
+                    topology.GetRequiredTarget<ValidationMessageB>("validation-b"),
+                    cancellationToken
+                );
+
+                await mixedSink.WaitAsync(cancellationToken);
+
+                await publisher.PublishMessageAsync(
+                    new ValidationMessageA("first"),
+                    topology.GetRequiredTarget<ValidationMessageA>("parallel"),
+                    cancellationToken
+                );
+                await publisher.PublishMessageAsync(
+                    new ValidationMessageA("second"),
+                    topology.GetRequiredTarget<ValidationMessageA>("parallel"),
+                    cancellationToken
+                );
+
+                await parallelProbe.WaitForBothAsync(cancellationToken);
+
+                var connectionFactory = new ConnectionFactory
+                {
+                    Uri = new Uri(container.GetConnectionString())
+                };
+                await using var connection = await connectionFactory.CreateConnectionAsync(cancellationToken);
+                await using var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
+
+                mixedSink.Values.Should().BeEquivalentTo("a", "b");
+                (await channel.ConsumerCountAsync(mixedQueue, cancellationToken)).Should().Be(1);
+                (await channel.ConsumerCountAsync(parallelQueue, cancellationToken)).Should().Be(2);
+            }
+            finally
+            {
+                parallelProbe.Release();
+
+                foreach (var hostedService in hostedServices.Reverse())
+                {
+                    await hostedService.StopAsync(CancellationToken.None);
+                }
+            }
+        }
+        finally
+        {
+            await container.DisposeAsync();
+        }
+    }
+
     [Fact]
     public async Task NonCloudEventsPipeline_DeserializesRawBodyAndDeadLettersDeserializerFailures()
     {
@@ -263,6 +398,124 @@ public sealed class RabbitMqDedicatedTopologiesIntegrationTests
         }
 
         throw new InvalidOperationException($"No RabbitMQ message was available in queue '{queueName}'.");
+    }
+
+    private sealed class MixedMessageSink
+    {
+        private readonly TaskCompletionSource<bool> _completed =
+            new (TaskCreationOptions.RunContinuationsAsynchronously);
+
+        private readonly object _sync = new ();
+
+        public IList<string> Values { get; } = new List<string>();
+
+        public void Add(string value)
+        {
+            lock (_sync)
+            {
+                Values.Add(value);
+
+                if (Values.Count == 2)
+                {
+                    _completed.TrySetResult(true);
+                }
+            }
+        }
+
+        public Task WaitAsync(CancellationToken cancellationToken)
+        {
+            return _completed.Task.WaitAsync(cancellationToken);
+        }
+    }
+
+    private sealed class ParallelHandlerProbe
+    {
+        private readonly TaskCompletionSource<bool> _bothEntered =
+            new (TaskCreationOptions.RunContinuationsAsynchronously);
+
+        private readonly TaskCompletionSource<bool> _release =
+            new (TaskCreationOptions.RunContinuationsAsynchronously);
+
+        private int _entered;
+
+        public async Task EnterAsync(CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref _entered) == 2)
+            {
+                _bothEntered.TrySetResult(true);
+            }
+
+            await _release.Task.WaitAsync(cancellationToken);
+        }
+
+        public Task WaitForBothAsync(CancellationToken cancellationToken)
+        {
+            return _bothEntered.Task.WaitAsync(cancellationToken);
+        }
+
+        public void Release()
+        {
+            _release.TrySetResult(true);
+        }
+    }
+
+    private sealed class MixedValidationMessageAHandler : IMessageHandler<ValidationMessageA>
+    {
+        private readonly MixedMessageSink _sink;
+
+        public MixedValidationMessageAHandler(MixedMessageSink sink)
+        {
+            _sink = sink;
+        }
+
+        public Task HandleAsync(
+            ValidationMessageA message,
+            IncomingMessageContext context,
+            CancellationToken cancellationToken
+        )
+        {
+            _sink.Add(message.Value);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class MixedValidationMessageBHandler : IMessageHandler<ValidationMessageB>
+    {
+        private readonly MixedMessageSink _sink;
+
+        public MixedValidationMessageBHandler(MixedMessageSink sink)
+        {
+            _sink = sink;
+        }
+
+        public Task HandleAsync(
+            ValidationMessageB message,
+            IncomingMessageContext context,
+            CancellationToken cancellationToken
+        )
+        {
+            _sink.Add(message.Value);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class ParallelValidationMessageAHandler : IMessageHandler<ValidationMessageA>
+    {
+        private readonly ParallelHandlerProbe _probe;
+
+        public ParallelValidationMessageAHandler(ParallelHandlerProbe probe)
+        {
+            _probe = probe;
+        }
+
+        public Task HandleAsync(
+            ValidationMessageA message,
+            IncomingMessageContext context,
+            CancellationToken cancellationToken
+        )
+        {
+            return _probe.EnterAsync(cancellationToken);
+        }
     }
 
     private sealed class RecordingPublishMessageHandler : IMessageHandler<RabbitMqPublishMessage>

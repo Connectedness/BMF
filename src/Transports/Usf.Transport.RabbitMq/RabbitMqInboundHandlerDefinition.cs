@@ -4,17 +4,10 @@ using Usf.Core.Messaging;
 namespace Usf.Transport.RabbitMq;
 
 public sealed record RabbitMqInboundHandlerDefinition(
-    string QueueName,
     string? EndpointName,
     Type MessageType,
     Type HandlerType,
     MessageDelegate HandlerInvocation,
     Type DeserializerType,
-    Type InspectorType,
-    string? ChannelGroupName,
-    int ChannelCount,
-    ushort PrefetchCount,
-    ushort ConsumerDispatchConcurrency,
-    bool CopyBody,
     MessageAckMode AckMode
 );

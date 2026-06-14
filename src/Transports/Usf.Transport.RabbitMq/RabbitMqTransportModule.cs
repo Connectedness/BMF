@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -147,7 +148,7 @@ public static class RabbitMqTransportModule
         var services = builder.Services;
         builder.Topologies.Add(topologyName);
 
-        foreach (var handler in configuration.Handlers)
+        foreach (var handler in configuration.Consumers.SelectMany(static consumer => consumer.Handlers))
         {
             services.TryAddScoped(handler.HandlerType);
         }
