@@ -22,7 +22,6 @@ public sealed class PayloadCodecMessageDeserializerTests
 
         var message = await deserializer.DeserializeAsync(
             context,
-            typeof(TestMessage),
             TestContext.Current.CancellationToken
         );
 
@@ -38,7 +37,7 @@ public sealed class PayloadCodecMessageDeserializerTests
         PayloadCodecMessageDeserializer deserializer = new (new ThrowingPayloadCodec(failure));
         var context = CreateContext("invalid"u8.ToArray());
 
-        var action = async () => await deserializer.DeserializeAsync(context, typeof(TestMessage));
+        var action = async () => await deserializer.DeserializeAsync(context);
 
         var exception = await action.Should().ThrowAsync<MessageDeserializationException>();
         exception.Which.MessageType.Should().Be(typeof(TestMessage));

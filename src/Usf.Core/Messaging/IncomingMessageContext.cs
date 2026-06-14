@@ -21,7 +21,7 @@ public sealed class IncomingMessageContext
         Acknowledgement = acknowledgement ?? throw new ArgumentNullException(nameof(acknowledgement));
         CancellationToken = cancellationToken;
         MessageType = messageType ?? throw new ArgumentNullException(nameof(messageType));
-        Items = items ?? new IncomingMessageContextItems();
+        Items = items;
     }
 
     public TransportMessage Transport { get; }
@@ -32,9 +32,19 @@ public sealed class IncomingMessageContext
 
     public object? Message { get; set; }
 
+    /// <summary>
+    /// The concrete message type the inspector resolved for this delivery. It may be more derived
+    /// than <see cref="InboundEndpoint.MessageType" /> (the endpoint handles any assignable type), and
+    /// is the type the deserialization middleware decodes the body into.
+    /// </summary>
     public Type MessageType { get; }
 
-    public IncomingMessageContextItems Items { get; }
+    /// <summary>
+    /// The strongly-typed side-band values flowing with this message. The backing bag is created on
+    /// first access, so a delivery whose inspector contributes nothing and whose pipeline never reads
+    /// items allocates none. When an inspector pre-seeds a bag, the context adopts that instance.
+    /// </summary>
+    public IncomingMessageContextItems Items => field ??= new IncomingMessageContextItems();
 
     public IMessageAcknowledgement Acknowledgement { get; }
 

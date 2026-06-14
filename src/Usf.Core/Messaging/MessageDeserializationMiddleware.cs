@@ -23,11 +23,8 @@ public sealed class MessageDeserializationMiddleware : IMessageMiddleware
             var deserializer = (IMessageDeserializer) context.Services.GetRequiredService(
                 context.Endpoint.DeserializerType
             );
-            context.Message = await deserializer.DeserializeAsync(
-                    context,
-                    context.MessageType,
-                    context.CancellationToken
-                )
+            context.Message = await deserializer
+               .DeserializeAsync(context, context.CancellationToken)
                .ConfigureAwait(false);
         }
 

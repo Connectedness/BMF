@@ -667,7 +667,6 @@ public sealed class AddRabbitMqConsumeTopologyTests
     {
         public ValueTask<object?> DeserializeAsync(
             IncomingMessageContext context,
-            Type messageType,
             CancellationToken cancellationToken = default
         )
         {

@@ -285,7 +285,9 @@ public sealed class RabbitMqDedicatedTopologiesIntegrationTests
         }
     }
 
+    // ReSharper disable NotAccessedPositionalProperty.Local -- required for serialization
     private sealed record RawMessage(int Id, string Name);
+    // ReSharper restore NotAccessedPositionalProperty.Local
 
     private sealed record RejectedRawMessage;
 
@@ -324,13 +326,12 @@ public sealed class RabbitMqDedicatedTopologiesIntegrationTests
 
         public ValueTask<object?> DeserializeAsync(
             IncomingMessageContext context,
-            Type messageType,
             CancellationToken cancellationToken = default
         )
         {
             CallCount++;
             MessageWasNull = context.Message is null;
-            messageType.Should().Be(typeof(RawMessage));
+            context.MessageType.Should().Be(typeof(RawMessage));
             var parts = Encoding.UTF8.GetString(context.Transport.Body.Span).Split('|');
             return new ValueTask<object?>(new RawMessage(int.Parse(parts[0]), parts[1]));
         }
@@ -340,7 +341,6 @@ public sealed class RabbitMqDedicatedTopologiesIntegrationTests
     {
         public ValueTask<object?> DeserializeAsync(
             IncomingMessageContext context,
-            Type messageType,
             CancellationToken cancellationToken = default
         )
         {
