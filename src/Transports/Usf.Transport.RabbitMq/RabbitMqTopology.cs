@@ -18,7 +18,7 @@ namespace Usf.Transport.RabbitMq;
 /// <see cref="RabbitMqConnectionProvider" />; register separate topology instances when separate publisher and
 /// consumer connections are wanted, preferably via
 /// <see cref="RabbitMqTransportModule.AddRabbitMqOutboundTopology(UsfBuilder, System.Action{Usf.Transport.RabbitMq.IRabbitMqOutboundTopologyBuilder})" />
-/// and <see cref="RabbitMqTransportModule.AddRabbitMqInboundTopology(UsfBuilder, System.Action{Usf.Transport.RabbitMq.IRabbitMqInboundTopologyBuilder}(Usf.Transport.RabbitMq.IRabbitMqInboundTopologyBuilder))" />.
+/// and <see cref="RabbitMqTransportModule.AddRabbitMqInboundTopology(UsfBuilder, System.Action{Usf.Transport.RabbitMq.IRabbitMqInboundTopologyBuilder})" />.
 /// </summary>
 public sealed class RabbitMqTopology : Topology, IAsyncDisposable, IDisposable
 {
