@@ -6,12 +6,12 @@ The exception behavior should match the .NET Generic Host: rethrow a single fail
 
 ## Acceptance Criteria
 
-- [ ] `TopologyRuntimeHostedService.StopAsync` attempts to stop every registered runtime sequentially in reverse registration order, even when one or more runtimes throw.
-- [ ] When exactly one runtime fails to stop, `StopAsync` rethrows the exact original exception instance without wrapping it and preserves its stack trace.
-- [ ] When multiple runtimes fail to stop, `StopAsync` throws an `AggregateException` containing the exact original exception instances in reverse shutdown order.
-- [ ] Cancellation exceptions from individual runtimes are collected like other shutdown failures and do not prevent the remaining runtimes from receiving `StopAsync`.
-- [ ] `TopologyRuntimeHostedService` does not log propagated shutdown failures or add an `ILogger` dependency.
-- [ ] Automated tests cover successful reverse-order shutdown, continued shutdown after a failure, single-failure propagation, multiple-failure aggregation, and cancellation during shutdown.
+- [x] `TopologyRuntimeHostedService.StopAsync` attempts to stop every registered runtime sequentially in reverse registration order, even when one or more runtimes throw.
+- [x] When exactly one runtime fails to stop, `StopAsync` rethrows the exact original exception instance without wrapping it and preserves its stack trace.
+- [x] When multiple runtimes fail to stop, `StopAsync` throws an `AggregateException` containing the exact original exception instances in reverse shutdown order.
+- [x] Cancellation exceptions from individual runtimes are collected like other shutdown failures and do not prevent the remaining runtimes from receiving `StopAsync`.
+- [x] `TopologyRuntimeHostedService` does not log propagated shutdown failures or add an `ILogger` dependency.
+- [x] Automated tests cover successful reverse-order shutdown, continued shutdown after a failure, single-failure propagation, multiple-failure aggregation, and cancellation during shutdown.
 
 ## Technical Details
 
