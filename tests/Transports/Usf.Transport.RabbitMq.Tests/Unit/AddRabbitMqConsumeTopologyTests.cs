@@ -465,6 +465,29 @@ public sealed class AddRabbitMqConsumeTopologyTests
     }
 
     [Fact]
+    public void Handle_RejectsUndefinedAckMode()
+    {
+        var services = new ServiceCollection();
+
+        Action action = () => services.AddTestCloudEvents()
+           .AddRabbitMqTopology(
+                builder =>
+                {
+                    builder.UseConnectionFactory(static _ => new ConnectionFactory());
+                    builder.Queue("inbound");
+                    builder.Consume(
+                        "inbound",
+                        endpoint => endpoint.Handle<ValidationMessageA, ValidationMessageAHandler>(
+                            handler => handler.WithAckMode((MessageAckMode) 999)
+                        )
+                    );
+                }
+            );
+
+        action.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("ackMode");
+    }
+
+    [Fact]
     public void AddRabbitMqTopology_AppliesQueueSettingsRegardlessOfHandleCallOrder()
     {
         var services = new ServiceCollection();
