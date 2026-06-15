@@ -6,11 +6,11 @@ The CI pipeline intermittently fails while pulling RabbitMQ from `public.ecr.aws
 
 ## Acceptance Criteria
 
-- [ ] CI authenticates to Docker Hub before any test step can pull RabbitMQ images, using the `DOCKERHUB_USER` and `DOCKERHUB_PAT` repository secrets.
-- [ ] RabbitMQ test infrastructure no longer references `public.ecr.aws/docker/library/rabbitmq`.
-- [ ] RabbitMQ test infrastructure uses the latest appropriate RabbitMQ 4.x Docker Hub management image, preferring the Alpine variant when it is available.
-- [ ] The CI workflow keeps working for pull requests and pushes without exposing Docker Hub credentials in logs.
-- [ ] Automated tests need to be written or updated if the image selection or workflow changes affect covered behavior.
+- [x] CI authenticates to Docker Hub before any test step can pull RabbitMQ images, using the `DOCKERHUB_USER` and `DOCKERHUB_PAT` repository secrets.
+- [x] RabbitMQ test infrastructure no longer references `public.ecr.aws/docker/library/rabbitmq`.
+- [x] RabbitMQ test infrastructure uses the latest appropriate RabbitMQ 4.x Docker Hub management image, preferring the Alpine variant when it is available.
+- [x] The CI workflow keeps working for pull requests and pushes without exposing Docker Hub credentials in logs.
+- [x] Automated tests need to be written or updated if the image selection or workflow changes affect covered behavior.
 
 ## Technical Details
 
