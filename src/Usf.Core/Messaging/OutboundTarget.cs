@@ -99,7 +99,6 @@ public abstract class OutboundTarget
         catch (OperationCanceledException)
         {
             outcome = "cancelled";
-            activity?.SetTag(OutboundDiagnostics.OutcomeTagName, outcome);
             throw;
         }
         catch (Exception exception)
