@@ -24,15 +24,14 @@ public sealed class FrameworkMessageAcknowledgementMiddleware : IMessageMiddlewa
 
             if (context.Endpoint.AckMode == MessageAckMode.Auto)
             {
-                await context.Acknowledgement.AckAsync(context.CancellationToken).ConfigureAwait(false);
+                await context.Acknowledgement.AckAsync(CancellationToken.None).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
         {
             if (context.Endpoint.AckMode == MessageAckMode.Auto)
             {
-                await context.Acknowledgement.NackAsync(requeue: true, CancellationToken.None)
-                   .ConfigureAwait(false);
+                await context.Acknowledgement.NackAsync(requeue: true, CancellationToken.None).ConfigureAwait(false);
             }
 
             throw;
@@ -41,8 +40,7 @@ public sealed class FrameworkMessageAcknowledgementMiddleware : IMessageMiddlewa
         {
             if (context.Endpoint.AckMode == MessageAckMode.Auto)
             {
-                await context.Acknowledgement.NackAsync(requeue: false, CancellationToken.None)
-                   .ConfigureAwait(false);
+                await context.Acknowledgement.NackAsync(requeue: false, CancellationToken.None).ConfigureAwait(false);
             }
 
             throw;
