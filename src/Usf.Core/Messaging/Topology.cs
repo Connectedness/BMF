@@ -71,6 +71,30 @@ public abstract class Topology
         return typedTarget;
     }
 
+    public IOutboundRoutableTarget<T> GetRequiredRoutingTarget<T>()
+    {
+        var target = GetRequiredTarget<T>();
+
+        if (target is not IOutboundRoutableTarget<T> routableTarget)
+        {
+            throw new OutboundTargetNotRoutableException(target.Name, typeof(T));
+        }
+
+        return routableTarget;
+    }
+
+    public IOutboundRoutableTarget<T> GetRequiredRoutingTarget<T>(string name)
+    {
+        var target = GetRequiredTarget<T>(name);
+
+        if (target is not IOutboundRoutableTarget<T> routableTarget)
+        {
+            throw new OutboundTargetNotRoutableException(target.Name, typeof(T));
+        }
+
+        return routableTarget;
+    }
+
     public bool TryGetTarget(Type messageType, out OutboundTarget? target)
     {
         if (messageType is null)

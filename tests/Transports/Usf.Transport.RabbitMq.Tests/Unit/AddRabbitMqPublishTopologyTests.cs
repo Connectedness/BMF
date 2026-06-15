@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -255,6 +256,119 @@ public sealed class AddRabbitMqPublishTopologyTests
         targetRegistry
            .GetRequiredTarget("headers-target").GetType()
            .Name.Should().Be("RabbitMqHeadersOutboundTarget`1");
+    }
+
+    [Fact]
+    public async Task PublishMessageAsync_ThrowsWhenRoutingKeyIsSuppliedForNonRoutableTarget()
+    {
+        var services = new ServiceCollection();
+        services
+           .AddTestCloudEvents()
+           .AddRabbitMqOutboundTopology(
+                builder =>
+                {
+                    builder.UseConnectionFactory(static _ => new ConnectionFactory());
+                    builder.Exchange("fanout-exchange", ExchangeType.Fanout);
+                    builder.Exchange("headers-exchange", ExchangeType.Headers);
+                    builder.Address("fanout-address", "fanout-exchange");
+                    builder.Address("headers-address", "headers-exchange");
+                    builder.PublishNamed<ValidationMessageA>(
+                        "fanout-target",
+                        target => target
+                           .ToFanoutAddress("fanout-address")
+                           .WithSerializer<CloudEventMessageSerializer>()
+                    );
+                    builder.PublishNamed<ValidationMessageA>(
+                        "headers-target",
+                        target => target
+                           .ToHeadersAddress("headers-address")
+                           .WithHeader("region", "eu")
+                           .WithSerializer<CloudEventMessageSerializer>()
+                    );
+                }
+            );
+        await using var serviceProvider = services.BuildServiceProvider();
+        var publisher = serviceProvider.GetRequiredService<IMessagePublisher>();
+        var targetRegistry = serviceProvider
+           .GetRequiredService<ITopologyRegistry>()
+           .GetRequiredTopology(Topology.DefaultName);
+
+        var fanoutPublish = () => publisher.PublishMessageAsync(
+            new ValidationMessageA("value"),
+            targetRegistry.GetRequiredTarget("fanout-target"),
+            routingKey: "explicit.route"
+        );
+        var headersPublish = () => publisher.PublishMessageAsync(
+            new ValidationMessageA("value"),
+            targetRegistry.GetRequiredTarget("headers-target"),
+            routingKey: "explicit.route"
+        );
+
+        (await fanoutPublish.Should().ThrowAsync<OutboundTargetNotRoutableException>())
+           .Which.MessageType.Should().Be<ValidationMessageA>();
+        await headersPublish.Should().ThrowAsync<OutboundTargetNotRoutableException>();
+    }
+
+    [Fact]
+    public void GetRequiredRoutingTarget_ThrowsForNonRoutableTarget()
+    {
+        var services = new ServiceCollection();
+        services.AddTestCloudEvents()
+           .AddRabbitMqOutboundTopology(
+                builder =>
+                {
+                    builder.UseConnectionFactory(static _ => new ConnectionFactory());
+                    builder.Exchange("fanout-exchange", ExchangeType.Fanout);
+                    builder.Address("fanout-address", "fanout-exchange");
+                    builder.Publish<ValidationMessageA>(
+                        target => target
+                           .ToFanoutAddress("fanout-address")
+                           .WithSerializer<CloudEventMessageSerializer>()
+                    );
+                }
+            );
+        using var serviceProvider = services.BuildServiceProvider();
+        var outboundTopology = serviceProvider
+           .GetRequiredService<ITopologyRegistry>()
+           .GetRequiredTopology(Topology.DefaultName);
+
+        Action action = () => outboundTopology.GetRequiredRoutingTarget<ValidationMessageA>();
+
+        action.Should().Throw<OutboundTargetNotRoutableException>();
+    }
+
+    [Fact]
+    public void GetRequiredRoutingTarget_ReturnsRoutableTargetForDirectExchange()
+    {
+        var services = new ServiceCollection();
+        services
+           .AddTestCloudEvents()
+           .AddRabbitMqOutboundTopology(
+                builder =>
+                {
+                    builder.UseConnectionFactory(static _ => new ConnectionFactory());
+                    builder.Exchange("direct-exchange", ExchangeType.Direct);
+                    builder.Address("direct-address", "direct-exchange");
+                    builder.Publish<ValidationMessageA>(
+                        target => target
+                           .ToDirectAddress("direct-address", "direct.route")
+                           .WithSerializer<CloudEventMessageSerializer>()
+                    );
+                    builder.PublishNamed<ValidationMessageA>(
+                        "direct-target",
+                        target => target
+                           .ToDirectAddress("direct-address", "direct.route")
+                           .WithSerializer<CloudEventMessageSerializer>()
+                    );
+                }
+            );
+        using var serviceProvider = services.BuildServiceProvider();
+        var outboundTopology = serviceProvider
+           .GetRequiredService<ITopologyRegistry>()
+           .GetRequiredTopology(Topology.DefaultName);
+
+        outboundTopology.GetRequiredRoutingTarget<ValidationMessageA>().Should().NotBeNull();
+        outboundTopology.GetRequiredRoutingTarget<ValidationMessageA>("direct-target").Should().NotBeNull();
     }
 
     [Fact]

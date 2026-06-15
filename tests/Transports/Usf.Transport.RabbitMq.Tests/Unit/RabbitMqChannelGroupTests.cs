@@ -544,9 +544,41 @@ public sealed class RabbitMqChannelGroupTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task RabbitMqOutboundTarget_UsesTargetRoutingKeyWhenCallerRoutingKeyIsBlank(
+    public async Task RabbitMqOutboundTarget_RejectsBlankRoutingKeyOnRoutableSurface(
         string? callerRoutingKey
     )
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var channel = new TestRabbitMqChannel();
+        await using var channelGroup = new RabbitMqChannelGroup(
+            "group",
+            1,
+            _ => Task.FromResult(channel.Object)
+        );
+        IOutboundRoutableTarget<ValidationMessageA> target = new RabbitMqDirectOutboundTarget<ValidationMessageA>(
+            "target",
+            RabbitMqCloudEventsTestFactory.CreateSerializer(),
+            RabbitMqCloudEventsTestFactory.CreateRegistry(),
+            Topology.DefaultName,
+            channelGroup,
+            "exchange",
+            false,
+            "target.route",
+            null
+        );
+
+        var action = async () => await target.PublishAsync(
+            new ValidationMessageA("value"),
+            callerRoutingKey!,
+            cancellationToken
+        );
+
+        await action.Should().ThrowAsync<ArgumentException>().WithParameterName("routingKey");
+        channel.BasicPublishCallCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task RabbitMqOutboundTarget_UsesTargetRoutingKeyWhenPublishedWithoutRoutingKey()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var channel = new TestRabbitMqChannel();
@@ -569,7 +601,6 @@ public sealed class RabbitMqChannelGroupTests
 
         await target.PublishAsync(
             new ValidationMessageA("value"),
-            callerRoutingKey,
             cancellationToken: cancellationToken
         );
 
@@ -614,7 +645,7 @@ public sealed class RabbitMqChannelGroupTests
     }
 
     [Fact]
-    public async Task RabbitMqOutboundTarget_UsesMessageRoutingKeyFactoryWhenCallerRoutingKeyIsBlank()
+    public async Task RabbitMqOutboundTarget_UsesMessageRoutingKeyFactoryWhenPublishedWithoutRoutingKey()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var channel = new TestRabbitMqChannel();
@@ -642,12 +673,70 @@ public sealed class RabbitMqChannelGroupTests
 
         await target.PublishAsync(
             new ValidationMessageA("created"),
-            "   ",
             cancellationToken: cancellationToken
         );
 
         channel.LastPublishedRoutingKey.Should().Be("message.created");
         factoryCallCount.Should().Be(1);
+    }
+
+    [Fact]
+    public void RabbitMqOutboundTargets_ExposeRoutableCapabilityOnlyForDirectAndTopicExchanges()
+    {
+        var serializer = RabbitMqCloudEventsTestFactory.CreateSerializer();
+        var registry = RabbitMqCloudEventsTestFactory.CreateRegistry();
+        using var channelGroup = new RabbitMqChannelGroup(
+            "group",
+            1,
+            _ => Task.FromResult(new TestRabbitMqChannel().Object)
+        );
+
+        var directTarget = new RabbitMqDirectOutboundTarget<ValidationMessageA>(
+            "direct",
+            serializer,
+            registry,
+            Topology.DefaultName,
+            channelGroup,
+            "exchange",
+            false,
+            "direct.route",
+            null
+        );
+        var topicTarget = new RabbitMqTopicOutboundTarget<ValidationMessageA>(
+            "topic",
+            serializer,
+            registry,
+            Topology.DefaultName,
+            channelGroup,
+            "exchange",
+            false,
+            "topic.route",
+            null
+        );
+        var fanoutTarget = new RabbitMqFanoutOutboundTarget<ValidationMessageA>(
+            "fanout",
+            serializer,
+            registry,
+            Topology.DefaultName,
+            channelGroup,
+            "exchange",
+            false
+        );
+        var headersTarget = new RabbitMqHeadersOutboundTarget<ValidationMessageA>(
+            "headers",
+            serializer,
+            registry,
+            Topology.DefaultName,
+            channelGroup,
+            "exchange",
+            false,
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+        );
+
+        directTarget.Should().BeAssignableTo<IOutboundRoutableTarget<ValidationMessageA>>();
+        topicTarget.Should().BeAssignableTo<IOutboundRoutableTarget<ValidationMessageA>>();
+        fanoutTarget.Should().NotBeAssignableTo<IOutboundRoutableTarget<ValidationMessageA>>();
+        headersTarget.Should().NotBeAssignableTo<IOutboundRoutableTarget<ValidationMessageA>>();
     }
 
     [Fact]

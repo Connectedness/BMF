@@ -129,6 +129,52 @@ public sealed class TopologyTests
            .WithMessage("Topology 'orders' is already registered. Registered topologies: ORDERS, orders.");
     }
 
+    [Fact]
+    public void GetRequiredRoutingTarget_ReturnsRoutableTarget()
+    {
+        var target = new RecordingTarget<SampleMessage>("named", CloudEventsTestFactory.CreateSerializer());
+        var topology = new TestTopology(
+            Topology.DefaultName,
+            new Dictionary<Type, OutboundTarget>
+            {
+                [typeof(SampleMessage)] = target
+            },
+            new Dictionary<string, OutboundTarget>(StringComparer.Ordinal)
+            {
+                ["named"] = target
+            }
+        );
+
+        topology.GetRequiredRoutingTarget<SampleMessage>().Should().BeSameAs(target);
+        topology.GetRequiredRoutingTarget<SampleMessage>("named").Should().BeSameAs(target);
+    }
+
+    [Fact]
+    public void GetRequiredRoutingTarget_ThrowsWhenTargetIsNotRoutable()
+    {
+        var target = new NonRoutableRecordingTarget<SampleMessage>(
+            "named",
+            CloudEventsTestFactory.CreateSerializer()
+        );
+        var topology = new TestTopology(
+            Topology.DefaultName,
+            new Dictionary<Type, OutboundTarget>
+            {
+                [typeof(SampleMessage)] = target
+            },
+            new Dictionary<string, OutboundTarget>(StringComparer.Ordinal)
+            {
+                ["named"] = target
+            }
+        );
+
+        var byType = () => topology.GetRequiredRoutingTarget<SampleMessage>();
+        var byName = () => topology.GetRequiredRoutingTarget<SampleMessage>("named");
+
+        byType.Should().Throw<OutboundTargetNotRoutableException>().Which.MessageType.Should().Be<SampleMessage>();
+        byName.Should().Throw<OutboundTargetNotRoutableException>();
+    }
+
     private sealed class SampleMessageHandler : IMessageHandler<SampleMessage>
     {
         public Task HandleAsync(
