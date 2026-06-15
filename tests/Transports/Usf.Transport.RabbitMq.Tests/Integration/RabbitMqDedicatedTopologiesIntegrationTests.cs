@@ -102,12 +102,12 @@ public sealed class RabbitMqDedicatedTopologiesIntegrationTests
                 await publisher.PublishMessageAsync(
                     new ValidationMessageA("a"),
                     topology.GetRequiredTarget<ValidationMessageA>("validation-a"),
-                    cancellationToken
+                    cancellationToken: cancellationToken
                 );
                 await publisher.PublishMessageAsync(
                     new ValidationMessageB("b"),
                     topology.GetRequiredTarget<ValidationMessageB>("validation-b"),
-                    cancellationToken
+                    cancellationToken: cancellationToken
                 );
 
                 await mixedSink.WaitAsync(cancellationToken);
@@ -115,12 +115,12 @@ public sealed class RabbitMqDedicatedTopologiesIntegrationTests
                 await publisher.PublishMessageAsync(
                     new ValidationMessageA("first"),
                     topology.GetRequiredTarget<ValidationMessageA>("parallel"),
-                    cancellationToken
+                    cancellationToken: cancellationToken
                 );
                 await publisher.PublishMessageAsync(
                     new ValidationMessageA("second"),
                     topology.GetRequiredTarget<ValidationMessageA>("parallel"),
-                    cancellationToken
+                    cancellationToken: cancellationToken
                 );
 
                 await parallelProbe.WaitForBothAsync(cancellationToken);
