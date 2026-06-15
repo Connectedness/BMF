@@ -127,8 +127,8 @@ public abstract class TransportMessage
         {
             string stringValue => stringValue,
             byte[] bytes => Encoding.UTF8.GetString(bytes),
-            ReadOnlyMemory<byte> memory => Encoding.UTF8.GetString(memory.ToArray()),
-            Memory<byte> memory => Encoding.UTF8.GetString(memory.ToArray()),
+            ReadOnlyMemory<byte> memory => Encoding.UTF8.GetString(memory.Span),
+            Memory<byte> memory => Encoding.UTF8.GetString(memory.Span),
             IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
             _ => rawValue.ToString()
         };
