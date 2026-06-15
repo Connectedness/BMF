@@ -119,7 +119,14 @@ public abstract class OutboundTarget
             );
             activity?.SetStatus(ActivityStatusCode.Error);
             activity?.SetTag(OutboundDiagnostics.OutcomeTagName, outcome);
-            activity?.SetTag(OutboundDiagnostics.DeliveryFailureReasonTagName, deliveryFailureReason);
+            if (deliveryFailureReason is not null)
+            {
+                activity?.SetTag(
+                    OutboundDiagnostics.DeliveryFailureReasonTagName,
+                    deliveryFailureReason
+                );
+            }
+
             throw;
         }
         finally
