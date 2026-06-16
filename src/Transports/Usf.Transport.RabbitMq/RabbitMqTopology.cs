@@ -6,7 +6,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
 using Usf.Core.Messaging;
-using Usf.Transport.RabbitMq.Configuration;
+using Usf.Core.Messaging.Inbound;
+using Usf.Core.Messaging.Outbound;
+
+using Usf.Transport.RabbitMq.Inbound;
+using Usf.Transport.RabbitMq.Outbound;
 
 namespace Usf.Transport.RabbitMq;
 
@@ -17,8 +21,8 @@ namespace Usf.Transport.RabbitMq;
 /// connection provider, and the channel source. A topology owns exactly one
 /// <see cref="RabbitMqConnectionProvider" />; register separate topology instances when separate publisher and
 /// consumer connections are wanted, preferably via
-/// <see cref="RabbitMqTransportModule.AddRabbitMqOutboundTopology(UsfBuilder, System.Action{Usf.Transport.RabbitMq.IRabbitMqOutboundTopologyBuilder})" />
-/// and <see cref="RabbitMqTransportModule.AddRabbitMqInboundTopology(UsfBuilder, System.Action{Usf.Transport.RabbitMq.IRabbitMqInboundTopologyBuilder})" />.
+/// <see cref="RabbitMqTransportModule.AddRabbitMqOutboundTopology(UsfBuilder, System.Action{Usf.Transport.RabbitMq.Outbound.IRabbitMqOutboundTopologyBuilder})" />
+/// and <see cref="RabbitMqTransportModule.AddRabbitMqInboundTopology(UsfBuilder, System.Action{Usf.Transport.RabbitMq.Inbound.IRabbitMqInboundTopologyBuilder})" />.
 /// </summary>
 public sealed class RabbitMqTopology : Topology, IAsyncDisposable, IDisposable
 {
@@ -44,7 +48,7 @@ public sealed class RabbitMqTopology : Topology, IAsyncDisposable, IDisposable
         IReadOnlyList<RabbitMqExchangeDefinition> exchanges,
         IReadOnlyList<RabbitMqQueueDefinition> queues,
         IReadOnlyList<RabbitMqBindingDefinition> bindings,
-        IReadOnlyList<RabbitMqChannelGroup> outboundChannelGroups,
+        IReadOnlyList<RabbitMqOutboundChannelGroup> outboundChannelGroups,
         IReadOnlyList<OutboundTarget> targets,
         IReadOnlyList<RabbitMqInboundChannelGroup> inboundChannelGroups,
         IReadOnlyList<RabbitMqInboundConsumer> consumers,
@@ -81,7 +85,7 @@ public sealed class RabbitMqTopology : Topology, IAsyncDisposable, IDisposable
 
     public IReadOnlyList<RabbitMqBindingDefinition> Bindings { get; }
 
-    public IReadOnlyList<RabbitMqChannelGroup> OutboundChannelGroups { get; }
+    public IReadOnlyList<RabbitMqOutboundChannelGroup> OutboundChannelGroups { get; }
 
     public IReadOnlyList<OutboundTarget> Targets { get; }
 

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Usf.Core.Messaging;
-using Usf.Core.Messaging.Serialization;
+using Usf.Core.Messaging.Outbound;
 
 namespace Usf.Transport.RabbitMq.Tests.TestSupport;
 
@@ -32,7 +32,8 @@ public static class RabbitMqCloudEventsTestFactory
     {
         MessageContractRegistryBuilder builder = new ();
         builder.Map<RabbitMqAuditMessage>(AuditMessageDiscriminator);
-        builder.Map<RabbitMqPublishMessage>(PublishMessageDiscriminator)
+        builder
+           .Map<RabbitMqPublishMessage>(PublishMessageDiscriminator)
            .WithDataSchema("/schemas/rabbitmq-publish");
         builder.Map<ValidationMessageA>(ValidationMessageADiscriminator);
         builder.Map<ValidationMessageB>(ValidationMessageBDiscriminator);

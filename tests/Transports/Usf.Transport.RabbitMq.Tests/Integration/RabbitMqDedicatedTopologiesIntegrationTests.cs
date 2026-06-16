@@ -10,7 +10,8 @@ using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using Testcontainers.RabbitMq;
 using Usf.Core.Messaging;
-using Usf.Core.Messaging.Serialization;
+using Usf.Core.Messaging.Inbound;
+using Usf.Core.Messaging.Outbound;
 using Usf.Transport.RabbitMq.Tests.TestSupport;
 using Xunit;
 
@@ -631,7 +632,7 @@ public sealed class RabbitMqDedicatedTopologiesIntegrationTests
             CancellationToken cancellationToken
         )
         {
-            using var registration = cancellationToken.Register(
+            await using var registration = cancellationToken.Register(
                 static state =>
                     ((TaskCompletionSource<(RawMessage, IncomingMessageContext)>) state!).TrySetCanceled(),
                 _completion
@@ -652,7 +653,7 @@ public sealed class RabbitMqDedicatedTopologiesIntegrationTests
 
         public async Task<RabbitMqPublishMessage> WaitAsync(CancellationToken cancellationToken)
         {
-            using var registration = cancellationToken.Register(
+            await using var registration = cancellationToken.Register(
                 static state => ((TaskCompletionSource<RabbitMqPublishMessage>) state!).TrySetCanceled(),
                 _completion
             );

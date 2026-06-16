@@ -5,11 +5,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using Usf.Core.Messaging;
-using Usf.Core.Messaging.Errors;
-using Usf.Core.Messaging.Serialization;
-using Usf.Transport.RabbitMq.Configuration;
+using Usf.Core.Messaging.Inbound;
+using Usf.Core.Messaging.Outbound;
 using Usf.Transport.RabbitMq.Tests.TestSupport;
 using Xunit;
+
+using Usf.Transport.RabbitMq.Outbound;
 
 namespace Usf.Transport.RabbitMq.Tests.Unit;
 
@@ -407,6 +408,7 @@ public sealed class AddRabbitMqPublishTopologyTests
             );
         using var serviceProvider = services.BuildServiceProvider();
 
+        // ReSharper disable once AccessToDisposedClosure -- act is called before disposal
         Action action = () => _ = serviceProvider.GetRequiredService<Topology>();
 
         var exception = action.Should().Throw<TopologyValidationException>().Which;

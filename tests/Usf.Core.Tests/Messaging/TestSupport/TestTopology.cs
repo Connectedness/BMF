@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Usf.Core.Messaging;
+using Usf.Core.Messaging.Inbound;
+using Usf.Core.Messaging.Outbound;
 
 namespace Usf.Core.Tests.Messaging.TestSupport;
 

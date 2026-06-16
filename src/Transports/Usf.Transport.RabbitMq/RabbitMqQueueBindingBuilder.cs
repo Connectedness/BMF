@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Usf.Transport.RabbitMq.Configuration;
 
 namespace Usf.Transport.RabbitMq;
 

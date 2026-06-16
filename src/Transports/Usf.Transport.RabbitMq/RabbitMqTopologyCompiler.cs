@@ -7,8 +7,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using Usf.Core.Messaging;
-using Usf.Core.Messaging.Errors;
-using Usf.Transport.RabbitMq.Configuration;
+using Usf.Core.Messaging.Inbound;
+using Usf.Core.Messaging.Outbound;
+
+using Usf.Transport.RabbitMq.Inbound;
+using Usf.Transport.RabbitMq.Outbound;
 
 namespace Usf.Transport.RabbitMq;
 
@@ -124,7 +127,7 @@ public sealed class RabbitMqTopologyCompiler
     // ----- Outbound compilation -----
 
     private (
-        List<RabbitMqChannelGroup> ChannelGroups,
+        List<RabbitMqOutboundChannelGroup> ChannelGroups,
         List<OutboundTarget> Targets,
         Dictionary<Type, OutboundTarget> DefaultTargetsByMessageType,
         Dictionary<string, OutboundTarget> TargetsByName
@@ -135,8 +138,8 @@ public sealed class RabbitMqTopologyCompiler
             RabbitMqChannelSource channelSource
         )
     {
-        Dictionary<string, RabbitMqChannelGroup> explicitChannelGroupsByName = new (StringComparer.Ordinal);
-        List<RabbitMqChannelGroup> channelGroups = [];
+        Dictionary<string, RabbitMqOutboundChannelGroup> explicitChannelGroupsByName = new (StringComparer.Ordinal);
+        List<RabbitMqOutboundChannelGroup> channelGroups = [];
 
         foreach (var channelGroupDefinition in OrderOutboundChannelGroups(configuration.OutboundChannelGroups))
         {
@@ -190,8 +193,8 @@ public sealed class RabbitMqTopologyCompiler
         return (channelGroups, targets, defaultTargetsByMessageType, targetsByName);
     }
 
-    private static IEnumerable<RabbitMqChannelGroupDefinition> OrderOutboundChannelGroups(
-        IReadOnlyList<RabbitMqChannelGroupDefinition> channelGroups
+    private static IEnumerable<RabbitMqOutboundChannelGroupDefinition> OrderOutboundChannelGroups(
+        IReadOnlyList<RabbitMqOutboundChannelGroupDefinition> channelGroups
     )
     {
         return channelGroups.OrderBy(static channelGroup => channelGroup.Name, StringComparer.Ordinal);
@@ -206,8 +209,8 @@ public sealed class RabbitMqTopologyCompiler
            .ThenBy(static target => target.TargetName ?? string.Empty, StringComparer.Ordinal);
     }
 
-    private static RabbitMqChannelGroup CreateChannelGroup(
-        RabbitMqChannelGroupDefinition definition,
+    private static RabbitMqOutboundChannelGroup CreateChannelGroup(
+        RabbitMqOutboundChannelGroupDefinition definition,
         RabbitMqPublisherConfirmMode defaultPublisherConfirmMode,
         TimeSpan? defaultPublisherConfirmTimeout,
         RabbitMqChannelSource channelSource
@@ -215,7 +218,7 @@ public sealed class RabbitMqTopologyCompiler
     {
         var publisherConfirmMode = definition.PublisherConfirmMode ?? defaultPublisherConfirmMode;
 
-        return new RabbitMqChannelGroup(
+        return new RabbitMqOutboundChannelGroup(
             definition.Name,
             definition.MaximumChannelCount,
             async cancellationToken => await channelSource
@@ -243,11 +246,11 @@ public sealed class RabbitMqTopologyCompiler
         };
     }
 
-    private static RabbitMqChannelGroup ResolveOutboundChannelGroup(
+    private static RabbitMqOutboundChannelGroup ResolveOutboundChannelGroup(
         RabbitMqOutboundTargetDefinition targetDefinition,
         string targetName,
-        IReadOnlyDictionary<string, RabbitMqChannelGroup> explicitChannelGroupsByName,
-        ICollection<RabbitMqChannelGroup> channelGroups,
+        IReadOnlyDictionary<string, RabbitMqOutboundChannelGroup> explicitChannelGroupsByName,
+        ICollection<RabbitMqOutboundChannelGroup> channelGroups,
         RabbitMqPublisherConfirmMode defaultPublisherConfirmMode,
         TimeSpan? defaultPublisherConfirmTimeout,
         RabbitMqChannelSource channelSource
@@ -259,8 +262,8 @@ public sealed class RabbitMqTopologyCompiler
         }
 
         var implicitChannelGroup = CreateChannelGroup(
-            new RabbitMqChannelGroupDefinition(
-                $"{RabbitMqChannelGroupDefinition.ReservedImplicitNamePrefix}{channelGroups.Count}:{targetName}",
+            new RabbitMqOutboundChannelGroupDefinition(
+                $"{RabbitMqOutboundChannelGroupDefinition.ReservedImplicitNamePrefix}{channelGroups.Count}:{targetName}",
                 1
             ),
             defaultPublisherConfirmMode,
@@ -275,7 +278,7 @@ public sealed class RabbitMqTopologyCompiler
         RabbitMqOutboundTargetDefinition targetDefinition,
         string topologyName,
         IMessageContractRegistry messageContractRegistry,
-        RabbitMqChannelGroup channelGroup,
+        RabbitMqOutboundChannelGroup channelGroup,
         string exchangeName
     )
     {
@@ -295,7 +298,7 @@ public sealed class RabbitMqTopologyCompiler
         IMessageSerializer serializer,
         IMessageContractRegistry messageContractRegistry,
         string topologyName,
-        RabbitMqChannelGroup channelGroup,
+        RabbitMqOutboundChannelGroup channelGroup,
         string exchangeName
     )
     {
@@ -555,7 +558,7 @@ public sealed class RabbitMqTopologyCompiler
     // ----- Channel budget -----
 
     private static (int WorstCaseChannelCount, string Description) CalculateChannelBudget(
-        IReadOnlyList<RabbitMqChannelGroup> outboundChannelGroups,
+        IReadOnlyList<RabbitMqOutboundChannelGroup> outboundChannelGroups,
         IReadOnlyList<RabbitMqInboundChannelGroup> inboundChannelGroups
     )
     {
@@ -689,7 +692,7 @@ public sealed class RabbitMqTopologyCompiler
     }
 
     private static void ValidateOutboundChannelGroupDefinitions(
-        IReadOnlyList<RabbitMqChannelGroupDefinition> channelGroups,
+        IReadOnlyList<RabbitMqOutboundChannelGroupDefinition> channelGroups,
         ICollection<string> validationErrors
     )
     {
@@ -703,12 +706,12 @@ public sealed class RabbitMqTopologyCompiler
             }
 
             if (channelGroup.Name.StartsWith(
-                    RabbitMqChannelGroupDefinition.ReservedImplicitNamePrefix,
+                    RabbitMqOutboundChannelGroupDefinition.ReservedImplicitNamePrefix,
                     StringComparison.Ordinal
                 ))
             {
                 validationErrors.Add(
-                    $"Channel group '{channelGroup.Name}' uses reserved name prefix '{RabbitMqChannelGroupDefinition.ReservedImplicitNamePrefix}'."
+                    $"Channel group '{channelGroup.Name}' uses reserved name prefix '{RabbitMqOutboundChannelGroupDefinition.ReservedImplicitNamePrefix}'."
                 );
             }
 
@@ -752,7 +755,7 @@ public sealed class RabbitMqTopologyCompiler
     }
 
     private static void ValidateOutboundChannelGroupUsage(
-        IReadOnlyList<RabbitMqChannelGroupDefinition> channelGroups,
+        IReadOnlyList<RabbitMqOutboundChannelGroupDefinition> channelGroups,
         IReadOnlyList<RabbitMqOutboundTargetDefinition> targets,
         ICollection<string> validationErrors
     )
@@ -781,7 +784,7 @@ public sealed class RabbitMqTopologyCompiler
     private void ValidateTargets(
         IReadOnlyList<RabbitMqOutboundTargetDefinition> targets,
         IReadOnlyDictionary<string, RabbitMqExchangeDefinition> exchangesByName,
-        IReadOnlyDictionary<string, RabbitMqChannelGroupDefinition> channelGroupsByName,
+        IReadOnlyDictionary<string, RabbitMqOutboundChannelGroupDefinition> channelGroupsByName,
         RabbitMqPublisherConfirmMode defaultPublisherConfirmMode,
         ICollection<string> validationErrors
     )
@@ -820,7 +823,7 @@ public sealed class RabbitMqTopologyCompiler
     private void ValidateTarget(
         RabbitMqOutboundTargetDefinition target,
         IReadOnlyDictionary<string, RabbitMqExchangeDefinition> exchangesByName,
-        IReadOnlyDictionary<string, RabbitMqChannelGroupDefinition> channelGroupsByName,
+        IReadOnlyDictionary<string, RabbitMqOutboundChannelGroupDefinition> channelGroupsByName,
         RabbitMqPublisherConfirmMode defaultPublisherConfirmMode,
         ICollection<string> validationErrors
     )
@@ -883,7 +886,7 @@ public sealed class RabbitMqTopologyCompiler
 
     private static bool TryGetPublisherConfirmMode(
         RabbitMqOutboundTargetDefinition target,
-        IReadOnlyDictionary<string, RabbitMqChannelGroupDefinition> channelGroupsByName,
+        IReadOnlyDictionary<string, RabbitMqOutboundChannelGroupDefinition> channelGroupsByName,
         RabbitMqPublisherConfirmMode defaultPublisherConfirmMode,
         out RabbitMqPublisherConfirmMode publisherConfirmMode
     )

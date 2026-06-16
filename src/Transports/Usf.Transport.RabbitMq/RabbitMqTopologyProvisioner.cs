@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
 using Usf.Core.Messaging;
-using Usf.Transport.RabbitMq.Configuration;
+using Usf.Core.Messaging.Outbound;
 
 namespace Usf.Transport.RabbitMq;
 

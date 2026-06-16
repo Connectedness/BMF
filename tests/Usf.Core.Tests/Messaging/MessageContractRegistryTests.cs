@@ -1,7 +1,6 @@
 using System;
 using FluentAssertions;
 using Usf.Core.Messaging;
-using Usf.Core.Messaging.Errors;
 using Xunit;
 
 namespace Usf.Core.Tests.Messaging;

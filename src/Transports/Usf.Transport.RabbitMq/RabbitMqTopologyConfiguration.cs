@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using RabbitMQ.Client;
 using Usf.Core.Messaging;
-using Usf.Transport.RabbitMq.Configuration;
+using Usf.Core.Messaging.Inbound;
+
+using Usf.Transport.RabbitMq.Inbound;
+using Usf.Transport.RabbitMq.Outbound;
 
 namespace Usf.Transport.RabbitMq;
 
@@ -16,7 +19,7 @@ public sealed record RabbitMqTopologyConfiguration(
     IReadOnlyList<RabbitMqExchangeDefinition> Exchanges,
     IReadOnlyList<RabbitMqQueueDefinition> Queues,
     IReadOnlyList<RabbitMqBindingDefinition> Bindings,
-    IReadOnlyList<RabbitMqChannelGroupDefinition> OutboundChannelGroups,
+    IReadOnlyList<RabbitMqOutboundChannelGroupDefinition> OutboundChannelGroups,
     IReadOnlyList<RabbitMqOutboundTargetDefinition> Targets,
     IReadOnlyList<RabbitMqInboundChannelGroupDefinition> InboundChannelGroups,
     IReadOnlyList<RabbitMqInboundConsumerDefinition> Consumers,

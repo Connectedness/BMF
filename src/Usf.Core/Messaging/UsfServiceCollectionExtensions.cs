@@ -4,7 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Usf.Core.Messaging.Serialization;
+using Usf.Core.Messaging.Inbound;
+using Usf.Core.Messaging.Outbound;
 
 namespace Usf.Core.Messaging;
 
