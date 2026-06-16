@@ -1,6 +1,6 @@
 # Root Agents.md
 
-USF is a lightweight framework for modern cloud-native applications. It consists of an asynchronous messaging system and a saga framework.
+BMF is a lightweight framework for modern cloud-native applications. It consists of an asynchronous messaging system and a saga framework.
 
 ## Implementation rules
 
