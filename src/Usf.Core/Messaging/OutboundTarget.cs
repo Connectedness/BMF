@@ -118,7 +118,6 @@ public abstract class OutboundTarget
                 )
             );
             activity?.SetStatus(ActivityStatusCode.Error);
-            activity?.SetTag(OutboundDiagnostics.OutcomeTagName, outcome);
             if (deliveryFailureReason is not null)
             {
                 activity?.SetTag(
