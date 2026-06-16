@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Usf.Transport.RabbitMq;
+namespace Usf.Transport.RabbitMq.Outbound;
 
 public abstract record RabbitMqOutboundTargetDefinition(
     Type MessageType,

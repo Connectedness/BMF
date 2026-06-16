@@ -1,4 +1,4 @@
-namespace Usf.Transport.RabbitMq;
+namespace Usf.Transport.RabbitMq.Outbound;
 
 public enum RabbitMqOutboundRouteScenario
 {

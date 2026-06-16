@@ -1,8 +1,8 @@
 using System;
 
-namespace Usf.Transport.RabbitMq.Configuration;
+namespace Usf.Transport.RabbitMq.Outbound;
 
-public sealed record RabbitMqChannelGroupDefinition(
+public sealed record RabbitMqOutboundChannelGroupDefinition(
     string Name,
     int MaximumChannelCount,
     RabbitMqPublisherConfirmMode? PublisherConfirmMode = null,

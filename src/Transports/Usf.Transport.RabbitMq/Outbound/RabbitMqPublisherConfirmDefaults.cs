@@ -1,6 +1,6 @@
 using System;
 
-namespace Usf.Transport.RabbitMq.Configuration;
+namespace Usf.Transport.RabbitMq.Outbound;
 
 public static class RabbitMqPublisherConfirmDefaults
 {

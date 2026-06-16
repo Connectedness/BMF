@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using RabbitMQ.Client;
 using Usf.Core.Messaging;
 using Usf.Core.Messaging.Inbound;
-using Usf.Transport.RabbitMq.Configuration;
+
+using Usf.Transport.RabbitMq.Inbound;
+using Usf.Transport.RabbitMq.Outbound;
 
 namespace Usf.Transport.RabbitMq;
 
@@ -30,7 +32,7 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
     private readonly List<RabbitMqExchangeDefinition> _exchangeDefinitions = [];
 
     private readonly List<RabbitMqInboundChannelGroupDefinition> _inboundChannelGroupDefinitions = [];
-    private readonly List<RabbitMqChannelGroupDefinition> _outboundChannelGroupDefinitions = [];
+    private readonly List<RabbitMqOutboundChannelGroupDefinition> _outboundChannelGroupDefinitions = [];
     private readonly List<RabbitMqQueueDefinition> _queueDefinitions = [];
     private readonly List<RabbitMqOutboundTargetDefinition> _targets = [];
 
@@ -301,18 +303,18 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
         var channelGroupName = RequireText(name, nameof(name));
 
         if (channelGroupName.StartsWith(
-                RabbitMqChannelGroupDefinition.ReservedImplicitNamePrefix,
+                RabbitMqOutboundChannelGroupDefinition.ReservedImplicitNamePrefix,
                 StringComparison.Ordinal
             ))
         {
             throw new ArgumentException(
-                $"Channel group names beginning with '{RabbitMqChannelGroupDefinition.ReservedImplicitNamePrefix}' are reserved.",
+                $"Channel group names beginning with '{RabbitMqOutboundChannelGroupDefinition.ReservedImplicitNamePrefix}' are reserved.",
                 nameof(name)
             );
         }
 
         _outboundChannelGroupDefinitions.Add(
-            new RabbitMqChannelGroupDefinition(
+            new RabbitMqOutboundChannelGroupDefinition(
                 channelGroupName,
                 maximumChannelCount,
                 publisherConfirmMode,

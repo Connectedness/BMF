@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using RabbitMQ.Client;
 using Usf.Core.Messaging.Inbound;
 
-namespace Usf.Transport.RabbitMq;
+namespace Usf.Transport.RabbitMq.Inbound;
 
 public sealed class RabbitMqMessageAcknowledgement : IMessageAcknowledgement
 {

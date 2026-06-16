@@ -6,14 +6,14 @@
 
 ## Acceptance Criteria
 
-- [ ] Direction-neutral RabbitMQ topology, broker resource, provisioning, connection, and channel infrastructure APIs remain in `Usf.Transport.RabbitMq`.
-- [ ] RabbitMQ publishing APIs, outbound targets, outbound target definitions, publisher channel groups, publisher-confirm options, and outbound route scenarios move to `Usf.Transport.RabbitMq.Outbound`.
-- [ ] The outbound-only `RabbitMqChannelGroup` and `RabbitMqChannelGroupDefinition` types are renamed to `RabbitMqOutboundChannelGroup` and `RabbitMqOutboundChannelGroupDefinition`.
-- [ ] RabbitMQ consuming APIs, inbound consumers, inbound endpoints, inbound channel groups, runtime, transport message, and acknowledgement types move to `Usf.Transport.RabbitMq.Inbound`.
-- [ ] `Usf.Transport.RabbitMq.Configuration` is removed; its types are assigned to the root, outbound, or inbound namespace according to responsibility.
-- [ ] Tests and any benchmark or sample imports compile against the new RabbitMQ namespaces without compatibility shims for the old namespaces.
-- [ ] XML documentation references and public API examples are updated to avoid stale namespace names. Run a Release build to verify as `<TreatWarningsAsErrors>` is enabled.
-- [ ] Automated tests need to be updated and run.
+- [x] Direction-neutral RabbitMQ topology, broker resource, provisioning, connection, and channel infrastructure APIs remain in `Usf.Transport.RabbitMq`.
+- [x] RabbitMQ publishing APIs, outbound targets, outbound target definitions, publisher channel groups, publisher-confirm options, and outbound route scenarios move to `Usf.Transport.RabbitMq.Outbound`.
+- [x] The outbound-only `RabbitMqChannelGroup` and `RabbitMqChannelGroupDefinition` types are renamed to `RabbitMqOutboundChannelGroup` and `RabbitMqOutboundChannelGroupDefinition`.
+- [x] RabbitMQ consuming APIs, inbound consumers, inbound endpoints, inbound channel groups, runtime, transport message, and acknowledgement types move to `Usf.Transport.RabbitMq.Inbound`.
+- [x] `Usf.Transport.RabbitMq.Configuration` is removed; its types are assigned to the root, outbound, or inbound namespace according to responsibility.
+- [x] Tests and any benchmark or sample imports compile against the new RabbitMQ namespaces without compatibility shims for the old namespaces.
+- [x] XML documentation references and public API examples are updated to avoid stale namespace names. Run a Release build to verify as `<TreatWarningsAsErrors>` is enabled.
+- [x] Automated tests need to be updated and run.
 
 ## Technical Details
 

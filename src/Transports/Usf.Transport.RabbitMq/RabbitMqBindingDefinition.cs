@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Usf.Transport.RabbitMq.Configuration;
+namespace Usf.Transport.RabbitMq;
 
 public abstract record RabbitMqBindingDefinition(
     string SourceExchangeName,

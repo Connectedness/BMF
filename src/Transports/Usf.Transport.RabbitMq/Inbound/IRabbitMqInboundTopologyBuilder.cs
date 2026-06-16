@@ -2,14 +2,14 @@ using System;
 using Usf.Core.Messaging;
 using Usf.Core.Messaging.Inbound;
 
-namespace Usf.Transport.RabbitMq;
+namespace Usf.Transport.RabbitMq.Inbound;
 
 /// <summary>
 /// Configures a consume-only RabbitMQ topology. In addition to the shared surface of
 /// <see cref="IRabbitMqTopologyBuilder{TSelf}" />, this builder exposes consumers, consumer channel groups,
 /// the inbound pipeline, and the shutdown timeout — but no publishing configuration, so a topology
 /// configured through this interface cannot accidentally share its connection with publishers. Used by
-/// <see cref="RabbitMqTransportModule.AddRabbitMqInboundTopology(UsfBuilder, System.Action{Usf.Transport.RabbitMq.IRabbitMqInboundTopologyBuilder})" />
+/// <see cref="RabbitMqTransportModule.AddRabbitMqInboundTopology(UsfBuilder, System.Action{Usf.Transport.RabbitMq.Inbound.IRabbitMqInboundTopologyBuilder})" />
 /// .
 /// </summary>
 public interface IRabbitMqInboundTopologyBuilder : IRabbitMqTopologyBuilder<IRabbitMqInboundTopologyBuilder>

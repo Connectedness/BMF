@@ -6,7 +6,7 @@ using System.Globalization;
 using RabbitMQ.Client;
 using Usf.Core.Messaging.Inbound;
 
-namespace Usf.Transport.RabbitMq;
+namespace Usf.Transport.RabbitMq.Inbound;
 
 public sealed class RabbitMqTransportMessage : TransportMessage
 {

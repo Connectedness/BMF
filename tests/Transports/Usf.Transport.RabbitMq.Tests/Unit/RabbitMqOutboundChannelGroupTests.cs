@@ -14,13 +14,15 @@ using RabbitMQ.Client.Exceptions;
 using Usf.Core.Messaging;
 using Usf.Core.Messaging.Inbound;
 using Usf.Core.Messaging.Outbound;
-using Usf.Transport.RabbitMq.Configuration;
 using Usf.Transport.RabbitMq.Tests.TestSupport;
 using Xunit;
 
+using Usf.Transport.RabbitMq.Inbound;
+using Usf.Transport.RabbitMq.Outbound;
+
 namespace Usf.Transport.RabbitMq.Tests.Unit;
 
-public sealed class RabbitMqChannelGroupTests
+public sealed class RabbitMqOutboundChannelGroupTests
 {
     [Fact]
     public void RabbitMqTopologyBuilder_UsesImplicitPrivateChannelGroupsByDefault()
@@ -52,7 +54,7 @@ public sealed class RabbitMqChannelGroupTests
         configuration.DefaultPublisherConfirmTimeout.Should().Be(TimeSpan.FromSeconds(7));
         configuration.OutboundChannelGroups.Should().ContainSingle()
            .Which.Should().Be(
-                new RabbitMqChannelGroupDefinition(
+                new RabbitMqOutboundChannelGroupDefinition(
                     "confirmed",
                     3,
                     RabbitMqPublisherConfirmMode.Confirms,
@@ -325,7 +327,7 @@ public sealed class RabbitMqChannelGroupTests
             return default;
         };
 
-        await using var channelGroup = new RabbitMqChannelGroup(
+        await using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(channel.Object)
@@ -368,7 +370,7 @@ public sealed class RabbitMqChannelGroupTests
             throw new InvalidOperationException("Publish failed.");
         };
 
-        await using var channelGroup = new RabbitMqChannelGroup(
+        await using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(channels.Dequeue().Object)
@@ -403,7 +405,7 @@ public sealed class RabbitMqChannelGroupTests
         {
             BasicPublishAsyncHandler = token => new ValueTask(Task.Delay(Timeout.InfiniteTimeSpan, token))
         };
-        await using var channelGroup = new RabbitMqChannelGroup(
+        await using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(channel.Object),
@@ -442,7 +444,7 @@ public sealed class RabbitMqChannelGroupTests
         var channel = new TestRabbitMqChannel();
         channel.BasicPublishAsyncHandler =
             token => new ValueTask(Task.Delay(Timeout.InfiniteTimeSpan, token));
-        await using var channelGroup = new RabbitMqChannelGroup(
+        await using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(channel.Object),
@@ -476,7 +478,7 @@ public sealed class RabbitMqChannelGroupTests
         var channel = new TestRabbitMqChannel();
         var publishException = new PublishException(1, isReturn: true);
         channel.BasicPublishAsyncHandler = _ => throw publishException;
-        await using var channelGroup = new RabbitMqChannelGroup(
+        await using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(channel.Object)
@@ -513,7 +515,7 @@ public sealed class RabbitMqChannelGroupTests
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var channel = new TestRabbitMqChannel();
-        await using var channelGroup = new RabbitMqChannelGroup(
+        await using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(channel.Object)
@@ -549,7 +551,7 @@ public sealed class RabbitMqChannelGroupTests
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var channel = new TestRabbitMqChannel();
-        await using var channelGroup = new RabbitMqChannelGroup(
+        await using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(channel.Object)
@@ -581,7 +583,7 @@ public sealed class RabbitMqChannelGroupTests
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var channel = new TestRabbitMqChannel();
-        await using var channelGroup = new RabbitMqChannelGroup(
+        await using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(channel.Object)
@@ -612,7 +614,7 @@ public sealed class RabbitMqChannelGroupTests
         var cancellationToken = TestContext.Current.CancellationToken;
         var channel = new TestRabbitMqChannel();
         var factoryCallCount = 0;
-        await using var channelGroup = new RabbitMqChannelGroup(
+        await using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(channel.Object)
@@ -649,7 +651,7 @@ public sealed class RabbitMqChannelGroupTests
         var cancellationToken = TestContext.Current.CancellationToken;
         var channel = new TestRabbitMqChannel();
         var factoryCallCount = 0;
-        await using var channelGroup = new RabbitMqChannelGroup(
+        await using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(channel.Object)
@@ -684,7 +686,7 @@ public sealed class RabbitMqChannelGroupTests
     {
         var serializer = RabbitMqCloudEventsTestFactory.CreateSerializer();
         var registry = RabbitMqCloudEventsTestFactory.CreateRegistry();
-        using var channelGroup = new RabbitMqChannelGroup(
+        using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(new TestRabbitMqChannel().Object)
@@ -743,7 +745,7 @@ public sealed class RabbitMqChannelGroupTests
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var channel = new TestRabbitMqChannel();
-        await using var channelGroup = new RabbitMqChannelGroup(
+        await using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(channel.Object)
@@ -793,7 +795,7 @@ public sealed class RabbitMqChannelGroupTests
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var channel = new TestRabbitMqChannel();
-        await using var channelGroup = new RabbitMqChannelGroup(
+        await using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(channel.Object)
@@ -861,7 +863,7 @@ public sealed class RabbitMqChannelGroupTests
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var channel = new TestRabbitMqChannel();
-        await using var channelGroup = new RabbitMqChannelGroup(
+        await using var channelGroup = new RabbitMqOutboundChannelGroup(
             "group",
             1,
             _ => Task.FromResult(channel.Object)
@@ -1264,7 +1266,7 @@ public sealed class RabbitMqChannelGroupTests
                 [],
                 [],
                 [],
-                [new RabbitMqChannelGroupDefinition("invalid", 0)],
+                [new RabbitMqOutboundChannelGroupDefinition("invalid", 0)],
                 [],
                 [],
                 [],
@@ -1295,7 +1297,7 @@ public sealed class RabbitMqChannelGroupTests
                 [],
                 [],
                 [],
-                [new RabbitMqChannelGroupDefinition("$implicit:user-defined", 1)],
+                [new RabbitMqOutboundChannelGroupDefinition("$implicit:user-defined", 1)],
                 [],
                 [],
                 [],
@@ -1491,7 +1493,7 @@ public sealed class RabbitMqChannelGroupTests
         var disposalEvents = new List<string>();
         var channel = new TestRabbitMqChannel(disposalEvents, "channel-group");
         var connection = new TestRabbitMqConnection(disposalEvents);
-        var channelGroup = new RabbitMqChannelGroup("group", 1, _ => Task.FromResult(channel.Object));
+        var channelGroup = new RabbitMqOutboundChannelGroup("group", 1, _ => Task.FromResult(channel.Object));
         var topology = CreateTopology(
             new RabbitMqConnectionProvider(_ => Task.FromResult(connection.Object)),
             [channelGroup],
@@ -1510,7 +1512,7 @@ public sealed class RabbitMqChannelGroupTests
 
     private static RabbitMqTopology CreateTopology(
         RabbitMqConnectionProvider connectionProvider,
-        IReadOnlyList<RabbitMqChannelGroup> channelGroups,
+        IReadOnlyList<RabbitMqOutboundChannelGroup> channelGroups,
         int worstCaseChannelCount,
         string description
     )
@@ -1561,7 +1563,7 @@ public sealed class RabbitMqChannelGroupTests
         return compiler.Compile(Topology.DefaultName, configuration, connectionProvider);
     }
 
-    private static RabbitMqChannelGroup GetChannelGroup(OutboundTarget target)
+    private static RabbitMqOutboundChannelGroup GetChannelGroup(OutboundTarget target)
     {
         var rabbitMqTargetType = target.GetType();
         while (rabbitMqTargetType is not null &&
@@ -1572,7 +1574,7 @@ public sealed class RabbitMqChannelGroupTests
         }
 
         var field = rabbitMqTargetType!.GetField("_channelGroup", BindingFlags.Instance | BindingFlags.NonPublic);
-        return (RabbitMqChannelGroup) field!.GetValue(target)!;
+        return (RabbitMqOutboundChannelGroup) field!.GetValue(target)!;
     }
 
     private sealed class EmptyTopology : Topology

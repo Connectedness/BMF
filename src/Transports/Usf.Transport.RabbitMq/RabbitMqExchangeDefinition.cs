@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 
-namespace Usf.Transport.RabbitMq.Configuration;
+namespace Usf.Transport.RabbitMq;
 
-public sealed record RabbitMqQueueDefinition(
+public sealed record RabbitMqExchangeDefinition(
     string Name,
+    string Type,
     RabbitMqDeclareMode DeclareMode,
     bool Durable,
-    bool Exclusive,
     bool AutoDelete,
     IReadOnlyDictionary<string, object?> Arguments
 );

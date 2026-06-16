@@ -1,7 +1,7 @@
 using System;
 using RabbitMQ.Client;
 
-namespace Usf.Transport.RabbitMq;
+namespace Usf.Transport.RabbitMq.Inbound;
 
 public sealed class RabbitMqInboundChannelGroup
 {

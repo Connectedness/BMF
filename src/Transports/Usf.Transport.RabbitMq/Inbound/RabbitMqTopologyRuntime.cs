@@ -11,7 +11,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Usf.Core.Messaging.Inbound;
 
-namespace Usf.Transport.RabbitMq;
+namespace Usf.Transport.RabbitMq.Inbound;
 
 /// <summary>
 /// The active consumer runtime for a RabbitMQ topology that contains inbound endpoints. It opens consumer

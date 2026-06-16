@@ -1,7 +1,7 @@
 using System;
 using Usf.Core.Messaging.Inbound;
 
-namespace Usf.Transport.RabbitMq;
+namespace Usf.Transport.RabbitMq.Inbound;
 
 public abstract class RabbitMqInboundEndpoint : InboundEndpoint
 {

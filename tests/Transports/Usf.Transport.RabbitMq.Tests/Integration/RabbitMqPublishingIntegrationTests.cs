@@ -14,9 +14,10 @@ using RabbitMQ.Client.Exceptions;
 using Testcontainers.RabbitMq;
 using Usf.Core.Messaging;
 using Usf.Core.Messaging.Outbound;
-using Usf.Transport.RabbitMq.Configuration;
 using Usf.Transport.RabbitMq.Tests.TestSupport;
 using Xunit;
+
+using Usf.Transport.RabbitMq.Outbound;
 
 namespace Usf.Transport.RabbitMq.Tests.Integration;
 

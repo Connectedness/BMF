@@ -7,9 +7,8 @@ using RabbitMQ.Client.Exceptions;
 using Usf.Abstractions;
 using Usf.Core.Messaging;
 using Usf.Core.Messaging.Outbound;
-using Usf.Transport.RabbitMq.Configuration;
 
-namespace Usf.Transport.RabbitMq;
+namespace Usf.Transport.RabbitMq.Outbound;
 
 public abstract class RabbitMqOutboundTarget<TMessage> : OutboundTarget<TMessage>
 {
@@ -18,7 +17,7 @@ public abstract class RabbitMqOutboundTarget<TMessage> : OutboundTarget<TMessage
     /// </summary>
     public const string CloudEventsHeaderPrefix = "cloudEvents:";
 
-    private readonly RabbitMqChannelGroup _channelGroup;
+    private readonly RabbitMqOutboundChannelGroup _channelGroup;
     private readonly string _exchangeName;
     private readonly bool _isMandatory;
 
@@ -27,7 +26,7 @@ public abstract class RabbitMqOutboundTarget<TMessage> : OutboundTarget<TMessage
         IMessageSerializer serializer,
         IMessageContractRegistry messageContractRegistry,
         string topologyName,
-        RabbitMqChannelGroup channelGroup,
+        RabbitMqOutboundChannelGroup channelGroup,
         string exchangeName,
         bool isMandatory
     )
@@ -300,7 +299,7 @@ public sealed class RabbitMqFanoutOutboundTarget<TMessage> : RabbitMqOutboundTar
         IMessageSerializer serializer,
         IMessageContractRegistry messageContractRegistry,
         string topologyName,
-        RabbitMqChannelGroup channelGroup,
+        RabbitMqOutboundChannelGroup channelGroup,
         string exchangeName,
         bool isMandatory
     )
@@ -318,7 +317,7 @@ public abstract class RabbitMqRoutingKeyOutboundTarget<TMessage>
         IMessageSerializer serializer,
         IMessageContractRegistry messageContractRegistry,
         string topologyName,
-        RabbitMqChannelGroup channelGroup,
+        RabbitMqOutboundChannelGroup channelGroup,
         string exchangeName,
         bool isMandatory,
         string? constantRoutingKey,
@@ -419,7 +418,7 @@ public sealed class RabbitMqDirectOutboundTarget<TMessage> : RabbitMqRoutingKeyO
         IMessageSerializer serializer,
         IMessageContractRegistry messageContractRegistry,
         string topologyName,
-        RabbitMqChannelGroup channelGroup,
+        RabbitMqOutboundChannelGroup channelGroup,
         string exchangeName,
         bool isMandatory,
         string? constantRoutingKey,
@@ -445,7 +444,7 @@ public sealed class RabbitMqTopicOutboundTarget<TMessage> : RabbitMqRoutingKeyOu
         IMessageSerializer serializer,
         IMessageContractRegistry messageContractRegistry,
         string topologyName,
-        RabbitMqChannelGroup channelGroup,
+        RabbitMqOutboundChannelGroup channelGroup,
         string exchangeName,
         bool isMandatory,
         string? constantRoutingKey,
@@ -473,7 +472,7 @@ public sealed class RabbitMqHeadersOutboundTarget<TMessage> : RabbitMqOutboundTa
         IMessageSerializer serializer,
         IMessageContractRegistry messageContractRegistry,
         string topologyName,
-        RabbitMqChannelGroup channelGroup,
+        RabbitMqOutboundChannelGroup channelGroup,
         string exchangeName,
         bool isMandatory,
         IReadOnlyDictionary<string, object?> headers

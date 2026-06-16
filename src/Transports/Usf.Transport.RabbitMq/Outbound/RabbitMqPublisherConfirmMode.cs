@@ -1,4 +1,4 @@
-namespace Usf.Transport.RabbitMq.Configuration;
+namespace Usf.Transport.RabbitMq.Outbound;
 
 /// <summary>
 /// Configures RabbitMQ publisher confirmations for every channel in a channel group.

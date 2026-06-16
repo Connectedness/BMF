@@ -1,15 +1,14 @@
 using System;
 using Usf.Core.Messaging;
-using Usf.Transport.RabbitMq.Configuration;
 
-namespace Usf.Transport.RabbitMq;
+namespace Usf.Transport.RabbitMq.Outbound;
 
 /// <summary>
 /// Configures a publish-only RabbitMQ topology. In addition to the shared surface of
 /// <see cref="IRabbitMqTopologyBuilder{TSelf}" />, this builder exposes outbound targets,
 /// publisher channel groups, and publisher-confirm defaults — but no consumer configuration, so a topology
 /// configured through this interface cannot accidentally share its connection with consumers. Used by
-/// <see cref="RabbitMqTransportModule.AddRabbitMqOutboundTopology(UsfBuilder, System.Action{Usf.Transport.RabbitMq.IRabbitMqOutboundTopologyBuilder})" />
+/// <see cref="RabbitMqTransportModule.AddRabbitMqOutboundTopology(UsfBuilder, System.Action{Usf.Transport.RabbitMq.Outbound.IRabbitMqOutboundTopologyBuilder})" />
 /// .
 /// </summary>
 public interface IRabbitMqOutboundTopologyBuilder : IRabbitMqTopologyBuilder<IRabbitMqOutboundTopologyBuilder>

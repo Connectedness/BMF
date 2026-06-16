@@ -5,6 +5,8 @@ using FluentAssertions;
 using RabbitMQ.Client;
 using Xunit;
 
+using Usf.Transport.RabbitMq.Inbound;
+
 namespace Usf.Transport.RabbitMq.Tests.Unit;
 
 public sealed class RabbitMqTransportMessageTests

@@ -2,15 +2,14 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
-using Usf.Transport.RabbitMq.Configuration;
 
-namespace Usf.Transport.RabbitMq;
+namespace Usf.Transport.RabbitMq.Outbound;
 
-public sealed class RabbitMqChannelGroup : IAsyncDisposable, IDisposable
+public sealed class RabbitMqOutboundChannelGroup : IAsyncDisposable, IDisposable
 {
     private readonly IRabbitMqChannelPool _channelPool;
 
-    public RabbitMqChannelGroup(
+    public RabbitMqOutboundChannelGroup(
         string name,
         int maximumChannelCount,
         Func<CancellationToken, Task<IChannel>> channelFactory,

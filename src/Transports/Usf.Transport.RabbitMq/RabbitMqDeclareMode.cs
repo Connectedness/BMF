@@ -1,4 +1,4 @@
-namespace Usf.Transport.RabbitMq.Configuration;
+namespace Usf.Transport.RabbitMq;
 
 public enum RabbitMqDeclareMode
 {

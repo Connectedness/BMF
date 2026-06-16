@@ -11,6 +11,9 @@ using Usf.Core.Messaging;
 using Usf.Core.Messaging.Inbound;
 using Usf.Core.Messaging.Outbound;
 
+using Usf.Transport.RabbitMq.Inbound;
+using Usf.Transport.RabbitMq.Outbound;
+
 namespace Usf.Transport.RabbitMq;
 
 public static class RabbitMqTransportModule

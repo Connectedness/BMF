@@ -13,6 +13,8 @@ using Usf.Core.Messaging.Outbound;
 using Usf.Transport.RabbitMq.Tests.TestSupport;
 using Xunit;
 
+using Usf.Transport.RabbitMq.Inbound;
+
 namespace Usf.Transport.RabbitMq.Tests.Unit;
 
 public sealed class AddRabbitMqConsumeTopologyTests

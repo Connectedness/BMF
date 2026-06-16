@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Usf.Core.Messaging.Inbound;
 
-namespace Usf.Transport.RabbitMq;
+namespace Usf.Transport.RabbitMq.Inbound;
 
 public sealed class RabbitMqInboundConsumer
 {
