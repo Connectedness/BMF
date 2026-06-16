@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using RabbitMQ.Client;
 using Usf.Core.Messaging;
+using Usf.Core.Messaging.Inbound;
 using Usf.Transport.RabbitMq.Tests.TestSupport;
 using Xunit;
 

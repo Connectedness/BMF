@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Usf.Core.Messaging;
+using Usf.Core.Messaging.Outbound;
 using Usf.Core.Tests.Messaging.TestSupport;
 using Xunit;
 

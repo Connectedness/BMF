@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
-using Usf.Core.Messaging.Errors;
+using Usf.Core.Messaging.Inbound;
+using Usf.Core.Messaging.Outbound;
 
 namespace Usf.Core.Messaging;
 

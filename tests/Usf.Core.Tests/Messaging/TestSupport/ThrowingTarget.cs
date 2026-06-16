@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Usf.Core.Messaging;
+using Usf.Core.Messaging.Outbound;
 
 namespace Usf.Core.Tests.Messaging.TestSupport;
 

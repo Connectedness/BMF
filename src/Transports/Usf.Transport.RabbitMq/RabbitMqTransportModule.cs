@@ -8,7 +8,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using RabbitMQ.Client;
 using Usf.Core.Messaging;
-using Usf.Core.Messaging.Errors;
+using Usf.Core.Messaging.Inbound;
+using Usf.Core.Messaging.Outbound;
 
 namespace Usf.Transport.RabbitMq;
 

@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using Usf.Abstractions;
 using Usf.Core.Messaging;
+using Usf.Core.Messaging.Inbound;
+using Usf.Core.Messaging.Outbound;
 
 namespace Usf.Benchmarks;
 
@@ -113,15 +115,6 @@ public class TopologyPublisherMemoryBenchmark
                 Body
             );
             return new ValueTask<CloudEventEnvelope>(envelope);
-        }
-
-        public ValueTask<object?> DeserializeAsync(
-            CloudEventEnvelope envelope,
-            Type messageType,
-            CancellationToken cancellationToken = default
-        )
-        {
-            return new ValueTask<object?>((object?) null);
         }
     }
 }

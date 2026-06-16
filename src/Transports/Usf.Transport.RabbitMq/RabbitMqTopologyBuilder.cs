@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RabbitMQ.Client;
 using Usf.Core.Messaging;
+using Usf.Core.Messaging.Inbound;
 using Usf.Transport.RabbitMq.Configuration;
 
 namespace Usf.Transport.RabbitMq;

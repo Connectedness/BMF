@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using RabbitMQ.Client;
-using Usf.Core.Messaging;
+using Usf.Core.Messaging.Inbound;
 
 namespace Usf.Transport.RabbitMq;
 

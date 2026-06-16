@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using FluentAssertions;
-using Usf.Core.Messaging;
+using Usf.Core.Messaging.Outbound;
 using Xunit;
 
 namespace Usf.Core.Tests.Messaging;

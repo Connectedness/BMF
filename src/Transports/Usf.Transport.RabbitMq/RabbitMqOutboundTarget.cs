@@ -6,7 +6,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
 using Usf.Abstractions;
 using Usf.Core.Messaging;
-using Usf.Core.Messaging.Errors;
+using Usf.Core.Messaging.Outbound;
 using Usf.Transport.RabbitMq.Configuration;
 
 namespace Usf.Transport.RabbitMq;

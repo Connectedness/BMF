@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using Usf.Core.Messaging;
+using Usf.Core.Messaging.Outbound;
 
 namespace Usf.Core.Tests.Messaging.TestSupport;
 

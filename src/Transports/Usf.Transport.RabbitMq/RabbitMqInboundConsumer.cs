@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Usf.Core.Messaging;
+using Usf.Core.Messaging.Inbound;
 
 namespace Usf.Transport.RabbitMq;
 

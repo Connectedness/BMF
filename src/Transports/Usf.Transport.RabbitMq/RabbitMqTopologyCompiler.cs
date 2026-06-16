@@ -7,7 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using Usf.Core.Messaging;
-using Usf.Core.Messaging.Errors;
+using Usf.Core.Messaging.Inbound;
+using Usf.Core.Messaging.Outbound;
 using Usf.Transport.RabbitMq.Configuration;
 
 namespace Usf.Transport.RabbitMq;

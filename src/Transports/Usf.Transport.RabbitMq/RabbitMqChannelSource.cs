@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
-using Usf.Core.Messaging.Errors;
+using Usf.Core.Messaging;
 
 namespace Usf.Transport.RabbitMq;
 

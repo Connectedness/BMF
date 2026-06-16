@@ -7,6 +7,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Usf.Core.Messaging;
+using Usf.Core.Messaging.Inbound;
 using Xunit;
 
 namespace Usf.Core.Tests.Messaging;

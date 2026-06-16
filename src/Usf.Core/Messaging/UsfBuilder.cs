@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
+using Usf.Core.Messaging.Outbound;
 
 namespace Usf.Core.Messaging;
 

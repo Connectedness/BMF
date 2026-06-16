@@ -12,8 +12,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
 using Usf.Core.Messaging;
-using Usf.Core.Messaging.Errors;
-using Usf.Core.Messaging.Serialization;
+using Usf.Core.Messaging.Inbound;
+using Usf.Core.Messaging.Outbound;
 using Usf.Transport.RabbitMq.Configuration;
 using Usf.Transport.RabbitMq.Tests.TestSupport;
 using Xunit;
@@ -819,18 +819,18 @@ public sealed class RabbitMqChannelGroupTests
         using var parentActivity = new Activity("parent").SetIdFormat(ActivityIdFormat.W3C);
         parentActivity.TraceStateString = "vendor=value";
         parentActivity.AddBaggage("tenant", "tenant-activity").Start();
-        using var listener = new ActivityListener
+        using var listener = new ActivityListener();
+        listener.ShouldListenTo = source => source.Name == OutboundDiagnostics.ActivitySourceName;
+        listener.Sample = static (ref _) => ActivitySamplingResult.AllData;
+        listener.ActivityStarted = activity =>
         {
-            ShouldListenTo = source => source.Name == OutboundDiagnostics.ActivitySourceName,
-            Sample = static (ref _) => ActivitySamplingResult.AllData,
-            ActivityStarted = activity =>
+            if (activity.OperationName == "usf.outbound.publish" &&
+                // ReSharper disable AccessToDisposedClosure -- activity is listend to before disposal
+                activity.TraceId == parentActivity.TraceId &&
+                activity.ParentSpanId == parentActivity.SpanId)
+                // ReSharper restore AccessToDisposedClosure
             {
-                if (activity.OperationName == "usf.outbound.publish" &&
-                    activity.TraceId == parentActivity.TraceId &&
-                    activity.ParentSpanId == parentActivity.SpanId)
-                {
-                    producerActivity = activity;
-                }
+                producerActivity = activity;
             }
         };
         ActivitySource.AddActivityListener(listener);

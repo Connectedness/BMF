@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Usf.Core.Messaging;
+using Usf.Core.Messaging.Outbound;
 
 namespace Usf.Transport.RabbitMq;
 
@@ -108,7 +108,7 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage>
     /// Mandatory routing requires publisher confirmations on the target's effective channel group so the
     /// returned message can be correlated with its publish. A mandatory target whose effective group uses
     /// <see cref="Configuration.RabbitMqPublisherConfirmMode.FireAndForget" /> is rejected at compile time
-    /// through <see cref="Usf.Core.Messaging.Errors.TopologyValidationException" />; select
+    /// through <see cref="Usf.Core.Messaging.TopologyValidationException" />; select
     /// <see cref="Configuration.RabbitMqPublisherConfirmMode.Confirms" /> on the group (see
     /// <c>RabbitMqTopologyBuilder.ChannelGroup</c>) or leave the topology-level default
     /// (<c>WithDefaultPublisherConfirmMode</c>) on confirms. Confirmation tracking serializes outstanding
