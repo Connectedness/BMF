@@ -3,7 +3,7 @@
 *The Brilliant Messaging Framework*
 
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](https://github.com/Connectedness/BMF/blob/main/LICENSE)
-[![NuGet](https://img.shields.io/badge/NuGet-0.1.0-blue.svg?style=for-the-badge)](https://www.nuget.org/packages?q=BMF)
+[![NuGet](https://img.shields.io/nuget/v/Bmf.Core?style=for-the-badge&color=blue)](https://www.nuget.org/packages/Bmf.Core)
 [![Documentation](https://img.shields.io/badge/Docs-Changelog-yellowgreen.svg?style=for-the-badge)](https://github.com/Connectedness/BMF/releases)
 
 BMF is the messaging framework that lets you keep control! No automatic, obscure generation of broker resources, no hidden dependencies, no magic. Define your topologies, publish messages and subscribe to them. Promotes CloudEvents. That's it!
