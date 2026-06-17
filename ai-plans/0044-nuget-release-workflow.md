@@ -19,8 +19,8 @@ Issue: [#44](https://github.com/Connectedness/BMF/issues/44)
 - [x] All assemblies included in NuGet packages are signed.
 - [x] Signed Release builds suppress the benign CS8002 warning caused by the non-strong-named
       `Generator.Equals.Runtime` dependency.
-- [x] NuGet packages are created for every project under `./src/` that does not set `IsPackable=false`.
-- [x] All projects outside `./src/` set `IsPackable=false` so release packing only produces
+- [x] NuGet packages are created for every packable project in `BMF.slnx`.
+- [x] All projects that should not publish packages set `IsPackable=false` so solution-level packing only produces
       library packages.
 - [x] The workflow decodes the base64-encoded `BMF_SNK` secret to `./BMF.snk` before building or
       packing signed assemblies.
@@ -52,11 +52,10 @@ value, the workflow restores, builds, signs, packs, and uploads package artifact
 when `publish` is `true`, the publish job pushes packages to nuget.org.
 
 Use `${{ github.event.inputs.version }}` as the package version during build/pack. Use `dotnet
-restore`, `dotnet build --configuration Release`, and explicit pack commands for each publishable
-project under `./src/` shaped like:
+restore`, `dotnet build --configuration Release`, and a solution-level pack command shaped like:
 
 ```bash
-dotnet pack <src-project.csproj> --configuration Release --no-restore --disable-build-servers /m:1 /nodeReuse:false /p:SignAssembly=true /p:AssemblyOriginatorKeyFile=${{ github.workspace }}/BMF.snk /p:ContinuousIntegrationBuild=true /p:IncludeSymbols=true /p:PackageRequireLicenseAcceptance=false /p:SymbolPackageFormat=snupkg /p:Version=<version>
+dotnet pack ./BMF.slnx --configuration Release --no-restore /p:SignAssembly=true /p:AssemblyOriginatorKeyFile=${{ github.workspace }}/BMF.snk /p:ContinuousIntegrationBuild=true /p:IncludeSymbols=true /p:PackageRequireLicenseAcceptance=false /p:SymbolPackageFormat=snupkg /p:Version=<version>
 ```
 
 Replace `<version>` with `${{ github.event.inputs.version }}` in the workflow. Pass the signing key as
@@ -86,11 +85,11 @@ even when restore, build, pack, or publish fails. Because signing is applied onl
 parameters, debug, test, benchmark, and local builds never sign and never require the key.
 
 Publishable projects should have stable package metadata (`PackageId`, authors, description,
-license/readme metadata, repository URL, symbols/source-link settings if applicable). Non-package
-projects outside `./src/` must set `IsPackable=false`: set it once in the existing
-`tests/Directory.Build.props` (which covers both test projects) and, because `benchmarks/` has no
-`Directory.Build.props`, either add one that sets `IsPackable=false` or set the property directly on
-`benchmarks/Bmf.Benchmarks/Bmf.Benchmarks.csproj`. The root `Directory.Build.props` and
+license/readme metadata, repository URL, symbols/source-link settings if applicable). Any project in
+`BMF.slnx` that should not publish a package must set `IsPackable=false`: set it once in the
+existing `tests/Directory.Build.props` (which covers both test projects) and, because `benchmarks/`
+has no `Directory.Build.props`, either add one that sets `IsPackable=false` or set the property
+directly on `benchmarks/Bmf.Benchmarks/Bmf.Benchmarks.csproj`. The root `Directory.Build.props` and
 `src/Directory.Build.props` already exist; keep signing out of all of them (see above). The
 publishing step should push the generated `.nupkg` files with `dotnet nuget push` and fail clearly
 if a package cannot be published.

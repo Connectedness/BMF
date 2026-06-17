@@ -61,25 +61,18 @@ jobs:
         run: dotnet build BMF.slnx --configuration Release --no-restore /p:ContinuousIntegrationBuild=true
 
       - name: Pack
-        run: |
-          set -euo pipefail
-
-          find src -name '*.csproj' -print | sort | while IFS= read -r project; do
-            dotnet pack "${project}" \
-              --configuration Release \
-              --no-restore \
-              --disable-build-servers \
-              --output "${{ env.PACKAGE_OUTPUT }}" \
-              /m:1 \
-              /nodeReuse:false \
-              /p:SignAssembly=true \
-              /p:AssemblyOriginatorKeyFile=${{ github.workspace }}/BMF.snk \
-              /p:ContinuousIntegrationBuild=true \
-              /p:IncludeSymbols=true \
-              /p:PackageRequireLicenseAcceptance=false \
-              /p:SymbolPackageFormat=snupkg \
-              /p:Version=${{ github.event.inputs.version }}
-          done
+        run: >
+          dotnet pack ./BMF.slnx
+          --configuration Release
+          --no-restore
+          --output "${{ env.PACKAGE_OUTPUT }}"
+          /p:SignAssembly=true
+          /p:AssemblyOriginatorKeyFile=${{ github.workspace }}/BMF.snk
+          /p:ContinuousIntegrationBuild=true
+          /p:IncludeSymbols=true
+          /p:PackageRequireLicenseAcceptance=false
+          /p:SymbolPackageFormat=snupkg
+          /p:Version=${{ github.event.inputs.version }}
 
       - name: Upload package artifacts
         uses: actions/upload-artifact@v7
