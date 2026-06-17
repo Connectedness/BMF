@@ -194,23 +194,38 @@ declared, you'll know immediately — not three deploys later.
 ### Publishing
 
 `IMessagePublisher` is your outbound surface. The common call is
-`PublishMessageAsync(message)`: BMF looks up the message type's **outbound target**
-in the topology, builds the CloudEvent envelope, serializes the payload, and hands it
-to the transport.
+`PublishMessageAsync(message)`: BMF looks up the message type's outbound target in the
+topology, builds the CloudEvent envelope, serializes the payload, and hands it to the
+transport. You can supply per-call CloudEvents metadata when a single send needs to
+override the defaults, or name an explicit target when a type has more than one.
 
-An *outbound target* is the routing decision you configured with `Publish<T>` — which
-exchange, and how to route to it:
+### Outbound targets
+
+An *outbound target* is the routing-and-shaping decision you attach to a message type
+with `Publish<T>` (or `PublishNamed<T>` to register several under different names — handy
+when the same event fans out to multiple exchanges). First, how it routes:
 
 - `ToFanoutExchange(exchange)` — broadcast to every bound queue.
 - `ToDirectExchange(exchange, routingKey)` — route by an exact key (fixed, or derived
   per message with a `Func<T, string>`).
 - `ToTopicExchange(exchange, routingKey)` — route by a dot-delimited topic pattern.
-- `ToHeadersExchange(exchange)` — route on `WithHeader(...)` values instead of a key.
+- `ToHeadersExchange(exchange)` — route on header values instead of a key.
 
-You can register more than one target for the same type under different names (handy
-when the same event fans out to several exchanges) and pick one explicitly at publish
-time, or supply per-call CloudEvents metadata when you need to override the defaults
-for a single send.
+Then, how it's shaped. Each target can override the serializer with
+`WithSerializer<T>()` (the default emits CloudEvents), attach fixed `WithHeader(...)`
+values (which also drive routing on a headers exchange), pin itself to a named channel
+group with `UseChannelGroup(...)`, and demand delivery with `Mandatory()` — see
+[Publisher confirms and mandatory routing](#publisher-confirms-and-mandatory-routing).
+
+```csharp
+rabbit
+    .Publish<OrderPlaced>(target =>
+        target
+            .ToTopicExchange("orders", "shop.order.placed")
+            .WithHeader("x-tenant", "acme")
+            .Mandatory()
+    );
+```
 
 ### Consuming
 
@@ -231,6 +246,38 @@ rabbit
 channels, and `Concurrency` controls how many deliveries a single channel dispatches
 in parallel. Handler types are auto-registered as scoped; register the concrete type
 yourself beforehand if you want a different lifetime.
+
+### Customizing the inbound pipeline
+
+The journey from a raw delivery to your handler runs through three swappable stages, so
+you can adapt BMF to non-CloudEvents producers or weave in cross-cutting concerns:
+
+- **Inspector** — resolves a wire message to a known contract. The default reads the
+  CloudEvents `type` attribute to pick the discriminator and message type; swap it per
+  consumer with `UseInspector<T>()` (an `IInboundMessageInspector`) when messages don't
+  carry CloudEvents metadata.
+- **Deserializer** — turns the body into your message type. The default decodes the
+  payload codec (UTF-8 JSON); override it per handler via the `Handle<,>` configuration
+  with `WithDeserializer<T>()` (an `IMessageDeserializer`), or replace the deserialization
+  stage for the whole topology with `UseDeserializationMiddleware<T>()`.
+- **Middleware** — wraps the handler with cross-cutting stages (logging, metrics,
+  transactions). Add your own `IMessageMiddleware` with
+  `ConfigureInboundPipeline(pipeline => pipeline.UseMiddleware<T>())`; each stage decides
+  whether and when to call the next.
+
+```csharp
+rabbit
+    .ConfigureInboundPipeline(pipeline => pipeline.UseMiddleware<LoggingMiddleware>())
+    .Consume(
+        "orders-processing",
+        consumer => consumer
+            .UseInspector<LegacyHeaderInspector>()
+            .Handle<OrderPlaced, OrderPlacedHandler>(handler => handler
+                .WithDeserializer<XmlMessageDeserializer>()
+                .ManualAck()
+            )
+    );
+```
 
 ### Acknowledgements
 
