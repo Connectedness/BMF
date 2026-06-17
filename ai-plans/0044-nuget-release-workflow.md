@@ -11,24 +11,24 @@ Issue: [#44](https://github.com/Connectedness/BMF/issues/44)
 
 ## Acceptance Criteria
 
-- [ ] A manually triggered GitHub Actions workflow exists for NuGet releases.
-- [ ] The workflow exposes a required `version` input on `workflow_dispatch`, defaulting to `0.1.0`.
-- [ ] The workflow builds BMF in Release configuration.
-- [ ] The root `Directory.Build.props` defines NuGet/package metadata with `<Copyright>`,
+- [x] A manually triggered GitHub Actions workflow exists for NuGet releases.
+- [x] The workflow exposes a required `version` input on `workflow_dispatch`, defaulting to `0.1.0`.
+- [x] The workflow builds BMF in Release configuration.
+- [x] The root `Directory.Build.props` defines NuGet/package metadata with `<Copyright>`,
       `<Company>`, and `<Authors>`, but does not define `<Version>`.
-- [ ] All assemblies included in NuGet packages are signed.
+- [x] All assemblies included in NuGet packages are signed.
 - [x] Signed Release builds suppress the benign CS8002 warning caused by the non-strong-named
       `Generator.Equals.Runtime` dependency.
-- [ ] NuGet packages are created for every project under `./src/` that does not set `IsPackable=false`.
-- [ ] All projects outside `./src/` set `IsPackable=false` so solution-level packing only produces
+- [x] NuGet packages are created for every project under `./src/` that does not set `IsPackable=false`.
+- [x] All projects outside `./src/` set `IsPackable=false` so release packing only produces
       library packages.
-- [ ] The workflow decodes the base64-encoded `BMF_SNK` secret to `./BMF.snk` before building or
+- [x] The workflow decodes the base64-encoded `BMF_SNK` secret to `./BMF.snk` before building or
       packing signed assemblies.
-- [ ] The workflow removes `./BMF.snk` from the runner filesystem even when an earlier step fails.
+- [x] The workflow removes `./BMF.snk` from the runner filesystem even when an earlier step fails.
 - [x] `BMF.snk` is listed in `.gitignore` so the signing key is never committed from a working tree.
-- [ ] Package publishing uses NuGet trusted publishing with GitHub OIDC instead of a long-lived API key.
-- [ ] The workflow publishes packages to `nuget.org` through the trusted publishing temporary API key.
-- [ ] A non-publishing verification path restores, builds, and creates signed package artifacts in
+- [x] Package publishing uses NuGet trusted publishing with GitHub OIDC instead of a long-lived API key.
+- [x] The workflow publishes packages to `nuget.org` through the trusted publishing temporary API key.
+- [x] A non-publishing verification path restores, builds, and creates signed package artifacts in
       Release configuration without pushing to `nuget.org`.
 
 ## Technical Details
@@ -47,11 +47,16 @@ on:
         default: '0.1.0'
 ```
 
+The workflow also has a manual `publish` boolean input that defaults to `false`. With the default
+value, the workflow restores, builds, signs, packs, and uploads package artifacts without publishing;
+when `publish` is `true`, the publish job pushes packages to nuget.org.
+
 Use `${{ github.event.inputs.version }}` as the package version during build/pack. Use `dotnet
-restore`, `dotnet build --configuration Release`, and an explicit pack command shaped like:
+restore`, `dotnet build --configuration Release`, and explicit pack commands for each publishable
+project under `./src/` shaped like:
 
 ```bash
-dotnet pack ./BMF.slnx --configuration Release /p:SignAssembly=true /p:AssemblyOriginatorKeyFile=${{ github.workspace }}/BMF.snk /p:ContinuousIntegrationBuild=true /p:PackageRequireLicenseAcceptance=false /p:SymbolPackageFormat=snupkg /p:Version=<version>
+dotnet pack <src-project.csproj> --configuration Release --no-restore --disable-build-servers /m:1 /nodeReuse:false /p:SignAssembly=true /p:AssemblyOriginatorKeyFile=${{ github.workspace }}/BMF.snk /p:ContinuousIntegrationBuild=true /p:IncludeSymbols=true /p:PackageRequireLicenseAcceptance=false /p:SymbolPackageFormat=snupkg /p:Version=<version>
 ```
 
 Replace `<version>` with `${{ github.event.inputs.version }}` in the workflow. Pass the signing key as
@@ -82,13 +87,13 @@ parameters, debug, test, benchmark, and local builds never sign and never requir
 
 Publishable projects should have stable package metadata (`PackageId`, authors, description,
 license/readme metadata, repository URL, symbols/source-link settings if applicable). Non-package
-projects outside `./src/` must set `IsPackable=false` before solution-level packing is used: set it
-once in the existing `tests/Directory.Build.props` (which covers both test projects) and, because
-`benchmarks/` has no `Directory.Build.props`, either add one that sets `IsPackable=false` or set the
-property directly on `benchmarks/Bmf.Benchmarks/Bmf.Benchmarks.csproj`. The root `Directory.Build.props`
-and `src/Directory.Build.props` already exist; keep signing out of all of them (see above). The
-publishing step should push the generated `.nupkg` files with `dotnet nuget push` and fail clearly if a
-package cannot be published.
+projects outside `./src/` must set `IsPackable=false`: set it once in the existing
+`tests/Directory.Build.props` (which covers both test projects) and, because `benchmarks/` has no
+`Directory.Build.props`, either add one that sets `IsPackable=false` or set the property directly on
+`benchmarks/Bmf.Benchmarks/Bmf.Benchmarks.csproj`. The root `Directory.Build.props` and
+`src/Directory.Build.props` already exist; keep signing out of all of them (see above). The
+publishing step should push the generated `.nupkg` files with `dotnet nuget push` and fail clearly
+if a package cannot be published.
 
 Use NuGet trusted publishing rather than a stored NuGet API key. The release job needs
 `permissions: id-token: write` so GitHub Actions can issue an OIDC token. Shortly before pushing
