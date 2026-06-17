@@ -57,9 +57,6 @@ jobs:
       - name: Restore
         run: dotnet restore BMF.slnx /p:ContinuousIntegrationBuild=true
 
-      - name: Build
-        run: dotnet build BMF.slnx --configuration Release --no-restore /p:ContinuousIntegrationBuild=true
-
       - name: Pack
         run: >
           dotnet pack ./BMF.slnx

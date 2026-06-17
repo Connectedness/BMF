@@ -51,8 +51,9 @@ The workflow also has a manual `publish` boolean input that defaults to `false`.
 value, the workflow restores, builds, signs, packs, and uploads package artifacts without publishing;
 when `publish` is `true`, the publish job pushes packages to nuget.org.
 
-Use `${{ github.event.inputs.version }}` as the package version during build/pack. Use `dotnet
-restore`, `dotnet build --configuration Release`, and a solution-level pack command shaped like:
+Use `${{ github.event.inputs.version }}` as the package version during pack. Run `dotnet restore`
+first, then run a solution-level `dotnet pack` command shaped like this; do not add a separate
+`dotnet build` step because `dotnet pack` builds the Release outputs:
 
 ```bash
 dotnet pack ./BMF.slnx --configuration Release --no-restore /p:SignAssembly=true /p:AssemblyOriginatorKeyFile=${{ github.workspace }}/BMF.snk /p:ContinuousIntegrationBuild=true /p:IncludeSymbols=true /p:PackageRequireLicenseAcceptance=false /p:SymbolPackageFormat=snupkg /p:Version=<version>
@@ -111,7 +112,7 @@ that the package graph cannot be installed into the GAC, which is irrelevant for
 consumption. Suppress CS8002 centrally via `<NoWarn>` in the root `Directory.Build.props` so it
 covers `Bmf.Core` and every project that transitively references `Generator.Equals.Runtime`.
 
-Validation should include a Release restore/build and package creation path that can be exercised
+Validation should include a Release restore/pack package creation path that can be exercised
 without publishing. If the publish workflow itself cannot be fully tested without live credentials,
 factor packaging/signing logic into scripts or MSBuild targets that can be checked by regular CI and
 produce signed `.nupkg`/`.snupkg` artifacts without invoking `dotnet nuget push`. No separate automated
