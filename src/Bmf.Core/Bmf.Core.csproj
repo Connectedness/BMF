@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageId>BMF.Core</PackageId>
+    <PackageId>Bmf.Core</PackageId>
     <Description>The Brilliant Messaging Framework – Core</Description>
   </PropertyGroup>
 
