@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BMF · Logo — Concept 1: The Explicit Route</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <nav class="topnav">
+      <span class="topnav-brand">BMF · LOGO</span>
+      <div class="topnav-links">
+        <a href="/index.html" class="active">Concept 1 · Explicit Route</a>
+        <a href="/concept2.html">Concept 2 · Controlled Flow</a>
+        <a href="/concept3.html">Concept 3 · The Pulse</a>
+      </div>
+    </nav>
+    <header class="hero">
+      <div class="hero-mark">
+        <!-- Primary monogram (M built from an explicit route) -->
+        <svg class="logo logo--accent" viewBox="0 0 96 80" fill="none" aria-label="BMF monogram">
+          <path d="M18 64 V16 L48 32 L78 16 V64" class="route" stroke-width="8"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+          <circle cx="18" cy="64" r="8" class="node"/>
+          <circle cx="78" cy="64" r="8" class="node"/>
+        </svg>
+      </div>
+      <h1>BMF</h1>
+      <p class="tagline">Explicit Messaging. No Magic.</p>
+      <p class="concept-label">Concept 1 — The Explicit Route</p>
+    </header>
+
+    <main>
+      <section class="panel">
+        <h2>The idea</h2>
+        <p>
+          <code>&#9679;&#9472;&#9472;&#9472;&#9670;&#9472;&#9472;&#9472;&#9679;</code> —
+          two explicit <strong>endpoints</strong> (circles) connected through a central
+          <strong>routing exchange</strong> (diamond). Every node and every connection is
+          drawn on purpose. That <em>is</em> BMF: you declare the topology, nothing is hidden.
+        </p>
+        <p>
+          The primary mark folds this route into an <strong>M</strong>: the message enters at
+          the left endpoint, climbs, is routed through the diamond at the central junction, and
+          descends to the right endpoint.
+        </p>
+      </section>
+
+      <section class="panel">
+        <h2>Tune it live</h2>
+        <p>
+          Adjust the base line thickness and the diamond size and watch every size update in
+          real time — handy for checking how the mark holds up at favicon sizes.
+        </p>
+        <p class="hint">Defaults: variant A · base thickness 8.0 · diamond size 17.0</p>
+        <div class="tuner">
+          <div class="tuner-controls">
+            <div class="variant-picker">
+              <span class="control-label">Variant</span>
+              <div class="variant-btns">
+                <button class="variant-btn active" data-variant="A">A</button>
+                <button class="variant-btn" data-variant="B">B</button>
+                <button class="variant-btn" data-variant="C">C</button>
+              </div>
+            </div>
+            <label class="control">
+              <span class="control-label">Base thickness · <b id="thickness-val">8.0</b></span>
+              <input type="range" id="thickness" min="3" max="18" step="0.5" />
+            </label>
+            <label class="control">
+              <span class="control-label">Diamond size · <b id="diamond-val">17.0</b></span>
+              <input type="range" id="diamond" min="9" max="26" step="0.5" />
+            </label>
+          </div>
+
+          <div class="tuner-previews">
+            <figure class="swatch swatch--light tuner-hero">
+              <svg class="tune-svg logo--accent" viewBox="0 0 96 80" fill="none" width="150" height="125"></svg>
+              <figcaption>display</figcaption>
+            </figure>
+
+            <figure class="swatch swatch--light favicon-previews">
+              <svg class="tune-svg logo--accent" width="64" height="64" viewBox="0 0 96 80" fill="none"></svg>
+              <svg class="tune-svg logo--accent" width="32" height="32" viewBox="0 0 96 80" fill="none"></svg>
+              <svg class="tune-svg logo--accent" width="16" height="16" viewBox="0 0 96 80" fill="none"></svg>
+              <figcaption>64 · 32 · 16 px · light</figcaption>
+            </figure>
+
+            <figure class="swatch swatch--dark favicon-previews">
+              <svg class="tune-svg logo--mono-light" width="32" height="32" viewBox="0 0 96 80" fill="none"></svg>
+              <svg class="tune-svg logo--mono-light" width="16" height="16" viewBox="0 0 96 80" fill="none"></svg>
+              <figcaption>32 · 16 px · dark</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Variant A · vertex junction</h2>
+        <p>The diagonals meet at the diamond's top vertex — one clean peak.</p>
+        <div class="grid">
+          <figure class="swatch swatch--light">
+            <svg class="logo logo--accent" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L48 32 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <figcaption>Color · graphite + teal</figcaption>
+          </figure>
+          <figure class="swatch swatch--light">
+            <svg class="logo logo--mono-dark" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L48 32 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <figcaption>Monochrome · dark on light</figcaption>
+          </figure>
+          <figure class="swatch swatch--dark">
+            <svg class="logo logo--mono-light" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L48 32 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <figcaption>Monochrome · light on dark</figcaption>
+          </figure>
+        </div>
+        <div class="grid">
+          <figure class="swatch swatch--light favicon-previews">
+            <svg class="logo--accent" width="64" height="64" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L48 32 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <svg class="logo--accent" width="32" height="32" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L48 32 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <svg class="logo--accent" width="16" height="16" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L48 32 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <figcaption>64 · 32 · 16 px</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Variant B · face junction</h2>
+        <p>
+          The diagonals dock into the middle of the diamond's upper-left and upper-right edges,
+          leaving the exchange's peak visible between the incoming routes.
+        </p>
+        <div class="grid">
+          <figure class="swatch swatch--light">
+            <svg class="logo logo--accent" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L39.5 35.5 M56.5 35.5 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <figcaption>Color · graphite + teal</figcaption>
+          </figure>
+          <figure class="swatch swatch--light">
+            <svg class="logo logo--mono-dark" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L39.5 35.5 M56.5 35.5 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <figcaption>Monochrome · dark on light</figcaption>
+          </figure>
+          <figure class="swatch swatch--dark">
+            <svg class="logo logo--mono-light" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L39.5 35.5 M56.5 35.5 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <figcaption>Monochrome · light on dark</figcaption>
+          </figure>
+        </div>
+        <div class="grid">
+          <figure class="swatch swatch--light favicon-previews">
+            <svg class="logo--accent" width="64" height="64" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L39.5 35.5 M56.5 35.5 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <svg class="logo--accent" width="32" height="32" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L39.5 35.5 M56.5 35.5 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <svg class="logo--accent" width="16" height="16" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L39.5 35.5 M56.5 35.5 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <figcaption>64 · 32 · 16 px</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Variant C · raised exchange</h2>
+        <p>
+          Variant B with the diamond lifted up so it is no longer centered between the two
+          vertical strokes. The diagonals drop less, so the M's middle lines read flatter.
+        </p>
+        <div class="grid">
+          <figure class="swatch swatch--light">
+            <svg class="logo logo--accent" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L39.5 29.5 M56.5 29.5 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="26" width="24" height="24" rx="3" transform="rotate(45 48 38)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <figcaption>Color · graphite + teal</figcaption>
+          </figure>
+          <figure class="swatch swatch--light">
+            <svg class="logo logo--mono-dark" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L39.5 29.5 M56.5 29.5 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="26" width="24" height="24" rx="3" transform="rotate(45 48 38)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <figcaption>Monochrome · dark on light</figcaption>
+          </figure>
+          <figure class="swatch swatch--dark">
+            <svg class="logo logo--mono-light" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L39.5 29.5 M56.5 29.5 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="26" width="24" height="24" rx="3" transform="rotate(45 48 38)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <figcaption>Monochrome · light on dark</figcaption>
+          </figure>
+        </div>
+        <div class="grid">
+          <figure class="swatch swatch--light favicon-previews">
+            <svg class="logo--accent" width="64" height="64" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L39.5 29.5 M56.5 29.5 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="26" width="24" height="24" rx="3" transform="rotate(45 48 38)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <svg class="logo--accent" width="32" height="32" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L39.5 29.5 M56.5 29.5 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="26" width="24" height="24" rx="3" transform="rotate(45 48 38)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <svg class="logo--accent" width="16" height="16" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L39.5 29.5 M56.5 29.5 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="26" width="24" height="24" rx="3" transform="rotate(45 48 38)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <figcaption>64 · 32 · 16 px</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Wordmark lockup</h2>
+        <div class="grid">
+          <figure class="swatch swatch--light wordmark-row">
+            <svg class="logo logo--accent" viewBox="0 0 96 80" fill="none">
+              <path d="M18 64 V16 L48 32 L78 16 V64" class="route" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="36" y="32" width="24" height="24" rx="3" transform="rotate(45 48 44)" class="exchange"/>
+              <circle cx="18" cy="64" r="8" class="node"/>
+              <circle cx="78" cy="64" r="8" class="node"/>
+            </svg>
+            <div class="wordmark-text">
+              <span class="wordmark-name">BMF</span>
+              <span class="wordmark-sub">Explicit Messaging. No Magic.</span>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Palette</h2>
+        <p class="hint">Pick any colour — the page and the logos update live.</p>
+        <p class="hint">Defaults: Graphite #1F2937 · Teal #14B8A6 · Paper #FFFFFF</p>
+        <div class="palette">
+          <label class="chip" data-var="--graphite">
+            <input type="color" value="#1F2937" />
+            <span class="chip-name">Graphite</span>
+            <code class="chip-hex">#1F2937</code>
+          </label>
+          <label class="chip" data-var="--teal">
+            <input type="color" value="#14B8A6" />
+            <span class="chip-name">Teal · events</span>
+            <code class="chip-hex">#14B8A6</code>
+          </label>
+          <label class="chip" data-var="--paper">
+            <input type="color" value="#FFFFFF" />
+            <span class="chip-name">Paper</span>
+            <code class="chip-hex">#FFFFFF</code>
+          </label>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>BMF — The Brilliant Messaging Framework · logo exploration</p>
+    </footer>
+    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/palette.js"></script>
+  </body>
+</html>
