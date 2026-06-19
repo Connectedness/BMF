@@ -8,11 +8,33 @@ import { buildMark, DEFAULTS } from './pulse-tuner.js';
 
 const SIZES = [16, 32, 64, 128, 256, 512];
 
-// The mark is framed exactly like the NuGet icon: scale the (non-square) mark
-// so its longer side fills the canvas minus an 8/128 margin, then centre it —
-// so the 128px export here is pixel-identical to design/logo-128x128.png.
+// The mark has 3-fold rotational symmetry about its hub at (32, 32); that hub
+// is the visual centre, so we frame on it (not on the bounding box) — placing
+// (32, 32) at the canvas centre and scaling so the furthest reach to a bbox
+// edge just meets an 8/128 margin, leaving every other side to clear it.
+//
+// Straight up, the mark reaches much further up (one node) than down (two), so
+// the hub sits high in its box. Tilting it 15° is the orientation that minimises
+// the bounding box — it packs tightest and roughly halves the top/bottom gap,
+// landing on a clean diagonal symmetry (top reach = left, bottom = right).
 const MARGIN_FRACTION = 8 / 128;
-const BBOX = { x: 7.45, y: 4.5, w: 49.1, h: 44 }; // Reuleaux @ defaults, 64-space
+const CENTER = 32;
+const ROTATION = 15; // degrees, clockwise about the hub
+const NODE_RING = 22; // node-centre distance from the hub
+const NODE_R = 5.5; // node radius
+const NODE_ANGLES = [-90, 30, 150]; // node bearings before rotation
+// Furthest reach from the hub to a bounding-box edge in the rotated mark. The
+// nodes' disks dominate the box, so this is the largest |x|/|y| node offset
+// (over all four sides) plus the node radius.
+const HALF_EXTENT =
+  NODE_R +
+  NODE_RING *
+    Math.max(
+      ...NODE_ANGLES.flatMap((a) => {
+        const r = ((a + ROTATION) * Math.PI) / 180;
+        return [Math.abs(Math.cos(r)), Math.abs(Math.sin(r))];
+      })
+    );
 
 const VARIANTS = [
   {
@@ -56,12 +78,8 @@ const cssVar = (name) =>
 // baked in, the mark scaled + centred into a `size`×`size` canvas.
 function exportSvg(variant, size, transparent) {
   const margin = size * MARGIN_FRACTION;
-  const area = size - 2 * margin;
-  const scale = area / Math.max(BBOX.w, BBOX.h);
-  const sw = BBOX.w * scale;
-  const sh = BBOX.h * scale;
-  const tx = (size - sw) / 2 - scale * BBOX.x;
-  const ty = (size - sh) / 2 - scale * BBOX.y;
+  const scale = (size / 2 - margin) / HALF_EXTENT;
+  const offset = size / 2 - CENTER * scale; // puts the hub at the canvas centre
 
   const colors = { struct: cssVar(variant.struct), hub: cssVar(variant.hub) };
   const inner = buildMark({ variant: 'reuleaux', ...DEFAULTS, colors });
@@ -72,7 +90,8 @@ function exportSvg(variant, size, transparent) {
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" ` +
     `viewBox="0 0 ${size} ${size}" fill="none">${bg}` +
-    `<g transform="translate(${tx},${ty}) scale(${scale})">${inner}</g></svg>`
+    `<g transform="translate(${offset},${offset}) scale(${scale}) ` +
+    `rotate(${ROTATION} ${CENTER} ${CENTER})">${inner}</g></svg>`
   );
 }
 
@@ -202,7 +221,9 @@ for (const variant of VARIANTS) {
   svg.setAttribute('height', '104');
   svg.setAttribute('viewBox', '0 0 64 64');
   svg.setAttribute('fill', 'none');
-  svg.innerHTML = buildMark({ variant: 'reuleaux', ...DEFAULTS });
+  svg.innerHTML = `<g transform="rotate(${ROTATION} ${CENTER} ${CENTER})">${buildMark(
+    { variant: 'reuleaux', ...DEFAULTS }
+  )}</g>`;
   const caption = document.createElement('figcaption');
   caption.textContent = variant.caption;
   preview.append(svg, caption);
