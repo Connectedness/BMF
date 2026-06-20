@@ -8,33 +8,29 @@ import { buildMark, DEFAULTS } from './pulse-tuner.js';
 
 const SIZES = [16, 32, 64, 128, 256, 512];
 
-// The mark has 3-fold rotational symmetry about its hub at (32, 32); that hub
-// is the visual centre, so we frame on it (not on the bounding box) — placing
-// (32, 32) at the canvas centre and scaling so the furthest reach to a bbox
-// edge just meets an 8/128 margin, leaving every other side to clear it.
+// The mark is a 3-fold pinwheel. Tilting it 15° is the orientation that packs
+// it tightest, and at that angle its bounding box comes out essentially square.
+// We frame on that bounding box so the margin is equal on all four sides.
 //
-// Straight up, the mark reaches much further up (one node) than down (two), so
-// the hub sits high in its box. Tilting it 15° is the orientation that minimises
-// the bounding box — it packs tightest and roughly halves the top/bottom gap,
-// landing on a clean diagonal symmetry (top reach = left, bottom = right).
+// (The mark isn't mirror-symmetric, so the hub can't be both dead-centre and
+// evenly margined at once — we keep the margins even, which leaves the hub a
+// few px off-centre; the tilt keeps that offset small.)
 const MARGIN_FRACTION = 8 / 128;
 const CENTER = 32;
 const ROTATION = 15; // degrees, clockwise about the hub
 const NODE_RING = 22; // node-centre distance from the hub
 const NODE_R = 5.5; // node radius
 const NODE_ANGLES = [-90, 30, 150]; // node bearings before rotation
-// Furthest reach from the hub to a bounding-box edge in the rotated mark. The
-// nodes' disks dominate the box, so this is the largest |x|/|y| node offset
-// (over all four sides) plus the node radius.
-const HALF_EXTENT =
-  NODE_R +
-  NODE_RING *
-    Math.max(
-      ...NODE_ANGLES.flatMap((a) => {
-        const r = ((a + ROTATION) * Math.PI) / 180;
-        return [Math.abs(Math.cos(r)), Math.abs(Math.sin(r))];
-      })
-    );
+
+// Bounding box of the rotated mark — the node disks set its extents.
+const nodeX = NODE_ANGLES.map((a) => NODE_RING * Math.cos(((a + ROTATION) * Math.PI) / 180));
+const nodeY = NODE_ANGLES.map((a) => NODE_RING * Math.sin(((a + ROTATION) * Math.PI) / 180));
+const BOX = {
+  x: CENTER + Math.min(...nodeX) - NODE_R,
+  y: CENTER + Math.min(...nodeY) - NODE_R,
+  w: Math.max(...nodeX) - Math.min(...nodeX) + 2 * NODE_R,
+  h: Math.max(...nodeY) - Math.min(...nodeY) + 2 * NODE_R,
+};
 
 const VARIANTS = [
   {
@@ -78,8 +74,9 @@ const cssVar = (name) =>
 // baked in, the mark scaled + centred into a `size`×`size` canvas.
 function exportSvg(variant, size, transparent) {
   const margin = size * MARGIN_FRACTION;
-  const scale = (size / 2 - margin) / HALF_EXTENT;
-  const offset = size / 2 - CENTER * scale; // puts the hub at the canvas centre
+  const scale = (size - 2 * margin) / Math.max(BOX.w, BOX.h);
+  const tx = (size - BOX.w * scale) / 2 - scale * BOX.x; // centre the bounding box
+  const ty = (size - BOX.h * scale) / 2 - scale * BOX.y;
 
   const colors = { struct: cssVar(variant.struct), hub: cssVar(variant.hub) };
   const inner = buildMark({ variant: 'reuleaux', ...DEFAULTS, colors });
@@ -90,7 +87,7 @@ function exportSvg(variant, size, transparent) {
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" ` +
     `viewBox="0 0 ${size} ${size}" fill="none">${bg}` +
-    `<g transform="translate(${offset},${offset}) scale(${scale}) ` +
+    `<g transform="translate(${tx},${ty}) scale(${scale}) ` +
     `rotate(${ROTATION} ${CENTER} ${CENTER})">${inner}</g></svg>`
   );
 }
