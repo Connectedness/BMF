@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BMF · Logo — Concept 3: The Pulse</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <nav class="topnav">
+      <span class="topnav-brand">BMF · LOGO</span>
+      <div class="topnav-links">
+        <a href="/index.html">Concept 1 · Explicit Route</a>
+        <a href="/concept2.html">Concept 2 · Controlled Flow</a>
+        <a href="/concept3.html" class="active">Concept 3 · The Pulse</a>
+        <a href="/downloads.html">Downloads</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div class="hero-mark">
+        <svg class="pulse-anim logo--accent" viewBox="0 0 64 64" fill="none" width="150" height="150" aria-label="BMF pulse mark">
+          <path id="arc-a" d="M32 32 C38 22 40 17 32 10" class="route" stroke-width="5" stroke-linecap="round"/>
+          <path id="arc-b" d="M32 32 C37.66 42.2 40.99 46.43 51.05 43" class="route" stroke-width="5" stroke-linecap="round"/>
+          <path id="arc-c" d="M32 32 C20.34 31.8 15.01 32.57 12.95 43" class="route" stroke-width="5" stroke-linecap="round"/>
+          <path d="M32 23 A15.59 15.59 0 0 1 39.79 36.5 A15.59 15.59 0 0 1 24.21 36.5 A15.59 15.59 0 0 1 32 23 Z" class="hub"/>
+          <circle cx="32" cy="10" r="5.5" class="node"/>
+          <circle cx="51.05" cy="43" r="5.5" class="node"/>
+          <circle cx="12.95" cy="43" r="5.5" class="node"/>
+          <circle class="pulse pulse-dot" r="4.5" opacity="0">
+            <animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#arc-a"/></animateMotion>
+            <animate attributeName="opacity" dur="2.4s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.18;0.72;1"/>
+          </circle>
+          <circle class="pulse pulse-dot" r="4.5" opacity="0">
+            <animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#arc-b"/></animateMotion>
+            <animate attributeName="opacity" dur="2.4s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.18;0.72;1"/>
+          </circle>
+          <circle class="pulse pulse-dot" r="4.5" opacity="0">
+            <animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#arc-c"/></animateMotion>
+            <animate attributeName="opacity" dur="2.4s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.18;0.72;1"/>
+          </circle>
+        </svg>
+      </div>
+      <h1>BMF</h1>
+      <p class="tagline">Explicit Messaging. No Magic.</p>
+      <p class="concept-label">Concept 3 — The Pulse</p>
+    </header>
+
+    <main>
+      <section class="panel">
+        <h2>The idea</h2>
+        <p>
+          A central <strong>exchange</strong> fans out to three endpoint <strong>nodes</strong>.
+          The three connecting arms all bow the same way, so the mark reads as caught mid-spin:
+          a <em>living</em> topology rather than a static diagram.
+        </p>
+        <p>
+          The teal dot is a <strong>message in flight</strong>, routed out to a subscriber — the
+          pulse the concept is named for. One exchange, many endpoints: the fan-out shape of
+          messaging itself. <span class="hint">(The hero above is animated — watch the messages
+          flow.)</span>
+        </p>
+      </section>
+
+      <section class="panel">
+        <h2>Tune it live</h2>
+        <p>
+          Switch the hub shape and adjust the line thickness, node size, and hub size — every
+          size updates in real time, so you can judge each variant at favicon sizes.
+        </p>
+        <p class="hint">Defaults: hub Diamond · line thickness 5.0 · node size 5.5 · hub size 9.0</p>
+        <div class="tuner">
+          <div class="tuner-controls">
+            <div class="variant-picker">
+              <span class="control-label">Hub shape</span>
+              <div class="variant-btns">
+                <button class="variant-btn active" data-variant="diamond">Diamond</button>
+                <button class="variant-btn" data-variant="reuleaux">Reuleaux</button>
+                <button class="variant-btn" data-variant="hexagon">Hexagon</button>
+              </div>
+            </div>
+            <label class="control">
+              <span class="control-label">Line thickness · <b id="p-thickness-val">5.0</b></span>
+              <input type="range" id="p-thickness" min="2" max="10" step="0.5" />
+            </label>
+            <label class="control">
+              <span class="control-label">Node size · <b id="p-node-val">5.5</b></span>
+              <input type="range" id="p-node" min="3" max="9" step="0.5" />
+            </label>
+            <label class="control">
+              <span class="control-label">Hub size · <b id="p-hub-val">9.0</b></span>
+              <input type="range" id="p-hub" min="6" max="14" step="0.5" />
+            </label>
+          </div>
+
+          <div class="tuner-previews">
+            <figure class="swatch swatch--light tuner-hero">
+              <svg class="ptune-svg logo--accent" viewBox="0 0 64 64" fill="none" width="125" height="125"></svg>
+              <figcaption>display</figcaption>
+            </figure>
+
+            <figure class="swatch swatch--light favicon-previews">
+              <svg class="ptune-svg logo--accent" width="64" height="64" viewBox="0 0 64 64" fill="none"></svg>
+              <svg class="ptune-svg logo--accent" width="32" height="32" viewBox="0 0 64 64" fill="none"></svg>
+              <svg class="ptune-svg logo--accent" width="16" height="16" viewBox="0 0 64 64" fill="none"></svg>
+              <figcaption>64 · 32 · 16 px · light</figcaption>
+            </figure>
+
+            <figure class="swatch swatch--dark favicon-previews">
+              <svg class="ptune-svg logo--mono-light" width="32" height="32" viewBox="0 0 64 64" fill="none"></svg>
+              <svg class="ptune-svg logo--mono-light" width="16" height="16" viewBox="0 0 64 64" fill="none"></svg>
+              <figcaption>32 · 16 px · dark</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Variant 1 · Diamond</h2>
+        <p>
+          The original — a square on its corner. Its 4-fold symmetry can't line up evenly with
+          three arms, so the connections differ slightly; kept here as the baseline.
+        </p>
+        <div class="grid">
+          <figure class="swatch swatch--light">
+            <svg class="logo--accent pulse-static" data-variant="diamond" width="104" height="104" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>Color · graphite + teal</figcaption>
+          </figure>
+          <figure class="swatch swatch--light">
+            <svg class="logo--mono-dark pulse-static" data-variant="diamond" width="104" height="104" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>Monochrome · dark on light</figcaption>
+          </figure>
+          <figure class="swatch swatch--dark">
+            <svg class="logo--mono-light pulse-static" data-variant="diamond" width="104" height="104" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>Monochrome · light on dark</figcaption>
+          </figure>
+        </div>
+        <div class="grid">
+          <figure class="swatch swatch--light favicon-previews">
+            <svg class="logo--accent pulse-static" data-variant="diamond" width="64" height="64" viewBox="0 0 64 64" fill="none"></svg>
+            <svg class="logo--accent pulse-static" data-variant="diamond" width="32" height="32" viewBox="0 0 64 64" fill="none"></svg>
+            <svg class="logo--accent pulse-static" data-variant="diamond" width="16" height="16" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>64 · 32 · 16 px · light</figcaption>
+          </figure>
+          <figure class="swatch swatch--dark favicon-previews">
+            <svg class="logo--mono-light pulse-static" data-variant="diamond" width="32" height="32" viewBox="0 0 64 64" fill="none"></svg>
+            <svg class="logo--mono-light pulse-static" data-variant="diamond" width="16" height="16" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>32 · 16 px · dark</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Variant 2 · Reuleaux triangle</h2>
+        <p>
+          A curved-sided triangle. Its three points aim straight down the arms and its curves
+          rhyme with them — harmonious, organic, and it looks like it's mid-roll.
+        </p>
+        <div class="grid">
+          <figure class="swatch swatch--light">
+            <svg class="logo--accent pulse-static" data-variant="reuleaux" width="104" height="104" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>Color · graphite + teal</figcaption>
+          </figure>
+          <figure class="swatch swatch--light">
+            <svg class="logo--mono-dark pulse-static" data-variant="reuleaux" width="104" height="104" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>Monochrome · dark on light</figcaption>
+          </figure>
+          <figure class="swatch swatch--dark">
+            <svg class="logo--mono-light pulse-static" data-variant="reuleaux" width="104" height="104" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>Monochrome · light on dark</figcaption>
+          </figure>
+        </div>
+        <div class="grid">
+          <figure class="swatch swatch--light favicon-previews">
+            <svg class="logo--accent pulse-static" data-variant="reuleaux" width="64" height="64" viewBox="0 0 64 64" fill="none"></svg>
+            <svg class="logo--accent pulse-static" data-variant="reuleaux" width="32" height="32" viewBox="0 0 64 64" fill="none"></svg>
+            <svg class="logo--accent pulse-static" data-variant="reuleaux" width="16" height="16" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>64 · 32 · 16 px · light</figcaption>
+          </figure>
+          <figure class="swatch swatch--dark favicon-previews">
+            <svg class="logo--mono-light pulse-static" data-variant="reuleaux" width="32" height="32" viewBox="0 0 64 64" fill="none"></svg>
+            <svg class="logo--mono-light pulse-static" data-variant="reuleaux" width="16" height="16" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>32 · 16 px · dark</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Variant 3 · Hexagon</h2>
+        <p>
+          Reads as a packet / event — on-brand for a CloudEvents-first framework. Its six sides
+          contain the three-fold symmetry, so every arm connects identically.
+        </p>
+        <div class="grid">
+          <figure class="swatch swatch--light">
+            <svg class="logo--accent pulse-static" data-variant="hexagon" width="104" height="104" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>Color · graphite + teal</figcaption>
+          </figure>
+          <figure class="swatch swatch--light">
+            <svg class="logo--mono-dark pulse-static" data-variant="hexagon" width="104" height="104" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>Monochrome · dark on light</figcaption>
+          </figure>
+          <figure class="swatch swatch--dark">
+            <svg class="logo--mono-light pulse-static" data-variant="hexagon" width="104" height="104" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>Monochrome · light on dark</figcaption>
+          </figure>
+        </div>
+        <div class="grid">
+          <figure class="swatch swatch--light favicon-previews">
+            <svg class="logo--accent pulse-static" data-variant="hexagon" width="64" height="64" viewBox="0 0 64 64" fill="none"></svg>
+            <svg class="logo--accent pulse-static" data-variant="hexagon" width="32" height="32" viewBox="0 0 64 64" fill="none"></svg>
+            <svg class="logo--accent pulse-static" data-variant="hexagon" width="16" height="16" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>64 · 32 · 16 px · light</figcaption>
+          </figure>
+          <figure class="swatch swatch--dark favicon-previews">
+            <svg class="logo--mono-light pulse-static" data-variant="hexagon" width="32" height="32" viewBox="0 0 64 64" fill="none"></svg>
+            <svg class="logo--mono-light pulse-static" data-variant="hexagon" width="16" height="16" viewBox="0 0 64 64" fill="none"></svg>
+            <figcaption>32 · 16 px · dark</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Wordmark lockup</h2>
+        <div class="grid">
+          <figure class="swatch swatch--light wordmark-row">
+            <svg class="logo--accent pulse-static" data-variant="diamond" width="64" height="64" viewBox="0 0 64 64" fill="none"></svg>
+            <div class="wordmark-text">
+              <span class="wordmark-name">BMF</span>
+              <span class="wordmark-sub">Explicit Messaging. No Magic.</span>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Palette</h2>
+        <p class="hint">Pick any colour — the page and the logos update live.</p>
+        <p class="hint">Defaults: Graphite #1F2937 · Teal #00CDEA · Paper #FFFFFF</p>
+        <div class="palette">
+          <label class="chip" data-var="--graphite">
+            <input type="color" value="#1F2937" />
+            <span class="chip-name">Graphite</span>
+            <code class="chip-hex">#1F2937</code>
+          </label>
+          <label class="chip" data-var="--teal">
+            <input type="color" value="#00CDEA" />
+            <span class="chip-name">Teal · the pulse</span>
+            <code class="chip-hex">#00CDEA</code>
+          </label>
+          <label class="chip" data-var="--paper">
+            <input type="color" value="#FFFFFF" />
+            <span class="chip-name">Paper</span>
+            <code class="chip-hex">#FFFFFF</code>
+          </label>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>BMF — The Brilliant Messaging Framework · logo exploration</p>
+    </footer>
+    <script type="module" src="/src/pulse-tuner.js"></script>
+    <script type="module" src="/src/palette.js"></script>
+  </body>
+</html>

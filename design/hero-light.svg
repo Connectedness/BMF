@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="280" viewBox="0 0 360 280" fill="none" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="BMF — Explicit Messaging. No Magic.">
+  <!-- Concept 3 "The Pulse" hero — self-contained for GitHub README embedding.
+       Colours are baked in (no external CSS); the mark spins via SMIL and the
+       message dots travel the arcs. Light-theme variant: graphite structure. -->
+  <g transform="translate(110,18) scale(2.1875)">
+    <g>
+      <animateTransform attributeName="transform" type="rotate" from="0 32 32" to="360 32 32" dur="30s" repeatCount="indefinite"/>
+      <path id="hl-arc-a" d="M32 32 C38 22 40 17 32 10" stroke="#1F2937" stroke-width="5" stroke-linecap="round"/>
+      <path id="hl-arc-b" d="M32 32 C37.66 42.2 40.99 46.43 51.05 43" stroke="#1F2937" stroke-width="5" stroke-linecap="round"/>
+      <path id="hl-arc-c" d="M32 32 C20.34 31.8 15.01 32.57 12.95 43" stroke="#1F2937" stroke-width="5" stroke-linecap="round"/>
+      <path d="M32 23 A15.59 15.59 0 0 1 39.79 36.5 A15.59 15.59 0 0 1 24.21 36.5 A15.59 15.59 0 0 1 32 23 Z" fill="#00CDEA"/>
+      <circle cx="32" cy="10" r="5.5" fill="#1F2937"/>
+      <circle cx="51.05" cy="43" r="5.5" fill="#1F2937"/>
+      <circle cx="12.95" cy="43" r="5.5" fill="#1F2937"/>
+      <circle r="4.5" fill="#00CDEA" opacity="0">
+        <animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#hl-arc-a"/></animateMotion>
+        <animate attributeName="opacity" dur="2.4s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.18;0.72;1"/>
+      </circle>
+      <circle r="4.5" fill="#00CDEA" opacity="0">
+        <animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#hl-arc-b"/></animateMotion>
+        <animate attributeName="opacity" dur="2.4s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.18;0.72;1"/>
+      </circle>
+      <circle r="4.5" fill="#00CDEA" opacity="0">
+        <animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#hl-arc-c"/></animateMotion>
+        <animate attributeName="opacity" dur="2.4s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.18;0.72;1"/>
+      </circle>
+    </g>
+  </g>
+  <text x="180" y="212" text-anchor="middle" font-size="54" font-weight="700" letter-spacing="6" fill="#1F2937">BMF</text>
+  <text x="180" y="246" text-anchor="middle" font-size="15" letter-spacing="0.5" fill="#6B7280">Explicit Messaging. No Magic.</text>
+</svg>
