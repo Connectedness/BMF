@@ -52,10 +52,10 @@ public sealed class InboundDiagnosticsMiddleware : IMessageMiddleware
                 activity.AddBaggage(baggage.Key, baggage.Value);
             }
 
-            activity.SetTag(InboundDiagnostics.MessageTypeTagName, context.Endpoint.Discriminator);
-            activity.SetTag(InboundDiagnostics.EndpointNameTagName, context.Endpoint.Name);
-            activity.SetTag(InboundDiagnostics.SourceTagName, context.Transport.Source);
-            activity.SetTag(InboundDiagnostics.TransportNameTagName, context.Transport.TransportName);
+            foreach (var tag in baseTags)
+            {
+                activity.SetTag(tag.Key, tag.Value);
+            }
         }
 
         var outcome = "success";
