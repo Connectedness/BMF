@@ -7,32 +7,32 @@ and GitHub releases whose notes are maintained by Release Drafter.
 
 ## Acceptance Criteria
 
-- [ ] Every generated BMF NuGet package (including the nested `Bmf.Transport.RabbitMq` package)
+- [x] Every generated BMF NuGet package (including the nested `Bmf.Transport.RabbitMq` package)
       contains `design/logo-128x128.png` at the package root as `logo-128x128.png`, matching the
       existing `PackageIcon` metadata already configured in `src/Directory.Build.props`.
-- [ ] Every generated BMF NuGet package declares the tags
+- [x] Every generated BMF NuGet package declares the tags
       `messaging;communication;rabbitmq;amqp;bmf;cloudevents`.
-- [ ] The existing `<NoWarn>` element is completely removed from `src/Directory.Build.props`.
+- [x] The existing `<NoWarn>` element is completely removed from `src/Directory.Build.props`.
 - [x] `.github/release-drafter.yml` configures a shared release-note template and sensible change
       categories for BMF.
-- [ ] A GitHub Actions workflow updates the `vNext` draft GitHub release through Release Drafter
+- [x] A GitHub Actions workflow updates the `vNext` draft GitHub release through Release Drafter
       after every merge to `main`.
-- [ ] The NuGet release workflow rejects versions that do not match
+- [x] The NuGet release workflow rejects versions that do not match
       `^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$` before the value is used by restore, pack,
       publication, tagging, or release creation.
-- [ ] The NuGet release workflow uses Release Drafter to generate release notes for the validated
+- [x] The NuGet release workflow uses Release Drafter to generate release notes for the validated
       version and overrides the draft version, name, and tag with `v<version>`.
-- [ ] The NuGet release workflow exposes a `create_release` boolean input that defaults to `true`.
-- [ ] When package publication succeeds and `create_release` is `true`, the workflow publishes a
+- [x] The NuGet release workflow exposes a `create_release` boolean input that defaults to `true`.
+- [x] When package publication succeeds and `create_release` is `true`, the workflow publishes a
       GitHub release for `v<version>` using the Release Drafter notes; no GitHub release is published
       when `create_release` is `false`.
-- [ ] A version with a `-<suffix>` is published as a GitHub prerelease, while a version without a
+- [x] A version with a `-<suffix>` is published as a GitHub prerelease, while a version without a
       suffix is published as the latest GitHub release.
-- [ ] The non-publishing workflow path remains available and cannot accidentally create a GitHub
+- [x] The non-publishing workflow path remains available and cannot accidentally create a GitHub
       release.
-- [ ] Automated verification confirms the package icon and tags are present in every generated
+- [x] Automated verification confirms the package icon and tags are present in every generated
       `.nupkg` without publishing packages or releases.
-- [ ] Automated coverage exercises the shared version script with stable, prerelease, and invalid
+- [x] Automated coverage exercises the shared version script with stable, prerelease, and invalid
       inputs without publishing packages or releases.
 
 ## Technical Details
