@@ -111,8 +111,11 @@ public abstract class OutboundTarget
             await PublishSerializedCoreAsync(message, cancellationToken).ConfigureAwait(false);
             diagnostics.Succeeded();
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            // Only a cancellation of the caller's token is a graceful, non-error cancellation. An
+            // OperationCanceledException raised while the caller's token is not signalled (an unrelated internal
+            // timeout, say) is a genuine failure and falls through to the failure path below.
             diagnostics.Cancelled();
             throw;
         }
@@ -532,8 +535,11 @@ public abstract class OutboundTarget<T> : OutboundTarget
             await PublishTypedCloudEventAsync(message, envelope, routingKey, cancellationToken).ConfigureAwait(false);
             diagnostics.Succeeded();
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            // Only a cancellation of the caller's token is a graceful, non-error cancellation. An
+            // OperationCanceledException raised while the caller's token is not signalled (an unrelated internal
+            // timeout, say) is a genuine failure and falls through to the failure path below.
             diagnostics.Cancelled();
             throw;
         }

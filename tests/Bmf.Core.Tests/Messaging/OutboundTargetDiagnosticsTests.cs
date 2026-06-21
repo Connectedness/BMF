@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Bmf.Core.Messaging;
 using Bmf.Core.Messaging.Outbound;
@@ -159,9 +160,37 @@ public sealed class OutboundTargetDiagnosticsTests
     }
 
     [Fact]
-    public async Task Publish_RecordsCancellationWithoutErrorType()
+    public async Task Publish_WhenCallerTokenCancelled_RecordsCancellationWithoutErrorType()
     {
         using var recorder = new OutboundDiagnosticsRecorder();
+        using CancellationTokenSource cancellationTokenSource = new ();
+        await cancellationTokenSource.CancelAsync();
+        var target = new RecordingTarget<SampleMessage>(
+            "default",
+            new ThrowingSerializer(new OperationCanceledException())
+        );
+
+        // ReSharper disable once AccessToDisposedClosure -- act is awaited before disposal
+        var act = async () => await target.PublishAsync(new SampleMessage("hello"), cancellationTokenSource.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        // A cancellation of the caller's token is an ordinary counter increment with error.type absent, like success.
+        recorder.SentMessages.Should().ContainSingle().Which.Should()
+           .NotContain(tag => tag.Key == MessagingSemanticConventions.ErrorType);
+        recorder.Durations.Should().ContainSingle().Which.Should()
+           .NotContain(tag => tag.Key == MessagingSemanticConventions.ErrorType);
+        recorder
+           .StartedActivities.Should().ContainSingle()
+           .Which.GetTagItem(MessagingSemanticConventions.ErrorType).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Publish_WhenCancellationIsNotFromCallerToken_RecordsFailureWithOtherErrorType()
+    {
+        using var recorder = new OutboundDiagnosticsRecorder();
+        // The caller's token is never signalled, so an OperationCanceledException from inside the publish is an
+        // unexpected cancellation (e.g. an unrelated internal timeout) and must be classified as a failure rather
+        // than suppressed as a graceful cancellation.
         var target = new RecordingTarget<SampleMessage>(
             "default",
             new ThrowingSerializer(new OperationCanceledException())
@@ -170,14 +199,22 @@ public sealed class OutboundTargetDiagnosticsTests
         var act = async () => await target.PublishAsync(new SampleMessage("hello"));
 
         await act.Should().ThrowAsync<OperationCanceledException>();
-        // Cancellation is an ordinary counter increment with error.type absent, exactly like a success.
-        recorder.SentMessages.Should().ContainSingle().Which.Should()
-           .NotContain(tag => tag.Key == MessagingSemanticConventions.ErrorType);
-        recorder.Durations.Should().ContainSingle().Which.Should()
-           .NotContain(tag => tag.Key == MessagingSemanticConventions.ErrorType);
-        recorder
-           .StartedActivities.Should().ContainSingle()
-           .Which.GetTagItem(MessagingSemanticConventions.ErrorType).Should().BeNull();
+        recorder.SentMessages.Should().ContainSingle().Which.Should().Contain(
+            new KeyValuePair<string, object?>(
+                MessagingSemanticConventions.ErrorType,
+                MessagingSemanticConventions.ErrorTypeOther
+            )
+        );
+        recorder.Durations.Should().ContainSingle().Which.Should().Contain(
+            new KeyValuePair<string, object?>(
+                MessagingSemanticConventions.ErrorType,
+                MessagingSemanticConventions.ErrorTypeOther
+            )
+        );
+        var activity = recorder.StartedActivities.Should().ContainSingle().Which;
+        activity.Status.Should().Be(ActivityStatusCode.Error);
+        activity.GetTagItem(MessagingSemanticConventions.ErrorType)
+           .Should().Be(MessagingSemanticConventions.ErrorTypeOther);
     }
 
     [Fact]

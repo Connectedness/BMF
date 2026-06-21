@@ -69,8 +69,11 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
 
             activity?.SetStatus(ActivityStatusCode.Ok);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            // Only a cancellation of the caller's token is a graceful, non-error cancellation. An
+            // OperationCanceledException raised while the caller's token is not signalled is a genuine
+            // provisioning failure and falls through to the failure path below.
             outcome = "cancelled";
             activity?.SetTag(OutcomeTagName, outcome);
             throw;
