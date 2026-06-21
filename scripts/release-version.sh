@@ -17,6 +17,11 @@ if [ -z "$version" ]; then
   exit 1
 fi
 
+if [[ "$version" == *$'\n'* || "$version" == *$'\r'* ]]; then
+  echo "error: RELEASE_VERSION must contain exactly one line" >&2
+  exit 1
+fi
+
 if ! printf '%s' "$version" | grep -Eq "$pattern"; then
   echo "error: '$version' is not a valid release version (expected $pattern)" >&2
   exit 1

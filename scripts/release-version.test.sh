@@ -32,6 +32,9 @@ rejected=(
   "1.2.3-beta!"
   "1.2.3 "
   " 1.2.3"
+  $'1.2.3\ninvalid'
+  $'1.2.3\nprerelease=true'
+  $'1.2.3\r'
   "abc"
 )
 
