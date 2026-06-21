@@ -59,9 +59,14 @@ public sealed class InboundDiagnosticsMiddlewareTests
         activity.GetTagItem(InboundDiagnostics.OutcomeTagName).Should().Be("success");
         activity.Status.Should().Be(ActivityStatusCode.Ok);
 
-        recorder.Attempts.Should().ContainSingle().Which.Should().Contain(
-            new KeyValuePair<string, object?>(InboundDiagnostics.OutcomeTagName, "success")
+        var attempt = recorder.Attempts.Should().ContainSingle().Which;
+        attempt.Should().Contain(
+            new KeyValuePair<string, object?>(InboundDiagnostics.MessageTypeTagName, "tests.message"),
+            new KeyValuePair<string, object?>(InboundDiagnostics.EndpointNameTagName, "endpoint"),
+            new KeyValuePair<string, object?>(InboundDiagnostics.SourceTagName, "source"),
+            new KeyValuePair<string, object?>(InboundDiagnostics.TransportNameTagName, "test")
         );
+        attempt.Should().NotContain(tag => tag.Key == InboundDiagnostics.OutcomeTagName);
         recorder.Durations.Should().ContainSingle().Which.Should().Contain(
             new KeyValuePair<string, object?>(InboundDiagnostics.MessageTypeTagName, "tests.message")
         );
@@ -110,6 +115,30 @@ public sealed class InboundDiagnosticsMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_RecordsAttemptBeforeCallingNextWithoutOutcome()
+    {
+        using var recorder = new InboundDiagnosticsRecorder();
+        var middleware = new InboundDiagnosticsMiddleware();
+
+        await middleware.InvokeAsync(
+            CreateContext(cancellationToken: TestContext.Current.CancellationToken),
+            _ =>
+            {
+                recorder
+                   .Attempts.Should().ContainSingle()
+                   .Which.Should().NotContain(tag => tag.Key == InboundDiagnostics.OutcomeTagName);
+                recorder.Failures.Should().BeEmpty();
+                recorder.Durations.Should().BeEmpty();
+                return Task.CompletedTask;
+            }
+        );
+
+        recorder.Durations.Should().ContainSingle().Which.Should().Contain(
+            new KeyValuePair<string, object?>(InboundDiagnostics.OutcomeTagName, "success")
+        );
+    }
+
+    [Fact]
     public async Task InvokeAsync_RecordsFailureOutcomeAndException()
     {
         using var recorder = new InboundDiagnosticsRecorder();
@@ -122,9 +151,9 @@ public sealed class InboundDiagnosticsMiddlewareTests
         );
 
         await act.Should().ThrowAsync<InvalidOperationException>();
-        recorder.Attempts.Should().ContainSingle().Which.Should().Contain(
-            new KeyValuePair<string, object?>(InboundDiagnostics.OutcomeTagName, "failure")
-        );
+        recorder
+           .Attempts.Should().ContainSingle()
+           .Which.Should().NotContain(tag => tag.Key == InboundDiagnostics.OutcomeTagName);
         recorder.Failures.Should().ContainSingle().Which.Should().Contain(
             new KeyValuePair<string, object?>(InboundDiagnostics.OutcomeTagName, "failure")
         );
@@ -143,7 +172,7 @@ public sealed class InboundDiagnosticsMiddlewareTests
     {
         using var recorder = new InboundDiagnosticsRecorder();
         using CancellationTokenSource cancellationTokenSource = new ();
-        cancellationTokenSource.Cancel();
+        await cancellationTokenSource.CancelAsync();
         var middleware = new InboundDiagnosticsMiddleware();
 
         var act = async () => await middleware.InvokeAsync(
@@ -154,9 +183,9 @@ public sealed class InboundDiagnosticsMiddlewareTests
         );
 
         await act.Should().ThrowAsync<OperationCanceledException>();
-        recorder.Attempts.Should().ContainSingle().Which.Should().Contain(
-            new KeyValuePair<string, object?>(InboundDiagnostics.OutcomeTagName, "cancelled")
-        );
+        recorder
+           .Attempts.Should().ContainSingle()
+           .Which.Should().NotContain(tag => tag.Key == InboundDiagnostics.OutcomeTagName);
         recorder.Failures.Should().BeEmpty();
         recorder.Durations.Should().ContainSingle().Which.Should().Contain(
             new KeyValuePair<string, object?>(InboundDiagnostics.OutcomeTagName, "cancelled")

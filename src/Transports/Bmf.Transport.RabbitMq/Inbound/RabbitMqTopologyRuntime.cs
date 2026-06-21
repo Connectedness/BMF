@@ -308,10 +308,11 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
                 var tags = new TagList
                 {
                     { InboundDiagnostics.SourceTagName, transportMessage.Source },
-                    { InboundDiagnostics.TransportNameTagName, transportMessage.TransportName },
-                    { InboundDiagnostics.OutcomeTagName, "failure" }
+                    { InboundDiagnostics.TransportNameTagName, transportMessage.TransportName }
                 };
                 InboundDiagnostics.ProcessAttempts.Add(1, tags);
+
+                tags.Add(InboundDiagnostics.OutcomeTagName, "failure");
                 InboundDiagnostics.ProcessFailures.Add(1, tags);
             }
 

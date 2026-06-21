@@ -60,6 +60,7 @@ public sealed class InboundDiagnosticsMiddleware : IMessageMiddleware
 
         var outcome = "success";
         var startedTimestamp = Stopwatch.GetTimestamp();
+        InboundDiagnostics.ProcessAttempts.Add(1, baseTags);
         try
         {
             await next(context).ConfigureAwait(false);
@@ -82,7 +83,6 @@ public sealed class InboundDiagnosticsMiddleware : IMessageMiddleware
         finally
         {
             var outcomeTags = BuildOutcomeTags(baseTags, outcome);
-            InboundDiagnostics.ProcessAttempts.Add(1, outcomeTags);
             InboundDiagnostics.ProcessDuration.Record(GetDurationMilliseconds(startedTimestamp), outcomeTags);
             activity?.SetTag(InboundDiagnostics.OutcomeTagName, outcome);
         }

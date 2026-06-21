@@ -130,9 +130,9 @@ public sealed class RabbitMqTopologyRuntimeTests
 
         recorder.Attempts.Should().ContainSingle().Which.Should().Contain(
             new KeyValuePair<string, object?>(InboundDiagnostics.SourceTagName, "inbound"),
-            new KeyValuePair<string, object?>(InboundDiagnostics.TransportNameTagName, "rabbitmq"),
-            new KeyValuePair<string, object?>(InboundDiagnostics.OutcomeTagName, "failure")
+            new KeyValuePair<string, object?>(InboundDiagnostics.TransportNameTagName, "rabbitmq")
         );
+        recorder.Attempts.Single().Should().NotContain(tag => tag.Key == InboundDiagnostics.OutcomeTagName);
         recorder.Failures.Should().ContainSingle().Which.Should().Contain(
             new KeyValuePair<string, object?>(InboundDiagnostics.SourceTagName, "inbound"),
             new KeyValuePair<string, object?>(InboundDiagnostics.TransportNameTagName, "rabbitmq"),
