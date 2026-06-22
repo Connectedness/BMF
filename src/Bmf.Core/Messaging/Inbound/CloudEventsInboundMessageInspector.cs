@@ -51,7 +51,11 @@ public sealed class CloudEventsInboundMessageInspector : IInboundMessageInspecto
 
         if (string.IsNullOrWhiteSpace(type))
         {
-            throw new InvalidOperationException($"CloudEvents attribute '{CloudEventAttributeNames.Type}' is missing.");
+            throw new UnknownInboundMessageException(
+                transportMessage.Source,
+                type ?? string.Empty,
+                $"CloudEvents attribute '{CloudEventAttributeNames.Type}' is present but empty."
+            );
         }
 
         var cloudEventType = type!;

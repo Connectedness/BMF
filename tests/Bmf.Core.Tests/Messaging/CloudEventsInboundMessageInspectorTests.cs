@@ -80,6 +80,26 @@ public sealed class CloudEventsInboundMessageInspectorTests
            .WithMessage("No inbound message contract is registered for CloudEvents type 'tests.unknown'.");
     }
 
+    [Fact]
+    public async Task InspectAsync_ThrowsUnknownInboundMessageExceptionWhenCloudEventsTypeIsPresentButEmpty()
+    {
+        CloudEventsInboundMessageInspector inspector = new (new MessageContractRegistryBuilder().Build());
+        var transport = new TestTransportMessage(
+            ReadOnlyMemory<byte>.Empty,
+            new Dictionary<string, object?>
+            {
+                ["cloudEvents:type"] = "  "
+            }
+        );
+
+        var act = async () => await inspector.InspectAsync(transport, TestContext.Current.CancellationToken);
+
+        (await act
+               .Should().ThrowAsync<UnknownInboundMessageException>()
+               .WithMessage("CloudEvents attribute 'type' is present but empty."))
+           .Which.TransportSource.Should().Be("source");
+    }
+
     private sealed record TestMessage;
 
     private sealed class TestTransportMessage : TransportMessage
