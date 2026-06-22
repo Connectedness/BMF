@@ -466,3 +466,11 @@ the package is just the discoverable, named convenience.
 ## License
 
 BMF is licensed under the [MIT License](LICENSE).
+
+-----------------------------------------------------------------------------------------
+
+<p align="center">
+  <picture>
+    <img alt="BMF Wallet" src="design/bmf_wallet.png" width="900" />
+  </picture>
+</p>
