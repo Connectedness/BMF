@@ -1,4 +1,5 @@
 using System;
+using Bmf.Transport.RabbitMq.Tests.TestSupport;
 using FluentAssertions;
 using RabbitMQ.Client;
 using Xunit;

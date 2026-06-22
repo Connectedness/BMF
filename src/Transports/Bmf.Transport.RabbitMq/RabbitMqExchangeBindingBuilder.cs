@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Bmf.Core.Messaging;
 
 namespace Bmf.Transport.RabbitMq;
 
@@ -8,7 +9,7 @@ namespace Bmf.Transport.RabbitMq;
 /// Fluent builder for a binding from a source exchange to a destination exchange, collecting the routing key,
 /// binding mode, and binding arguments into a <see cref="RabbitMqExchangeBindingDefinition" />.
 /// </summary>
-public sealed class RabbitMqExchangeBindingBuilder
+public sealed class RabbitMqExchangeBindingBuilder : IBuildable<RabbitMqExchangeBindingDefinition>
 {
     private readonly Dictionary<string, object?> _arguments = new (StringComparer.Ordinal);
 
@@ -18,7 +19,10 @@ public sealed class RabbitMqExchangeBindingBuilder
     /// <param name="sourceExchangeName">The name of the source exchange.</param>
     /// <param name="destinationExchangeName">The name of the destination exchange.</param>
     /// <param name="routingKey">The binding routing key; an empty string is permitted.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="sourceExchangeName" /> or <paramref name="destinationExchangeName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="sourceExchangeName" /> or <paramref name="destinationExchangeName" /> is null or
+    /// whitespace.
+    /// </exception>
     public RabbitMqExchangeBindingBuilder(
         string sourceExchangeName,
         string destinationExchangeName,
@@ -51,6 +55,18 @@ public sealed class RabbitMqExchangeBindingBuilder
     /// </summary>
     public RabbitMqBindingMode BindingMode { get; private set; }
 
+    /// <inheritdoc />
+    RabbitMqExchangeBindingDefinition IBuildable<RabbitMqExchangeBindingDefinition>.Build()
+    {
+        return new RabbitMqExchangeBindingDefinition(
+            SourceExchangeName,
+            DestinationExchangeName,
+            RoutingKey,
+            BindingMode,
+            new ReadOnlyDictionary<string, object?>(_arguments)
+        );
+    }
+
     /// <summary>
     /// Sets the binding mode for the binding.
     /// </summary>
@@ -73,21 +89,6 @@ public sealed class RabbitMqExchangeBindingBuilder
     {
         _arguments[RequireText(name, nameof(name))] = value;
         return this;
-    }
-
-    /// <summary>
-    /// Builds the immutable <see cref="RabbitMqExchangeBindingDefinition" /> from the configured values.
-    /// </summary>
-    /// <returns>The exchange binding definition.</returns>
-    public RabbitMqExchangeBindingDefinition Build()
-    {
-        return new RabbitMqExchangeBindingDefinition(
-            SourceExchangeName,
-            DestinationExchangeName,
-            RoutingKey,
-            BindingMode,
-            new ReadOnlyDictionary<string, object?>(_arguments)
-        );
     }
 
     private static string RequireText(string value, string parameterName)

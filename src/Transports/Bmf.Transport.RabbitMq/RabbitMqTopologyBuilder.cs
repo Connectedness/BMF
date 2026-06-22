@@ -222,7 +222,7 @@ public sealed class RabbitMqTopologyBuilder
     {
         RabbitMqExchangeBuilder builder = new (name, type);
         configure?.Invoke(builder);
-        _exchangeDefinitions.Add(builder.Build());
+        _exchangeDefinitions.Add(((IBuildable<RabbitMqExchangeDefinition>) builder).Build());
         return this;
     }
 
@@ -231,7 +231,7 @@ public sealed class RabbitMqTopologyBuilder
     {
         RabbitMqQueueBuilder builder = new (name);
         configure?.Invoke(builder);
-        _queueDefinitions.Add(builder.Build());
+        _queueDefinitions.Add(((IBuildable<RabbitMqQueueDefinition>) builder).Build());
         return this;
     }
 
@@ -245,7 +245,7 @@ public sealed class RabbitMqTopologyBuilder
     {
         RabbitMqQueueBindingBuilder builder = new (exchangeName, queueName, routingKey);
         configure?.Invoke(builder);
-        _bindingDefinitions.Add(builder.Build());
+        _bindingDefinitions.Add(((IBuildable<RabbitMqQueueBindingDefinition>) builder).Build());
         return this;
     }
 
@@ -259,7 +259,7 @@ public sealed class RabbitMqTopologyBuilder
     {
         RabbitMqExchangeBindingBuilder builder = new (sourceExchangeName, destinationExchangeName, routingKey);
         configure?.Invoke(builder);
-        _bindingDefinitions.Add(builder.Build());
+        _bindingDefinitions.Add(((IBuildable<RabbitMqExchangeBindingDefinition>) builder).Build());
         return this;
     }
 
