@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Immutable;
 using Microsoft.Extensions.DependencyInjection;
+using ImmutableArrayType =
+    System.Collections.Immutable.ImmutableArray<Bmf.Core.Messaging.Inbound.InboundMessageInspectorChainEntry>;
 
 namespace Bmf.Core.Messaging.Inbound;
 
@@ -11,10 +13,15 @@ namespace Bmf.Core.Messaging.Inbound;
 /// Entries are evaluated in declaration order by the transport runtime. The first inspector or recognizer that
 /// returns a result wins.
 /// </remarks>
-public sealed class InboundMessageInspectorChainBuilder
+public sealed class InboundMessageInspectorChainBuilder : IBuildable<ImmutableArrayType>
 {
-    private readonly ImmutableArray<InboundMessageInspectorChainEntry>.Builder _entries =
-        ImmutableArray.CreateBuilder<InboundMessageInspectorChainEntry>();
+    private readonly ImmutableArrayType.Builder _entries = ImmutableArray.CreateBuilder<InboundMessageInspectorChainEntry>();
+
+    /// <inheritdoc />
+    ImmutableArrayType IBuildable<ImmutableArrayType>.Build()
+    {
+        return _entries.ToImmutable();
+    }
 
     /// <summary>
     /// Adds the default CloudEvents inspector to the chain with the requested auto-registration lifetime.
@@ -96,15 +103,6 @@ public sealed class InboundMessageInspectorChainBuilder
         return When(
             message => string.Equals(message.ContentType, expectedValue, StringComparison.OrdinalIgnoreCase)
         );
-    }
-
-    /// <summary>
-    /// Builds the immutable chain entries accumulated so far.
-    /// </summary>
-    /// <returns>The chain entries in declaration order.</returns>
-    public ImmutableArray<InboundMessageInspectorChainEntry> Build()
-    {
-        return _entries.ToImmutable();
     }
 
     internal InboundMessageInspectorChainBuilder AddRecognizer(

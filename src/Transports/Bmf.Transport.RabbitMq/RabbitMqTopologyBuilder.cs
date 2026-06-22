@@ -413,7 +413,7 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
 
         RabbitMqInboundConsumerBuilder builder = new (queueName);
         configure(builder);
-        _consumers.Add(builder.Build());
+        _consumers.Add(((IBuildable<RabbitMqInboundConsumerDefinition>) builder).Build());
         return this;
     }
 
@@ -488,9 +488,9 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
             throw new ArgumentNullException(nameof(configure));
         }
 
-        RabbitMqOutboundTargetBuilder<TMessage> builder = new ();
+        RabbitMqOutboundTargetBuilder<TMessage> builder = new (targetName);
         configure(builder);
-        _targets.Add(builder.Build(targetName));
+        _targets.Add(((IBuildable<RabbitMqOutboundTargetDefinition>) builder).Build());
         return this;
     }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
+using Bmf.Core.Messaging;
 using Bmf.Core.Messaging.Inbound;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -70,13 +71,14 @@ public sealed class InboundMessageInspectorChainTests
     {
         InboundMessageInspectorChainBuilder builder = new ();
 
-        var entries = builder
+        builder
            .CloudEvents()
            .Use<TestInspector>(ServiceLifetime.Scoped)
            .WhenHeader("x-kind", "legacy").As<LegacyMessage>("tests.legacy")
            .WhenHeader("x-present").As<SecondMessage>()
-           .WhenContentType("text/plain").As<ThirdMessage>("tests.text")
-           .Build();
+           .WhenContentType("text/plain").As<ThirdMessage>("tests.text");
+
+        var entries = ((IBuildable<ImmutableArray<InboundMessageInspectorChainEntry>>) builder).Build();
 
         entries.Should().HaveCount(5);
         entries[0]
@@ -126,7 +128,8 @@ public sealed class InboundMessageInspectorChainTests
 
         recognizer.As<LegacyMessage>("tests.custom");
 
-        var entry = builder.Build().Should().ContainSingle().Which.Should()
+        var entry = ((IBuildable<ImmutableArray<InboundMessageInspectorChainEntry>>) builder).Build()
+           .Should().ContainSingle().Which.Should()
            .BeOfType<RecognizerInboundMessageInspectorChainEntry>().Which;
         entry.MessageType.Should().Be(typeof(LegacyMessage));
         entry.ExplicitDiscriminator.Should().Be("tests.custom");

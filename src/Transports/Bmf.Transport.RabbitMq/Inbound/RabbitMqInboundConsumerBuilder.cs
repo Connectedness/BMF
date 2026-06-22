@@ -10,7 +10,7 @@ namespace Bmf.Transport.RabbitMq.Inbound;
 /// Fluent builder for a RabbitMQ consumer on a single queue. It configures the prefetch, concurrency, channel
 /// count, channel group, message inspector, and body-copy behavior, and registers one or more typed handlers.
 /// </summary>
-public sealed class RabbitMqInboundConsumerBuilder
+public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundConsumerDefinition>
 {
     private readonly ImmutableArray<RabbitMqInboundHandlerDefinition>.Builder _handlers =
         ImmutableArray.CreateBuilder<RabbitMqInboundHandlerDefinition>();
@@ -36,6 +36,21 @@ public sealed class RabbitMqInboundConsumerBuilder
     public RabbitMqInboundConsumerBuilder(string queueName)
     {
         _queueName = RequireText(queueName, nameof(queueName));
+    }
+
+    /// <inheritdoc />
+    RabbitMqInboundConsumerDefinition IBuildable<RabbitMqInboundConsumerDefinition>.Build()
+    {
+        return new RabbitMqInboundConsumerDefinition(
+            _queueName,
+            _inspectorChain,
+            _channelGroupName,
+            _channelCount,
+            _prefetchCount,
+            _consumerDispatchConcurrency,
+            _copyBody,
+            _handlers.ToImmutable()
+        );
     }
 
     /// <summary>
@@ -147,7 +162,7 @@ public sealed class RabbitMqInboundConsumerBuilder
 
         InboundMessageInspectorChainBuilder builder = new ();
         configure(builder);
-        _inspectorChain = builder.Build();
+        _inspectorChain = ((IBuildable<ImmutableArray<InboundMessageInspectorChainEntry>>) builder).Build();
         return this;
     }
 
@@ -207,7 +222,8 @@ public sealed class RabbitMqInboundConsumerBuilder
 
         var handlerBuilder = new RabbitMqInboundHandlerBuilder();
         configure?.Invoke(handlerBuilder);
-        var (deserializerType, ackMode) = handlerBuilder.Build();
+        var (deserializerType, ackMode) =
+            ((IBuildable<(Type DeserializerType, MessageAckMode AckMode)>) handlerBuilder).Build();
 
         _handlers.Add(
             new RabbitMqInboundHandlerDefinition(
@@ -220,20 +236,6 @@ public sealed class RabbitMqInboundConsumerBuilder
             )
         );
         return this;
-    }
-
-    internal RabbitMqInboundConsumerDefinition Build()
-    {
-        return new RabbitMqInboundConsumerDefinition(
-            _queueName,
-            _inspectorChain,
-            _channelGroupName,
-            _channelCount,
-            _prefetchCount,
-            _consumerDispatchConcurrency,
-            _copyBody,
-            _handlers.ToImmutable()
-        );
     }
 
     private static string RequireText(string value, string parameterName)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Bmf.Core.Messaging;
 using Bmf.Core.Messaging.Outbound;
 
 namespace Bmf.Transport.RabbitMq.Outbound;
@@ -11,15 +12,25 @@ namespace Bmf.Transport.RabbitMq.Outbound;
 /// serializer, and mandatory-routing flag, then compiles them into a <see cref="RabbitMqOutboundTargetDefinition" />.
 /// </summary>
 /// <typeparam name="TMessage">The message type the target publishes.</typeparam>
-public sealed class RabbitMqOutboundTargetBuilder<TMessage>
+public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitMqOutboundTargetDefinition>
 {
     private readonly Dictionary<string, object?> _headers = new (StringComparer.Ordinal);
+    private readonly string? _targetName;
     private string? _channelGroupName;
     private string? _exchangeName;
     private string? _routingKey;
     private Func<TMessage, string>? _routingKeyFactory;
     private RabbitMqOutboundRouteScenario _scenario;
     private Type? _serializerType;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RabbitMqOutboundTargetBuilder{TMessage}" /> class.
+    /// </summary>
+    /// <param name="targetName">The optional name of the target the builder compiles.</param>
+    public RabbitMqOutboundTargetBuilder(string? targetName = null)
+    {
+        _targetName = targetName;
+    }
 
     /// <summary>
     /// Gets a value indicating whether the target requests mandatory routing (see <see cref="Mandatory" />).
@@ -195,7 +206,8 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage>
         return this;
     }
 
-    internal RabbitMqOutboundTargetDefinition Build(string? targetName)
+    /// <inheritdoc />
+    RabbitMqOutboundTargetDefinition IBuildable<RabbitMqOutboundTargetDefinition>.Build()
     {
         if (_exchangeName is null)
         {
@@ -208,7 +220,7 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage>
                 typeof(TMessage),
                 _exchangeName,
                 _channelGroupName,
-                targetName,
+                _targetName,
                 _serializerType,
                 IsMandatory
             ),
@@ -216,7 +228,7 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage>
                 typeof(TMessage),
                 _exchangeName,
                 _channelGroupName,
-                targetName,
+                _targetName,
                 _serializerType,
                 IsMandatory,
                 _routingKey,
@@ -226,7 +238,7 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage>
                 typeof(TMessage),
                 _exchangeName,
                 _channelGroupName,
-                targetName,
+                _targetName,
                 _serializerType,
                 IsMandatory,
                 _routingKey,
@@ -236,7 +248,7 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage>
                 typeof(TMessage),
                 _exchangeName,
                 _channelGroupName,
-                targetName,
+                _targetName,
                 _serializerType,
                 IsMandatory,
                 new ReadOnlyDictionary<string, object?>(_headers)
