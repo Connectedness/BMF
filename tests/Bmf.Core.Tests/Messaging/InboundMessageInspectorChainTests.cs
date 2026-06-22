@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
 using Bmf.Core.Messaging.Inbound;
@@ -134,7 +135,9 @@ public sealed class InboundMessageInspectorChainTests
     [Fact]
     public void Constructors_AndBuilders_ValidateArguments()
     {
-        var constructNullList = () => new CompositeInboundMessageInspector(null!);
+        var constructEmptyList = () =>
+            new CompositeInboundMessageInspector(ImmutableArray<IInboundMessageInspector>.Empty);
+        var constructDefaultList = () => new CompositeInboundMessageInspector(default);
         var constructListWithNullEntry = () => new CompositeInboundMessageInspector([null!]);
         var constructPredicateWithoutPredicate =
             () => new PredicateInboundMessageInspector(null!, "tests.legacy", typeof(LegacyMessage));
@@ -151,7 +154,8 @@ public sealed class InboundMessageInspectorChainTests
         var whenWithoutPredicate = () => builder.When(null!);
         var asWithBlankExplicitDiscriminator = () => builder.WhenHeader("x-kind").As<LegacyMessage>("  ");
 
-        constructNullList.Should().Throw<ArgumentNullException>().WithParameterName("inspectors");
+        constructEmptyList.Should().Throw<ArgumentNullException>().WithParameterName("inspectors");
+        constructDefaultList.Should().Throw<ArgumentNullException>().WithParameterName("inspectors");
         constructListWithNullEntry.Should().Throw<ArgumentNullException>().WithParameterName("inspectors");
         constructPredicateWithoutPredicate.Should().Throw<ArgumentNullException>().WithParameterName("predicate");
         constructPredicateWithBlankDiscriminator.Should().Throw<ArgumentException>()

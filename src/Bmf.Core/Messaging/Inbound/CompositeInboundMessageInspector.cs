@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,18 +23,23 @@ namespace Bmf.Core.Messaging.Inbound;
 /// </remarks>
 public sealed class CompositeInboundMessageInspector : IInboundMessageInspector
 {
-    private readonly IReadOnlyList<IInboundMessageInspector> _inspectors;
+    private readonly ImmutableArray<IInboundMessageInspector> _inspectors;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CompositeInboundMessageInspector" /> class.
     /// </summary>
     /// <param name="inspectors">The inspectors to evaluate in order.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="inspectors" /> or any entry is <see langword="null" />.</exception>
-    public CompositeInboundMessageInspector(IReadOnlyList<IInboundMessageInspector> inspectors)
+    public CompositeInboundMessageInspector(ImmutableArray<IInboundMessageInspector> inspectors)
     {
-        _inspectors = inspectors ?? throw new ArgumentNullException(nameof(inspectors));
+        if (inspectors.IsDefaultOrEmpty)
+        {
+            throw new ArgumentNullException(nameof(inspectors), "Inspectors cannot be empty or the default instance.");
+        }
 
-        for (var i = 0; i < inspectors.Count; i++)
+        _inspectors = inspectors;
+
+        for (var i = 0; i < inspectors.Length; i++)
         {
             if (inspectors[i] is null)
             {
