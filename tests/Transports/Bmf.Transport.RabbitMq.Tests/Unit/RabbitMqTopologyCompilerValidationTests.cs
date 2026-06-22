@@ -138,8 +138,85 @@ public sealed class RabbitMqTopologyCompilerValidationTests
             );
     }
 
+    [Fact]
+    public void Compile_RejectsNullInspectorChainEntry()
+    {
+        var configuration = new RabbitMqTopologyConfiguration(
+            static _ => new ConnectionFactory(),
+            [],
+            [
+                new RabbitMqQueueDefinition(
+                    "inbound",
+                    RabbitMqDeclareMode.Active,
+                    true,
+                    false,
+                    false,
+                    new Dictionary<string, object?>()
+                )
+            ],
+            [],
+            [],
+            [],
+            [],
+            [
+                new RabbitMqInboundConsumerDefinition(
+                    "inbound",
+                    [null!],
+                    null,
+                    1,
+                    1,
+                    1,
+                    true,
+                    [
+                        new RabbitMqInboundHandlerDefinition(
+                            null,
+                            typeof(ValidationMessageA),
+                            typeof(RegisteredValidationMessageAHandler),
+                            static _ => Task.CompletedTask,
+                            typeof(PayloadCodecMessageDeserializer),
+                            MessageAckMode.Auto
+                        )
+                    ]
+                )
+            ],
+            typeof(MessageDeserializationMiddleware),
+            ConfigurePipeline: null,
+            ShutdownTimeout: TimeSpan.FromSeconds(1)
+        );
+        RabbitMqTopologyCompiler compiler = new (
+            RabbitMqCloudEventsTestFactory.CreateRegistry(),
+            NullLoggerFactory.Instance,
+            static _ => null,
+            static type => type == typeof(RegisteredValidationMessageAHandler) ||
+                           type == typeof(PayloadCodecMessageDeserializer) ||
+                           type == typeof(MessageDeserializationMiddleware)
+        );
+        RabbitMqConnectionProvider connectionProvider = new (
+            static _ => Task.FromException<IConnection>(new NotSupportedException())
+        );
+
+        Action act = () => _ = compiler.Compile(Topology.DefaultName, configuration, connectionProvider);
+
+        act.Should().Throw<TopologyValidationException>()
+           .Which.ValidationErrors.Should().ContainSingle().Which.Should().Be(
+                "Inbound inspector chain for queue 'inbound' contains a null entry."
+            );
+    }
+
     // ReSharper disable once NotAccessedPositionalProperty.Local -- required for testing scenario
     private sealed record UnregisteredMessage(string Value);
+
+    private sealed class RegisteredValidationMessageAHandler : IMessageHandler<ValidationMessageA>
+    {
+        public Task HandleAsync(
+            ValidationMessageA message,
+            IncomingMessageContext context,
+            CancellationToken cancellationToken
+        )
+        {
+            return Task.CompletedTask;
+        }
+    }
 
     private sealed class RegisteredHandler : IMessageHandler<UnregisteredMessage>
     {

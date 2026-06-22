@@ -543,6 +543,14 @@ public sealed class RabbitMqTopologyCompiler
                         )
                     );
                     break;
+                case null:
+                    throw new InvalidOperationException(
+                        $"Inbound inspector chain for queue '{consumerDefinition.QueueName}' contains a null entry."
+                    );
+                default:
+                    throw new InvalidOperationException(
+                        $"Inbound inspector chain entry '{GetTypeName(entry.GetType())}' for queue '{consumerDefinition.QueueName}' is not supported."
+                    );
             }
         }
 
@@ -1282,22 +1290,35 @@ public sealed class RabbitMqTopologyCompiler
 
         foreach (var entry in consumer.InspectorChain)
         {
-            if (entry is not ServiceInboundMessageInspectorChainEntry serviceEntry)
+            switch (entry)
             {
-                continue;
-            }
+                case ServiceInboundMessageInspectorChainEntry serviceEntry:
+                    if (!typeof(IInboundMessageInspector).IsAssignableFrom(serviceEntry.InspectorType))
+                    {
+                        validationErrors.Add(
+                            $"Inbound inspector '{serviceEntry.InspectorType}' for queue '{consumer.QueueName}' does not implement '{typeof(IInboundMessageInspector)}'."
+                        );
+                    }
+                    else if (!_isServiceRegistered(serviceEntry.InspectorType))
+                    {
+                        validationErrors.Add(
+                            $"Inbound inspector '{serviceEntry.InspectorType}' for queue '{consumer.QueueName}' is not registered."
+                        );
+                    }
 
-            if (!typeof(IInboundMessageInspector).IsAssignableFrom(serviceEntry.InspectorType))
-            {
-                validationErrors.Add(
-                    $"Inbound inspector '{serviceEntry.InspectorType}' for queue '{consumer.QueueName}' does not implement '{typeof(IInboundMessageInspector)}'."
-                );
-            }
-            else if (!_isServiceRegistered(serviceEntry.InspectorType))
-            {
-                validationErrors.Add(
-                    $"Inbound inspector '{serviceEntry.InspectorType}' for queue '{consumer.QueueName}' is not registered."
-                );
+                    break;
+                case RecognizerInboundMessageInspectorChainEntry:
+                    break;
+                case null:
+                    validationErrors.Add(
+                        $"Inbound inspector chain for queue '{consumer.QueueName}' contains a null entry."
+                    );
+                    break;
+                default:
+                    validationErrors.Add(
+                        $"Inbound inspector chain entry '{GetTypeName(entry.GetType())}' for queue '{consumer.QueueName}' is not supported."
+                    );
+                    break;
             }
         }
     }
