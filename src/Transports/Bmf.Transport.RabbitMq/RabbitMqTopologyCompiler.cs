@@ -1177,7 +1177,7 @@ public sealed class RabbitMqTopologyCompiler
                 );
             }
 
-            if (consumer.Handlers.Count == 0)
+            if (consumer.Handlers.Length == 0)
             {
                 validationErrors.Add($"Consume('{consumer.QueueName}') declares no handlers.");
             }

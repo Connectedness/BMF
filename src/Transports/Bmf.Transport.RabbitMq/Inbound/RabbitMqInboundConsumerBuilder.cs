@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using Bmf.Core.Messaging;
 using Bmf.Core.Messaging.Inbound;
@@ -13,7 +12,9 @@ namespace Bmf.Transport.RabbitMq.Inbound;
 /// </summary>
 public sealed class RabbitMqInboundConsumerBuilder
 {
-    private readonly List<RabbitMqInboundHandlerDefinition> _handlers = [];
+    private readonly ImmutableArray<RabbitMqInboundHandlerDefinition>.Builder _handlers =
+        ImmutableArray.CreateBuilder<RabbitMqInboundHandlerDefinition>();
+
     private readonly string _queueName;
     private int _channelCount = 1;
     private string? _channelGroupName;
@@ -231,7 +232,7 @@ public sealed class RabbitMqInboundConsumerBuilder
             _prefetchCount,
             _consumerDispatchConcurrency,
             _copyBody,
-            _handlers.AsReadOnly()
+            _handlers.DrainToImmutable()
         );
     }
 

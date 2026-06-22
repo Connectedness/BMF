@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using Bmf.Core.Messaging.Inbound;
 
@@ -23,5 +22,5 @@ public sealed record RabbitMqInboundConsumerDefinition(
     ushort PrefetchCount,
     ushort ConsumerDispatchConcurrency,
     bool CopyBody,
-    IReadOnlyList<RabbitMqInboundHandlerDefinition> Handlers
+    ImmutableArray<RabbitMqInboundHandlerDefinition> Handlers
 );
