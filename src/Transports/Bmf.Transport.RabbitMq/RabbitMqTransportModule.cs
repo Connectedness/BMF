@@ -2,17 +2,16 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Bmf.Core.Messaging;
+using Bmf.Core.Messaging.Inbound;
+using Bmf.Core.Messaging.Outbound;
+using Bmf.Transport.RabbitMq.Inbound;
+using Bmf.Transport.RabbitMq.Outbound;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using RabbitMQ.Client;
-using Bmf.Core.Messaging;
-using Bmf.Core.Messaging.Inbound;
-using Bmf.Core.Messaging.Outbound;
-
-using Bmf.Transport.RabbitMq.Inbound;
-using Bmf.Transport.RabbitMq.Outbound;
 
 namespace Bmf.Transport.RabbitMq;
 
@@ -60,7 +59,11 @@ public static class RabbitMqTransportModule
 
         var topologyBuilder = new RabbitMqTopologyBuilder();
         configure(topologyBuilder);
-        return AddRabbitMqTopologyCore(builder, topologyName, topologyBuilder.Build());
+        return AddRabbitMqTopologyCore(
+            builder,
+            topologyName,
+            ((IBuildable<RabbitMqTopologyConfiguration>) topologyBuilder).Build()
+        );
     }
 
     /// <summary>
@@ -102,7 +105,11 @@ public static class RabbitMqTransportModule
 
         var topologyBuilder = new RabbitMqTopologyBuilder();
         configure(topologyBuilder);
-        return AddRabbitMqTopologyCore(builder, topologyName, topologyBuilder.Build());
+        return AddRabbitMqTopologyCore(
+            builder,
+            topologyName,
+            ((IBuildable<RabbitMqTopologyConfiguration>) topologyBuilder).Build()
+        );
     }
 
     /// <summary>
@@ -144,7 +151,11 @@ public static class RabbitMqTransportModule
 
         var topologyBuilder = new RabbitMqTopologyBuilder();
         configure(topologyBuilder);
-        return AddRabbitMqTopologyCore(builder, topologyName, topologyBuilder.Build());
+        return AddRabbitMqTopologyCore(
+            builder,
+            topologyName,
+            ((IBuildable<RabbitMqTopologyConfiguration>) topologyBuilder).Build()
+        );
     }
 
     private static BmfBuilder AddRabbitMqTopologyCore(
@@ -159,6 +170,14 @@ public static class RabbitMqTransportModule
         foreach (var handler in configuration.Consumers.SelectMany(static consumer => consumer.Handlers))
         {
             services.TryAddScoped(handler.HandlerType);
+        }
+
+        foreach (var inspector in configuration
+                    .Consumers
+                    .SelectMany(static consumer => consumer.InspectorChain)
+                    .OfType<ServiceInboundMessageInspectorChainEntry>())
+        {
+            RegisterInspector(services, inspector);
         }
 
         services.AddKeyedSingleton<RabbitMqTopology>(
@@ -256,5 +275,22 @@ public static class RabbitMqTransportModule
         }
 
         return serviceProvider.GetService(serviceType) is not null;
+    }
+
+    private static void RegisterInspector(
+        IServiceCollection services,
+        ServiceInboundMessageInspectorChainEntry inspector
+    )
+    {
+        // Auto-registration yields to any existing registration regardless of lifetime: the first registration of
+        // the inspector type wins, so a user's explicit registration is never overwritten. TryAdd matches on the
+        // service type only, so the configured lifetime is honoured only when no registration exists yet.
+        services.TryAdd(
+            ServiceDescriptor.Describe(
+                inspector.InspectorType,
+                inspector.InspectorType,
+                inspector.ServiceLifetime
+            )
+        );
     }
 }

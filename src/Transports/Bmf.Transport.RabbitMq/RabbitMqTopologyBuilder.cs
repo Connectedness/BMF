@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using RabbitMQ.Client;
 using Bmf.Core.Messaging;
 using Bmf.Core.Messaging.Inbound;
-
 using Bmf.Transport.RabbitMq.Inbound;
 using Bmf.Transport.RabbitMq.Outbound;
+using RabbitMQ.Client;
 
 namespace Bmf.Transport.RabbitMq;
 
@@ -25,7 +24,8 @@ namespace Bmf.Transport.RabbitMq;
 /// hand out this builder through the direction-specific interfaces to constrain the configuration surface
 /// at compile time.
 /// </summary>
-public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, IRabbitMqInboundTopologyBuilder
+public sealed class RabbitMqTopologyBuilder
+    : IRabbitMqOutboundTopologyBuilder, IRabbitMqInboundTopologyBuilder, IBuildable<RabbitMqTopologyConfiguration>
 {
     private readonly List<RabbitMqBindingDefinition> _bindingDefinitions = [];
     private readonly List<RabbitMqInboundConsumerDefinition> _consumers = [];
@@ -43,6 +43,27 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
     private Type _deserializationMiddlewareType = typeof(MessageDeserializationMiddleware);
     private MessageContractRegistryBuilder? _messageContracts;
     private TimeSpan _shutdownTimeout = TimeSpan.FromSeconds(30);
+
+    /// <inheritdoc />
+    RabbitMqTopologyConfiguration IBuildable<RabbitMqTopologyConfiguration>.Build()
+    {
+        return new RabbitMqTopologyConfiguration(
+            _createConnectionFactory,
+            _exchangeDefinitions.AsReadOnly(),
+            _queueDefinitions.AsReadOnly(),
+            _bindingDefinitions.AsReadOnly(),
+            _outboundChannelGroupDefinitions.AsReadOnly(),
+            _targets.AsReadOnly(),
+            _inboundChannelGroupDefinitions.AsReadOnly(),
+            _consumers.AsReadOnly(),
+            _deserializationMiddlewareType,
+            _configurePipeline,
+            _shutdownTimeout,
+            _defaultPublisherConfirmMode,
+            _defaultPublisherConfirmTimeout,
+            (MessageContractRegistry?) ((IBuildable<IMessageContractRegistry>?) _messageContracts)?.Build()
+        );
+    }
 
     IRabbitMqInboundTopologyBuilder IRabbitMqTopologyBuilder<IRabbitMqInboundTopologyBuilder>.UseConnectionFactory(
         ConnectionFactory connectionFactory
@@ -201,7 +222,7 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
     {
         RabbitMqExchangeBuilder builder = new (name, type);
         configure?.Invoke(builder);
-        _exchangeDefinitions.Add(builder.Build());
+        _exchangeDefinitions.Add(((IBuildable<RabbitMqExchangeDefinition>) builder).Build());
         return this;
     }
 
@@ -210,7 +231,7 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
     {
         RabbitMqQueueBuilder builder = new (name);
         configure?.Invoke(builder);
-        _queueDefinitions.Add(builder.Build());
+        _queueDefinitions.Add(((IBuildable<RabbitMqQueueDefinition>) builder).Build());
         return this;
     }
 
@@ -224,7 +245,7 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
     {
         RabbitMqQueueBindingBuilder builder = new (exchangeName, queueName, routingKey);
         configure?.Invoke(builder);
-        _bindingDefinitions.Add(builder.Build());
+        _bindingDefinitions.Add(((IBuildable<RabbitMqQueueBindingDefinition>) builder).Build());
         return this;
     }
 
@@ -238,7 +259,7 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
     {
         RabbitMqExchangeBindingBuilder builder = new (sourceExchangeName, destinationExchangeName, routingKey);
         configure?.Invoke(builder);
-        _bindingDefinitions.Add(builder.Build());
+        _bindingDefinitions.Add(((IBuildable<RabbitMqExchangeBindingDefinition>) builder).Build());
         return this;
     }
 
@@ -413,7 +434,7 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
 
         RabbitMqInboundConsumerBuilder builder = new (queueName);
         configure(builder);
-        _consumers.Add(builder.Build());
+        _consumers.Add(((IBuildable<RabbitMqInboundConsumerDefinition>) builder).Build());
         return this;
     }
 
@@ -453,31 +474,6 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
         return this;
     }
 
-    /// <summary>
-    /// Builds the immutable <see cref="RabbitMqTopologyConfiguration" /> from the configured exchanges, queues,
-    /// bindings, channel groups, targets, and consumers.
-    /// </summary>
-    /// <returns>The compiled topology configuration.</returns>
-    public RabbitMqTopologyConfiguration Build()
-    {
-        return new RabbitMqTopologyConfiguration(
-            _createConnectionFactory,
-            _exchangeDefinitions.AsReadOnly(),
-            _queueDefinitions.AsReadOnly(),
-            _bindingDefinitions.AsReadOnly(),
-            _outboundChannelGroupDefinitions.AsReadOnly(),
-            _targets.AsReadOnly(),
-            _inboundChannelGroupDefinitions.AsReadOnly(),
-            _consumers.AsReadOnly(),
-            _deserializationMiddlewareType,
-            _configurePipeline,
-            _shutdownTimeout,
-            _defaultPublisherConfirmMode,
-            _defaultPublisherConfirmTimeout,
-            (MessageContractRegistry?) _messageContracts?.Build()
-        );
-    }
-
     private RabbitMqTopologyBuilder PublishCore<TMessage>(
         string? targetName,
         Action<RabbitMqOutboundTargetBuilder<TMessage>> configure
@@ -488,9 +484,9 @@ public sealed class RabbitMqTopologyBuilder : IRabbitMqOutboundTopologyBuilder, 
             throw new ArgumentNullException(nameof(configure));
         }
 
-        RabbitMqOutboundTargetBuilder<TMessage> builder = new ();
+        RabbitMqOutboundTargetBuilder<TMessage> builder = new (targetName);
         configure(builder);
-        _targets.Add(builder.Build(targetName));
+        _targets.Add(((IBuildable<RabbitMqOutboundTargetDefinition>) builder).Build());
         return this;
     }
 

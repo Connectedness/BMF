@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Bmf.Core.Messaging;
 
 namespace Bmf.Transport.RabbitMq;
 
@@ -8,7 +9,7 @@ namespace Bmf.Transport.RabbitMq;
 /// Fluent builder for a RabbitMQ queue declaration. It collects the queue name, declare mode, durability flags,
 /// and broker arguments (dead-lettering, TTLs, length limits, queue type) into a <see cref="RabbitMqQueueDefinition" />.
 /// </summary>
-public sealed class RabbitMqQueueBuilder
+public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
 {
     private readonly Dictionary<string, object?> _arguments = new (StringComparer.Ordinal);
 
@@ -49,6 +50,19 @@ public sealed class RabbitMqQueueBuilder
     /// Gets a value indicating whether the queue is deleted automatically once its last consumer disconnects.
     /// </summary>
     public bool AutoDelete { get; private set; }
+
+    /// <inheritdoc />
+    RabbitMqQueueDefinition IBuildable<RabbitMqQueueDefinition>.Build()
+    {
+        return new RabbitMqQueueDefinition(
+            Name,
+            DeclareMode,
+            Durable,
+            Exclusive,
+            AutoDelete,
+            new ReadOnlyDictionary<string, object?>(_arguments)
+        );
+    }
 
     /// <summary>
     /// Sets the declare mode for the queue.
@@ -220,22 +234,6 @@ public sealed class RabbitMqQueueBuilder
     {
         _arguments["x-single-active-consumer"] = singleActiveConsumer;
         return this;
-    }
-
-    /// <summary>
-    /// Builds the immutable <see cref="RabbitMqQueueDefinition" /> from the configured values.
-    /// </summary>
-    /// <returns>The queue definition.</returns>
-    public RabbitMqQueueDefinition Build()
-    {
-        return new RabbitMqQueueDefinition(
-            Name,
-            DeclareMode,
-            Durable,
-            Exclusive,
-            AutoDelete,
-            new ReadOnlyDictionary<string, object?>(_arguments)
-        );
     }
 
     private static string RequireText(string value, string parameterName)

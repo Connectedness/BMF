@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Bmf.Core.Messaging;
 
 namespace Bmf.Transport.RabbitMq;
 
@@ -8,7 +9,7 @@ namespace Bmf.Transport.RabbitMq;
 /// Fluent builder for a binding from a source exchange to a queue, collecting the routing key, binding mode, and
 /// binding arguments into a <see cref="RabbitMqQueueBindingDefinition" />.
 /// </summary>
-public sealed class RabbitMqQueueBindingBuilder
+public sealed class RabbitMqQueueBindingBuilder : IBuildable<RabbitMqQueueBindingDefinition>
 {
     private readonly Dictionary<string, object?> _arguments = new (StringComparer.Ordinal);
 
@@ -47,6 +48,18 @@ public sealed class RabbitMqQueueBindingBuilder
     /// </summary>
     public RabbitMqBindingMode BindingMode { get; private set; }
 
+    /// <inheritdoc />
+    RabbitMqQueueBindingDefinition IBuildable<RabbitMqQueueBindingDefinition>.Build()
+    {
+        return new RabbitMqQueueBindingDefinition(
+            SourceExchangeName,
+            QueueName,
+            RoutingKey,
+            BindingMode,
+            new ReadOnlyDictionary<string, object?>(_arguments)
+        );
+    }
+
     /// <summary>
     /// Sets the binding mode for the binding.
     /// </summary>
@@ -69,21 +82,6 @@ public sealed class RabbitMqQueueBindingBuilder
     {
         _arguments[RequireText(name, nameof(name))] = value;
         return this;
-    }
-
-    /// <summary>
-    /// Builds the immutable <see cref="RabbitMqQueueBindingDefinition" /> from the configured values.
-    /// </summary>
-    /// <returns>The queue binding definition.</returns>
-    public RabbitMqQueueBindingDefinition Build()
-    {
-        return new RabbitMqQueueBindingDefinition(
-            SourceExchangeName,
-            QueueName,
-            RoutingKey,
-            BindingMode,
-            new ReadOnlyDictionary<string, object?>(_arguments)
-        );
     }
 
     private static string RequireText(string value, string parameterName)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Bmf.Core.Messaging;
 using RabbitMQ.Client;
 
 namespace Bmf.Transport.RabbitMq;
@@ -9,7 +10,7 @@ namespace Bmf.Transport.RabbitMq;
 /// Fluent builder for a RabbitMQ exchange declaration. It collects the exchange name, type, declare mode,
 /// durability flags, and broker arguments into a <see cref="RabbitMqExchangeDefinition" />.
 /// </summary>
-public sealed class RabbitMqExchangeBuilder
+public sealed class RabbitMqExchangeBuilder : IBuildable<RabbitMqExchangeDefinition>
 {
     private readonly Dictionary<string, object?> _arguments = new (StringComparer.Ordinal);
 
@@ -52,6 +53,19 @@ public sealed class RabbitMqExchangeBuilder
     /// Gets a value indicating whether the exchange is deleted automatically once the last queue is unbound.
     /// </summary>
     public bool AutoDelete { get; private set; }
+
+    /// <inheritdoc />
+    RabbitMqExchangeDefinition IBuildable<RabbitMqExchangeDefinition>.Build()
+    {
+        return new RabbitMqExchangeDefinition(
+            Name,
+            Type,
+            DeclareMode,
+            Durable,
+            AutoDelete,
+            new ReadOnlyDictionary<string, object?>(_arguments)
+        );
+    }
 
     /// <summary>
     /// Sets the declare mode for the exchange.
@@ -122,22 +136,6 @@ public sealed class RabbitMqExchangeBuilder
     {
         _arguments["x-delayed-type"] = RequireText(delayedExchangeType, nameof(delayedExchangeType));
         return this;
-    }
-
-    /// <summary>
-    /// Builds the immutable <see cref="RabbitMqExchangeDefinition" /> from the configured values.
-    /// </summary>
-    /// <returns>The exchange definition.</returns>
-    public RabbitMqExchangeDefinition Build()
-    {
-        return new RabbitMqExchangeDefinition(
-            Name,
-            Type,
-            DeclareMode,
-            Durable,
-            AutoDelete,
-            new ReadOnlyDictionary<string, object?>(_arguments)
-        );
     }
 
     private static string RequireText(string value, string parameterName)

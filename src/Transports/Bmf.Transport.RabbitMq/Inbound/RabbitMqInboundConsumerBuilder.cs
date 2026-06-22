@@ -1,23 +1,31 @@
 using System;
-using System.Collections.Generic;
+using System.Collections.Immutable;
 using Bmf.Core.Messaging;
 using Bmf.Core.Messaging.Inbound;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Bmf.Transport.RabbitMq.Inbound;
 
 /// <summary>
 /// Fluent builder for a RabbitMQ consumer on a single queue. It configures the prefetch, concurrency, channel
-/// count, channel group, message inspector, and body-copy behaviour, and registers one or more typed handlers.
+/// count, channel group, message inspector, and body-copy behavior, and registers one or more typed handlers.
 /// </summary>
-public sealed class RabbitMqInboundConsumerBuilder
+public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundConsumerDefinition>
 {
-    private readonly List<RabbitMqInboundHandlerDefinition> _handlers = [];
+    private readonly ImmutableArray<RabbitMqInboundHandlerDefinition>.Builder _handlers =
+        ImmutableArray.CreateBuilder<RabbitMqInboundHandlerDefinition>();
+
     private readonly string _queueName;
     private int _channelCount = 1;
     private string? _channelGroupName;
     private ushort _consumerDispatchConcurrency = 1;
     private bool _copyBody = true;
-    private Type _inspectorType = typeof(CloudEventsInboundMessageInspector);
+
+    private ImmutableArray<InboundMessageInspectorChainEntry> _inspectorChain =
+    [
+        new ServiceInboundMessageInspectorChainEntry(typeof(CloudEventsInboundMessageInspector))
+    ];
+
     private ushort _prefetchCount = 1;
 
     /// <summary>
@@ -28,6 +36,21 @@ public sealed class RabbitMqInboundConsumerBuilder
     public RabbitMqInboundConsumerBuilder(string queueName)
     {
         _queueName = RequireText(queueName, nameof(queueName));
+    }
+
+    /// <inheritdoc />
+    RabbitMqInboundConsumerDefinition IBuildable<RabbitMqInboundConsumerDefinition>.Build()
+    {
+        return new RabbitMqInboundConsumerDefinition(
+            _queueName,
+            _inspectorChain,
+            _channelGroupName,
+            _channelCount,
+            _prefetchCount,
+            _consumerDispatchConcurrency,
+            _copyBody,
+            _handlers.ToImmutable()
+        );
     }
 
     /// <summary>
@@ -106,15 +129,40 @@ public sealed class RabbitMqInboundConsumerBuilder
     }
 
     /// <summary>
-    /// Overrides the inbound message inspector with <typeparamref name="TInspector" /> instead of the default
-    /// CloudEvents inspector.
+    /// Overrides the inbound message inspector chain with <typeparamref name="TInspector" /> instead of the default
+    /// CloudEvents inspector, using the requested auto-registration lifetime.
     /// </summary>
     /// <typeparam name="TInspector">The inspector type to use.</typeparam>
+    /// <param name="serviceLifetime">The optional lifetime used when the inspector type is auto-registered.</param>
     /// <returns>The same builder for chaining.</returns>
-    public RabbitMqInboundConsumerBuilder UseInspector<TInspector>()
+    public RabbitMqInboundConsumerBuilder UseInspector<TInspector>(
+        ServiceLifetime serviceLifetime = ServiceLifetime.Singleton
+    )
         where TInspector : class, IInboundMessageInspector
     {
-        _inspectorType = typeof(TInspector);
+        _inspectorChain =
+        [
+            new ServiceInboundMessageInspectorChainEntry(typeof(TInspector), serviceLifetime)
+        ];
+        return this;
+    }
+
+    /// <summary>
+    /// Configures an ordered inbound message inspector chain for this consumer.
+    /// </summary>
+    /// <param name="configure">The callback that adds inspector and recognizer entries.</param>
+    /// <returns>The same builder for chaining.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="configure" /> is <see langword="null" />.</exception>
+    public RabbitMqInboundConsumerBuilder UseInspectors(Action<InboundMessageInspectorChainBuilder> configure)
+    {
+        if (configure is null)
+        {
+            throw new ArgumentNullException(nameof(configure));
+        }
+
+        InboundMessageInspectorChainBuilder builder = new ();
+        configure(builder);
+        _inspectorChain = ((IBuildable<ImmutableArray<InboundMessageInspectorChainEntry>>) builder).Build();
         return this;
     }
 
@@ -174,7 +222,8 @@ public sealed class RabbitMqInboundConsumerBuilder
 
         var handlerBuilder = new RabbitMqInboundHandlerBuilder();
         configure?.Invoke(handlerBuilder);
-        var (deserializerType, ackMode) = handlerBuilder.Build();
+        var (deserializerType, ackMode) =
+            ((IBuildable<(Type DeserializerType, MessageAckMode AckMode)>) handlerBuilder).Build();
 
         _handlers.Add(
             new RabbitMqInboundHandlerDefinition(
@@ -187,20 +236,6 @@ public sealed class RabbitMqInboundConsumerBuilder
             )
         );
         return this;
-    }
-
-    internal RabbitMqInboundConsumerDefinition Build()
-    {
-        return new RabbitMqInboundConsumerDefinition(
-            _queueName,
-            _inspectorType,
-            _channelGroupName,
-            _channelCount,
-            _prefetchCount,
-            _consumerDispatchConcurrency,
-            _copyBody,
-            _handlers.AsReadOnly()
-        );
     }
 
     private static string RequireText(string value, string parameterName)

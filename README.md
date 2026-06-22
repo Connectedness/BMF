@@ -339,9 +339,9 @@ The journey from a raw delivery to your handler runs through three swappable sta
 you can adapt BMF to non-CloudEvents producers or weave in cross-cutting concerns:
 
 - **Inspector** — resolves a wire message to a known contract. The default reads the
-  CloudEvents `type` attribute to pick the discriminator and message type; swap it per
-  consumer with `UseInspector<T>()` (an `IInboundMessageInspector`) when messages don't
-  carry CloudEvents metadata.
+  CloudEvents `type` attribute to pick the discriminator and message type. Use
+  `UseInspector<T>()` as the single-inspector shorthand, or `UseInspectors(...)` to
+  compose an ordered, first-match-wins chain.
 - **Deserializer** — turns the body into your message type. The default decodes the
   payload codec (UTF-8 JSON); override it per handler via the `Handle<,>` configuration
   with `WithDeserializer<T>()` (an `IMessageDeserializer`), or replace the deserialization
@@ -364,6 +364,37 @@ rabbit
             )
     );
 ```
+
+Composable inspector chains are useful when one queue carries several wire formats.
+`CloudEvents()` adds the default CloudEvents inspector, `Use<TInspector>()` adds a
+custom inspector resolved from DI, and recognizers map cheap transport signals to a
+message type without writing an inspector class:
+
+```csharp
+rabbit.Consume(
+    "uploads",
+    consumer => consumer
+        .UseInspectors(chain => chain
+            .CloudEvents()
+            .WhenHeader("x-amz-sns-message-type").As<UploadCompleted>("uploads.sns")
+            .WhenContentType("application/vnd.legacy-upload+json").As<LegacyUpload>("uploads.legacy")
+         )
+        .Handle<UploadCompleted, UploadCompletedHandler>(handler => handler
+            .WithDeserializer<SnsEnvelopeDeserializer>()
+         )
+        .Handle<LegacyUpload, LegacyUploadHandler>());
+```
+
+`WhenHeader(name)`, `WhenHeader(name, value)`, `WhenContentType(value)`, and
+`When(Func<TransportMessage, bool>)` each finish with `As<T>()` or
+`As<T>("explicit.discriminator")`. `As<T>()` uses the message contract registry;
+the explicit overload is for inbound formats that are not CloudEvents contracts. Put
+more specific entries first because the first match wins.
+
+Recognizers only decide "what type is this?" The selected handler endpoint still owns
+body decoding through `WithDeserializer<T>()`, so framed formats such as SNS envelopes
+or non-JSON payloads should recognize in the chain and deserialize on the matching
+handler.
 
 ### Acknowledgements
 
@@ -462,6 +493,46 @@ and `Bmf.Core` and the transports take no OpenTelemetry package reference at all
 the package you can subscribe to the same names directly with
 `AddSource("Bmf.Outbound", "Bmf.Inbound")` and `AddMeter("Bmf.Outbound", "Bmf.Inbound")`;
 the package is just the discoverable, named convenience.
+
+### Builders and `IBuildable<T>`
+
+Everything you configure — a topology, a consumer, an outbound target, an inspector
+chain — is a fluent builder you receive inside a callback. Each builder ends in a single
+terminal step that compiles your configuration into an immutable definition. That step is
+the framework's job, not yours: you describe the topology, and BMF compiles it once when
+the `Add…Topology` extension method returns. So the terminal `Build()` is deliberately
+kept off the configuration surface — it isn't a public method on the builder and won't
+show up in IntelliSense while you're configuring, which means you can't call it by
+accident mid-callback.
+
+The mechanism is a small interface, `IBuildable<T>`, that every builder implements
+**explicitly**:
+
+```csharp
+public interface IBuildable<out TResult>
+{
+    TResult Build();
+}
+```
+
+Because the implementation is explicit, `Build()` is reachable only through the interface,
+never through the builder's own type. In normal use you never see it — the `Add…Topology`
+extension methods on `IServiceCollection` configure the builder and compile it for you. If
+you ever need to compile a builder yourself (building a `RabbitMqTopologyConfiguration`
+directly in a test, say), cast to the interface to reach `Build()`:
+
+```csharp
+var topologyBuilder = new RabbitMqTopologyBuilder();
+topologyBuilder.UseConnectionFactory(static _ => new ConnectionFactory());
+topologyBuilder.Queue("inbound");
+topologyBuilder.Consume("inbound", consumer => consumer.Handle<OrderPlaced, OrderPlacedHandler>());
+
+var configuration = ((IBuildable<RabbitMqTopologyConfiguration>) topologyBuilder).Build();
+```
+
+The same pattern applies to every builder in the framework: the configuration surface is
+public and discoverable, while the terminal `Build()` stays hidden in plain sight behind
+`IBuildable<T>`.
 
 ## License
 

@@ -1,4 +1,5 @@
 using System;
+using Bmf.Core.Messaging;
 using Bmf.Core.Messaging.Inbound;
 
 namespace Bmf.Transport.RabbitMq.Inbound;
@@ -7,10 +8,16 @@ namespace Bmf.Transport.RabbitMq.Inbound;
 /// Fluent builder for a single inbound handler registration, configuring its deserializer and acknowledgement
 /// mode.
 /// </summary>
-public sealed class RabbitMqInboundHandlerBuilder
+public sealed class RabbitMqInboundHandlerBuilder : IBuildable<(Type DeserializerType, MessageAckMode AckMode)>
 {
     private MessageAckMode _ackMode = MessageAckMode.Auto;
     private Type _deserializerType = typeof(PayloadCodecMessageDeserializer);
+
+    /// <inheritdoc />
+    (Type DeserializerType, MessageAckMode AckMode) IBuildable<(Type DeserializerType, MessageAckMode AckMode)>.Build()
+    {
+        return (_deserializerType, _ackMode);
+    }
 
     /// <summary>
     /// Overrides the deserializer for this handler with <typeparamref name="TDeserializer" /> instead of the
@@ -50,10 +57,5 @@ public sealed class RabbitMqInboundHandlerBuilder
     public RabbitMqInboundHandlerBuilder ManualAck()
     {
         return WithAckMode(MessageAckMode.Manual);
-    }
-
-    internal (Type DeserializerType, MessageAckMode AckMode) Build()
-    {
-        return (_deserializerType, _ackMode);
     }
 }
