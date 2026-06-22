@@ -494,6 +494,46 @@ the package you can subscribe to the same names directly with
 `AddSource("Bmf.Outbound", "Bmf.Inbound")` and `AddMeter("Bmf.Outbound", "Bmf.Inbound")`;
 the package is just the discoverable, named convenience.
 
+### Builders and `IBuildable<T>`
+
+Everything you configure — a topology, a consumer, an outbound target, an inspector
+chain — is a fluent builder you receive inside a callback. Each builder ends in a single
+terminal step that compiles your configuration into an immutable definition. That step is
+the framework's job, not yours: you describe the topology, and BMF compiles it once when
+the `Add…Topology` extension method returns. So the terminal `Build()` is deliberately
+kept off the configuration surface — it isn't a public method on the builder and won't
+show up in IntelliSense while you're configuring, which means you can't call it by
+accident mid-callback.
+
+The mechanism is a small interface, `IBuildable<T>`, that every builder implements
+**explicitly**:
+
+```csharp
+public interface IBuildable<out TResult>
+{
+    TResult Build();
+}
+```
+
+Because the implementation is explicit, `Build()` is reachable only through the interface,
+never through the builder's own type. In normal use you never see it — the `Add…Topology`
+extension methods on `IServiceCollection` configure the builder and compile it for you. If
+you ever need to compile a builder yourself (building a `RabbitMqTopologyConfiguration`
+directly in a test, say), cast to the interface to reach `Build()`:
+
+```csharp
+var topologyBuilder = new RabbitMqTopologyBuilder();
+topologyBuilder.UseConnectionFactory(static _ => new ConnectionFactory());
+topologyBuilder.Queue("inbound");
+topologyBuilder.Consume("inbound", consumer => consumer.Handle<OrderPlaced, OrderPlacedHandler>());
+
+var configuration = ((IBuildable<RabbitMqTopologyConfiguration>) topologyBuilder).Build();
+```
+
+The same pattern applies to every builder in the framework: the configuration surface is
+public and discoverable, while the terminal `Build()` stays hidden in plain sight behind
+`IBuildable<T>`.
+
 ## License
 
 BMF is licensed under the [MIT License](LICENSE).

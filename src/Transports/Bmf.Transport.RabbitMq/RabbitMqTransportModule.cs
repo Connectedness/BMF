@@ -59,7 +59,11 @@ public static class RabbitMqTransportModule
 
         var topologyBuilder = new RabbitMqTopologyBuilder();
         configure(topologyBuilder);
-        return AddRabbitMqTopologyCore(builder, topologyName, topologyBuilder.Build());
+        return AddRabbitMqTopologyCore(
+            builder,
+            topologyName,
+            ((IBuildable<RabbitMqTopologyConfiguration>) topologyBuilder).Build()
+        );
     }
 
     /// <summary>
@@ -101,7 +105,11 @@ public static class RabbitMqTransportModule
 
         var topologyBuilder = new RabbitMqTopologyBuilder();
         configure(topologyBuilder);
-        return AddRabbitMqTopologyCore(builder, topologyName, topologyBuilder.Build());
+        return AddRabbitMqTopologyCore(
+            builder,
+            topologyName,
+            ((IBuildable<RabbitMqTopologyConfiguration>) topologyBuilder).Build()
+        );
     }
 
     /// <summary>
@@ -143,7 +151,11 @@ public static class RabbitMqTransportModule
 
         var topologyBuilder = new RabbitMqTopologyBuilder();
         configure(topologyBuilder);
-        return AddRabbitMqTopologyCore(builder, topologyName, topologyBuilder.Build());
+        return AddRabbitMqTopologyCore(
+            builder,
+            topologyName,
+            ((IBuildable<RabbitMqTopologyConfiguration>) topologyBuilder).Build()
+        );
     }
 
     private static BmfBuilder AddRabbitMqTopologyCore(
