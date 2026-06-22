@@ -11,6 +11,15 @@ namespace Bmf.Core.Messaging.Inbound;
 /// </summary>
 /// <remarks>
 /// The order is significant: broad inspectors placed before narrower inspectors can shadow them.
+/// <para>
+/// This type composes inspectors that are already resolved into instances at construction time; it has no
+/// dependency-injection concept. Transports that resolve some inspectors per delivery (honoring a scoped or
+/// transient lifetime) use a compiled, service-provider-aware counterpart instead — for example, the RabbitMQ
+/// transport's <c>RabbitMqInboundMessageInspectorChain</c>. The two deliberately do not share the first-match loop:
+/// that counterpart must stay stateless because a single chain instance is shared across concurrent deliveries, so
+/// it threads the per-delivery <see cref="System.IServiceProvider" /> through each evaluation rather than capturing
+/// fixed instances the way this type does.
+/// </para>
 /// </remarks>
 public sealed class CompositeInboundMessageInspector : IInboundMessageInspector
 {

@@ -10,6 +10,15 @@ namespace Bmf.Transport.RabbitMq.Inbound;
 /// <summary>
 /// The compiled inspector chain for a RabbitMQ inbound consumer.
 /// </summary>
+/// <remarks>
+/// This is the compiled, service-provider-aware counterpart of
+/// <see cref="CompositeInboundMessageInspector" />: both evaluate inspectors in declaration order and return the
+/// first non-<see langword="null" /> result, but this chain may resolve some entries from the per-delivery
+/// <see cref="IServiceProvider" /> (honouring a scoped or transient inspector lifetime) instead of holding only
+/// fixed instances. A single instance is built once at topology-compile time and shared across concurrent
+/// deliveries, so it stays stateless and threads the service provider through each evaluation rather than capturing
+/// it; that is why the first-match loop is not shared with <see cref="CompositeInboundMessageInspector" />.
+/// </remarks>
 public sealed class RabbitMqInboundMessageInspectorChain
 {
     /// <summary>
