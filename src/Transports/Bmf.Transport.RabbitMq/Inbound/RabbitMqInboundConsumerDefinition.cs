@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Bmf.Core.Messaging.Inbound;
 
 namespace Bmf.Transport.RabbitMq.Inbound;
@@ -16,7 +17,7 @@ namespace Bmf.Transport.RabbitMq.Inbound;
 /// <param name="Handlers">The handler registrations for the consumer.</param>
 public sealed record RabbitMqInboundConsumerDefinition(
     string QueueName,
-    IReadOnlyList<InboundMessageInspectorChainEntry> InspectorChain,
+    ImmutableArray<InboundMessageInspectorChainEntry> InspectorChain,
     string? ChannelGroupName,
     int ChannelCount,
     ushort PrefetchCount,

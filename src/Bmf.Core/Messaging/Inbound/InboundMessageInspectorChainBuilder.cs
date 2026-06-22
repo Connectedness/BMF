@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Collections.Immutable;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Bmf.Core.Messaging.Inbound;
@@ -13,7 +13,8 @@ namespace Bmf.Core.Messaging.Inbound;
 /// </remarks>
 public sealed class InboundMessageInspectorChainBuilder
 {
-    private readonly List<InboundMessageInspectorChainEntry> _entries = [];
+    private readonly ImmutableArray<InboundMessageInspectorChainEntry>.Builder _entries =
+        ImmutableArray.CreateBuilder<InboundMessageInspectorChainEntry>();
 
     /// <summary>
     /// Adds the default CloudEvents inspector to the chain with the requested auto-registration lifetime.
@@ -101,9 +102,9 @@ public sealed class InboundMessageInspectorChainBuilder
     /// Builds the immutable chain entries accumulated so far.
     /// </summary>
     /// <returns>The chain entries in declaration order.</returns>
-    public IReadOnlyList<InboundMessageInspectorChainEntry> Build()
+    public ImmutableArray<InboundMessageInspectorChainEntry> Build()
     {
-        return _entries.ToArray();
+        return _entries.DrainToImmutable();
     }
 
     internal InboundMessageInspectorChainBuilder AddRecognizer(

@@ -1272,7 +1272,7 @@ public sealed class RabbitMqTopologyCompiler
         ICollection<string> validationErrors
     )
     {
-        if (consumer.InspectorChain.Count == 0)
+        if (consumer.InspectorChain.Length == 0)
         {
             validationErrors.Add(
                 $"Inbound inspector chain for queue '{consumer.QueueName}' must contain at least one entry."

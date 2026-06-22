@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Bmf.Core.Messaging;
 using Bmf.Core.Messaging.Inbound;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +20,7 @@ public sealed class RabbitMqInboundConsumerBuilder
     private ushort _consumerDispatchConcurrency = 1;
     private bool _copyBody = true;
 
-    private IReadOnlyList<InboundMessageInspectorChainEntry> _inspectorChain =
+    private ImmutableArray<InboundMessageInspectorChainEntry> _inspectorChain =
     [
         new ServiceInboundMessageInspectorChainEntry(typeof(CloudEventsInboundMessageInspector))
     ];
