@@ -8,7 +8,7 @@ namespace Bmf.Transport.RabbitMq.Inbound;
 
 /// <summary>
 /// Fluent builder for a RabbitMQ consumer on a single queue. It configures the prefetch, concurrency, channel
-/// count, channel group, message inspector, and body-copy behaviour, and registers one or more typed handlers.
+/// count, channel group, message inspector, and body-copy behavior, and registers one or more typed handlers.
 /// </summary>
 public sealed class RabbitMqInboundConsumerBuilder
 {
@@ -232,7 +232,7 @@ public sealed class RabbitMqInboundConsumerBuilder
             _prefetchCount,
             _consumerDispatchConcurrency,
             _copyBody,
-            _handlers.DrainToImmutable()
+            _handlers.ToImmutable()
         );
     }
 

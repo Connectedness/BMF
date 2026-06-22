@@ -104,7 +104,7 @@ public sealed class InboundMessageInspectorChainBuilder
     /// <returns>The chain entries in declaration order.</returns>
     public ImmutableArray<InboundMessageInspectorChainEntry> Build()
     {
-        return _entries.DrainToImmutable();
+        return _entries.ToImmutable();
     }
 
     internal InboundMessageInspectorChainBuilder AddRecognizer(
