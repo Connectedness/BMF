@@ -131,6 +131,58 @@ public sealed class InboundMessageInspectorChainTests
         entry.ExplicitDiscriminator.Should().Be("tests.custom");
     }
 
+    [Fact]
+    public void Constructors_AndBuilders_ValidateArguments()
+    {
+        var constructNullList = () => new CompositeInboundMessageInspector(null!);
+        var constructListWithNullEntry = () => new CompositeInboundMessageInspector([null!]);
+        var constructPredicateWithoutPredicate =
+            () => new PredicateInboundMessageInspector(null!, "tests.legacy", typeof(LegacyMessage));
+        var constructPredicateWithBlankDiscriminator =
+            () => new PredicateInboundMessageInspector(_ => true, "  ", typeof(LegacyMessage));
+        var constructPredicateWithoutMessageType =
+            () => new PredicateInboundMessageInspector(_ => true, "tests.legacy", null!);
+        var constructRecognizerEntryWithBlankDiscriminator =
+            () => new RecognizerInboundMessageInspectorChainEntry(_ => true, typeof(LegacyMessage), "  ");
+        InboundMessageInspectorChainBuilder builder = new ();
+        var whenHeaderWithoutName = () => builder.WhenHeader("  ");
+        var whenHeaderWithoutValue = () => builder.WhenHeader("x-kind", "  ");
+        var whenContentTypeWithoutValue = () => builder.WhenContentType("  ");
+        var whenWithoutPredicate = () => builder.When(null!);
+        var asWithBlankExplicitDiscriminator = () => builder.WhenHeader("x-kind").As<LegacyMessage>("  ");
+
+        constructNullList.Should().Throw<ArgumentNullException>().WithParameterName("inspectors");
+        constructListWithNullEntry.Should().Throw<ArgumentNullException>().WithParameterName("inspectors");
+        constructPredicateWithoutPredicate.Should().Throw<ArgumentNullException>().WithParameterName("predicate");
+        constructPredicateWithBlankDiscriminator.Should().Throw<ArgumentException>()
+           .WithParameterName("discriminator");
+        constructPredicateWithoutMessageType.Should().Throw<ArgumentNullException>().WithParameterName("messageType");
+        constructRecognizerEntryWithBlankDiscriminator.Should().Throw<ArgumentException>()
+           .WithParameterName("explicitDiscriminator");
+        whenHeaderWithoutName.Should().Throw<ArgumentException>().WithParameterName("name");
+        whenHeaderWithoutValue.Should().Throw<ArgumentException>().WithParameterName("value");
+        whenContentTypeWithoutValue.Should().Throw<ArgumentException>().WithParameterName("value");
+        whenWithoutPredicate.Should().Throw<ArgumentNullException>().WithParameterName("predicate");
+        asWithBlankExplicitDiscriminator.Should().Throw<ArgumentException>()
+           .WithParameterName("explicitDiscriminator");
+    }
+
+    [Fact]
+    public async Task InspectAsync_RejectsNullTransportMessage()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        CompositeInboundMessageInspector composite = new ([new TestInspector(null)]);
+        PredicateInboundMessageInspector predicate = new (_ => true, "tests.legacy", typeof(LegacyMessage));
+
+        var inspectCompositeWithoutMessage = async () => await composite.InspectAsync(null!, cancellationToken);
+        var inspectPredicateWithoutMessage = async () => await predicate.InspectAsync(null!, cancellationToken);
+
+        await inspectCompositeWithoutMessage
+           .Should().ThrowAsync<ArgumentNullException>().WithParameterName("transportMessage");
+        await inspectPredicateWithoutMessage
+           .Should().ThrowAsync<ArgumentNullException>().WithParameterName("transportMessage");
+    }
+
     private sealed record LegacyMessage;
 
     private sealed record SecondMessage;

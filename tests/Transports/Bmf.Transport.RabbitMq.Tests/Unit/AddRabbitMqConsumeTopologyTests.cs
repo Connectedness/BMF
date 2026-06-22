@@ -616,6 +616,44 @@ public sealed class AddRabbitMqConsumeTopologyTests
     }
 
     [Fact]
+    public void Compile_RejectsRecognizerDiscriminatorCollidingWithAnotherHandler()
+    {
+        var services = new ServiceCollection();
+        services
+           .AddTestCloudEvents()
+           .AddRabbitMqTopology(
+                builder =>
+                {
+                    builder.UseConnectionFactory(static _ => new ConnectionFactory());
+                    builder.Queue("inbound");
+                    builder.Consume(
+                        "inbound",
+                        consumer => consumer
+                           .UseInspectors(
+                                chain => chain
+                                   .CloudEvents()
+                                   .WhenHeader("x-kind", "collide")
+                                   .As<ValidationMessageB>(
+                                        RabbitMqCloudEventsTestFactory.ValidationMessageADiscriminator
+                                    )
+                            )
+                           .Handle<ValidationMessageA, ValidationMessageAHandler>()
+                           .Handle<ValidationMessageB, ValidationMessageBHandler>()
+                    );
+                }
+            );
+        using var serviceProvider = services.BuildServiceProvider();
+
+        // ReSharper disable once AccessToDisposedClosure -- act is called before disposal
+        Action act = () => _ = serviceProvider.GetRequiredService<RabbitMqTopology>();
+
+        act.Should().Throw<TopologyValidationException>()
+           .Which.ValidationErrors.Should().Contain(
+                $"Inbound endpoint discriminator '{RabbitMqCloudEventsTestFactory.ValidationMessageADiscriminator}' is configured multiple times for queue 'inbound'."
+            );
+    }
+
+    [Fact]
     public void AddRabbitMqInboundTopology_InterfaceBuilderAppliesSharedBrokerAndPipelineSettings()
     {
         var services = new ServiceCollection();
