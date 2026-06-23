@@ -10,10 +10,10 @@ namespace Bmf.Core.Messaging;
 /// A transport binds these attributes according to its protocol binding. The RabbitMQ transport uses the AMQP
 /// protocol binding over AMQP 0.9.1. Equality is structural with two deliberate refinements: <see cref="Data" />
 /// is compared by content rather than by buffer identity, and <see cref="Extensions" /> is compared as an
-/// unordered set of key/value pairs. Extension keys are always matched ordinally, regardless of the comparer of
-/// the dictionary supplied to the constructor: the envelope normalizes that dictionary into an ordinally keyed
-/// snapshot once at construction, so <see cref="Equals(CloudEventEnvelope)" /> and <see cref="GetHashCode" /> do
-/// not allocate.
+/// unordered set of key/value pairs. Extension keys are always matched ordinally for equality and hashing,
+/// regardless of the comparer of the dictionary supplied to the constructor. For performance, the envelope may
+/// reuse the supplied dictionary instance when it is already ordinally keyed; callers should treat
+/// <see cref="Extensions" /> as immutable.
 /// </remarks>
 /// <param name="SpecVersion">The CloudEvents specification version.</param>
 /// <param name="Id">The event identifier.</param>
@@ -44,8 +44,9 @@ public readonly record struct CloudEventEnvelope(
     private readonly Dictionary<string, string?>? _extensions = NormalizeToOrdinal(Extensions);
 
     /// <summary>
-    /// The optional CloudEvents extension attributes, or <see langword="null" />. The value is an ordinally keyed
-    /// snapshot of the dictionary supplied to the constructor.
+    /// The optional CloudEvents extension attributes, or <see langword="null" />.
+    /// The value is an ordinally keyed dictionary derived from the dictionary supplied to the constructor
+    /// (and may reuse the supplied instance when it is already ordinally keyed).
     /// </summary>
     public IReadOnlyDictionary<string, string?>? Extensions
     {
