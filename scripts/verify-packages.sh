@@ -30,12 +30,12 @@ for package in "${packages[@]}"; do
   # report a missing file.
   listing="$(unzip -Z1 "$package")"
 
-  if ! grep -qx "$expected_icon" <<< "$listing"; then
+  if ! grep -Fqx "$expected_icon" <<< "$listing"; then
     echo "FAIL: $name is missing '$expected_icon' at the package root"
     package_ok=0
   fi
 
-  if ! grep -qx "$expected_readme" <<< "$listing"; then
+  if ! grep -Fqx "$expected_readme" <<< "$listing"; then
     echo "FAIL: $name is missing '$expected_readme' at the package root"
     package_ok=0
   fi
