@@ -10,7 +10,10 @@ namespace Bmf.Core.Messaging;
 /// A transport binds these attributes according to its protocol binding. The RabbitMQ transport uses the AMQP
 /// protocol binding over AMQP 0.9.1. Equality is structural with two deliberate refinements: <see cref="Data" />
 /// is compared by content rather than by buffer identity, and <see cref="Extensions" /> is compared as an
-/// unordered set of key/value pairs.
+/// unordered set of key/value pairs. Extension keys are always matched ordinally for equality and hashing,
+/// regardless of the comparer of the dictionary supplied to the constructor. For performance, the envelope may
+/// reuse the supplied dictionary instance when it is already ordinally keyed; callers should treat
+/// <see cref="Extensions" /> as immutable.
 /// </remarks>
 /// <param name="SpecVersion">The CloudEvents specification version.</param>
 /// <param name="Id">The event identifier.</param>
@@ -35,6 +38,23 @@ public readonly record struct CloudEventEnvelope(
     IReadOnlyDictionary<string, string?>? Extensions = null
 )
 {
+    // Stored as a concrete, ordinally keyed dictionary so that equality can match keys via a direct
+    // TryGetValue without snapshotting on every comparison. The public Extensions property exposes it
+    // as the read-only interface.
+    private readonly Dictionary<string, string?>? _extensions = NormalizeToOrdinal(Extensions);
+
+    /// <summary>
+    /// The optional CloudEvents extension attributes, or <see langword="null" />.
+    /// The value is an ordinally keyed dictionary derived from the dictionary supplied to the constructor
+    /// (and may reuse the supplied instance when it is already ordinally keyed).
+    /// </summary>
+    public IReadOnlyDictionary<string, string?>? Extensions
+    {
+        get => _extensions;
+        // ReSharper disable once UnusedMember.Global -- not true, this is hoisted into the constructor of the record
+        init => _extensions = NormalizeToOrdinal(value);
+    }
+
     /// <summary>
     /// Determines whether this envelope is structurally equal to another, comparing <see cref="Data" /> by
     /// content and <see cref="Extensions" /> as an unordered set of key/value pairs.
@@ -52,7 +72,7 @@ public readonly record struct CloudEventEnvelope(
                DataContentType == other.DataContentType &&
                DataSchema == other.DataSchema &&
                ReadOnlyMemoryByteEqualityComparer.Default.Equals(Data, other.Data) &&
-               ExtensionsEqual(Extensions, other.Extensions);
+               ExtensionsEqual(_extensions, other._extensions);
     }
 
     /// <summary>
@@ -72,14 +92,13 @@ public readonly record struct CloudEventEnvelope(
         hashCode.Add(DataContentType);
         hashCode.Add(DataSchema);
         hashCode.Add(ReadOnlyMemoryByteEqualityComparer.Default.GetHashCode(Data));
-        hashCode.Add(GetExtensionsHashCode(Extensions));
+        hashCode.Add(GetExtensionsHashCode(_extensions));
         return hashCode.ToHashCode();
     }
 
-    private static bool ExtensionsEqual(
-        IReadOnlyDictionary<string, string?>? left,
-        IReadOnlyDictionary<string, string?>? right
-    )
+    // Both operands are guaranteed to use an ordinal key comparer (see NormalizeToOrdinal), so the lookup below
+    // is ordinal and symmetric without snapshotting either side.
+    private static bool ExtensionsEqual(Dictionary<string, string?>? left, Dictionary<string, string?>? right)
     {
         if (ReferenceEquals(left, right))
         {
@@ -91,10 +110,10 @@ public readonly record struct CloudEventEnvelope(
             return false;
         }
 
-        foreach (var pair in left)
+        foreach (var pair in right)
         {
-            if (!right.TryGetValue(pair.Key, out var value) ||
-                !string.Equals(pair.Value, value, StringComparison.Ordinal))
+            if (!left.TryGetValue(pair.Key, out var value) ||
+                !string.Equals(value, pair.Value, StringComparison.Ordinal))
             {
                 return false;
             }
@@ -103,7 +122,7 @@ public readonly record struct CloudEventEnvelope(
         return true;
     }
 
-    private static int GetExtensionsHashCode(IReadOnlyDictionary<string, string?>? extensions)
+    private static int GetExtensionsHashCode(Dictionary<string, string?>? extensions)
     {
         if (extensions is null)
         {
@@ -118,5 +137,36 @@ public readonly record struct CloudEventEnvelope(
         }
 
         return hashCode;
+    }
+
+    // Returns the dictionary unchanged when it already matches keys ordinally (the common case, so no copy),
+    // otherwise copies it into an ordinally keyed dictionary so equality and hashing stay comparer-independent.
+    private static Dictionary<string, string?>? NormalizeToOrdinal(IReadOnlyDictionary<string, string?>? extensions)
+    {
+        if (extensions is null)
+        {
+            return null;
+        }
+
+        if (extensions is Dictionary<string, string?> dictionary && IsOrdinalKeyComparer(dictionary.Comparer))
+        {
+            return dictionary;
+        }
+
+        var ordinal = new Dictionary<string, string?>(extensions.Count, StringComparer.Ordinal);
+        foreach (var pair in extensions)
+        {
+            ordinal[pair.Key] = pair.Value;
+        }
+
+        return ordinal;
+    }
+
+    // StringComparer.Ordinal and EqualityComparer<string>.Default both match string keys ordinally; any other
+    // comparer (e.g., OrdinalIgnoreCase) must be normalized to keep equality ordinal.
+    private static bool IsOrdinalKeyComparer(IEqualityComparer<string> comparer)
+    {
+        return ReferenceEquals(comparer, StringComparer.Ordinal) ||
+               ReferenceEquals(comparer, EqualityComparer<string>.Default);
     }
 }
