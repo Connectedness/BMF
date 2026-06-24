@@ -9,8 +9,8 @@
     <Company>Connectedness</Company>
     <Copyright>Copyright (c) 2025 Connectedness</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/Connectedness/BMF</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/Connectedness/BrilliantMessaging</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/Connectedness/BMF</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Connectedness/BrilliantMessaging</RepositoryUrl>
   </PropertyGroup>
 </Project>
