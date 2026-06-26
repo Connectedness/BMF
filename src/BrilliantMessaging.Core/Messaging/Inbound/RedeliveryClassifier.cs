@@ -9,7 +9,7 @@ namespace BrilliantMessaging.Core.Messaging.Inbound;
 /// The classifier only answers whether the current failure should be requeued. It does not count attempts,
 /// schedule delays, or choose an exhaustion action.
 /// </remarks>
-public sealed record RedeliveryClassifier
+public sealed class RedeliveryClassifier
 {
     private readonly bool _retryMarkerOverrides;
     private readonly Func<Exception, bool> _shouldRetry;
