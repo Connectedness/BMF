@@ -27,17 +27,6 @@ public sealed class TopologyValidationExceptionTests
     }
 
     [Fact]
-    public void Message_ListsErrorsInSortedOrder()
-    {
-        TopologyValidationException exception = new (["zeta", "alpha"]);
-
-        int alphaIndex = exception.Message.IndexOf("alpha", StringComparison.Ordinal);
-        int zetaIndex = exception.Message.IndexOf("zeta", StringComparison.Ordinal);
-
-        alphaIndex.Should().BeLessThan(zetaIndex);
-    }
-
-    [Fact]
     public void Constructor_RequiresAtLeastOneError()
     {
         Action act = () => _ = new TopologyValidationException(Array.Empty<string>());

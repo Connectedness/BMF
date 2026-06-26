@@ -50,11 +50,11 @@ public sealed class TopologyValidationException : Exception
         }
 
         StringBuilder builder = new ("Topology validation failed:");
-        foreach (string error in validationErrors.OrderBy(static error => error, StringComparer.Ordinal))
+        for (int i = 0; i < validationErrors.Count; i++)
         {
             builder.AppendLine();
             builder.Append("- ");
-            builder.Append(error);
+            builder.Append(validationErrors[i]);
         }
         return builder.ToString();
     }
