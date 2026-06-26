@@ -47,6 +47,10 @@ public sealed class RabbitMqMessageAcknowledgement : IMessageAcknowledgement
             return Task.CompletedTask;
         }
 
+        // We settle exactly one delivery, so basic.reject gives us the same requeue/drop choice as
+        // basic.nack(multiple: false). RabbitMQ 4.3 quorum queues count basic.reject redeliveries toward
+        // delivery-limit; basic.nack requeues only increment acquired-count and would not exhaust that limit.
+        // See https://www.rabbitmq.com/docs/quorum-queues#when-is-delivery-count-incremented
         return _channel.BasicRejectAsync(_deliveryTag, requeue, cancellationToken).AsTask();
     }
 }
