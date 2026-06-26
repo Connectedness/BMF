@@ -71,9 +71,10 @@ public sealed class MessageDeserializationMiddlewareTests
     [Fact]
     public async Task InvokeAsync_PreservesCancellationFailure()
     {
-        var failure = new OperationCanceledException(TestContext.Current.CancellationToken);
+        var cancelledToken = new CancellationToken(canceled: true);
+        var failure = new OperationCanceledException(cancelledToken);
         var services = new DictionaryServiceProvider().Add(new RecordingDeserializer(failure));
-        var context = CreateContext(services);
+        var context = CreateContext(services, cancelledToken);
         MessageDeserializationMiddleware middleware = new ();
 
         var act = async () => await middleware.InvokeAsync(context, static _ => Task.CompletedTask);
@@ -94,7 +95,10 @@ public sealed class MessageDeserializationMiddlewareTests
         await nullNext.Should().ThrowAsync<ArgumentNullException>().WithParameterName("next");
     }
 
-    private static IncomingMessageContext CreateContext(IServiceProvider services)
+    private static IncomingMessageContext CreateContext(
+        IServiceProvider services,
+        CancellationToken? cancellationToken = null
+    )
     {
         var endpoint = new InboundEndpoint<SampleMessage>(
             "endpoint",
@@ -111,7 +115,7 @@ public sealed class MessageDeserializationMiddlewareTests
             endpoint,
             services,
             new NoOpAcknowledgement(),
-            TestContext.Current.CancellationToken,
+            cancellationToken ?? TestContext.Current.CancellationToken,
             typeof(SampleMessage)
         );
     }
