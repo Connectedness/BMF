@@ -41,9 +41,14 @@ public sealed class MessageDeserializationMiddleware : IMessageMiddleware
             {
                 throw;
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException exception)
             {
-                throw;
+                if (context.CancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+
+                throw new MessageDeserializationException(context.MessageType, exception);
             }
             catch (Exception exception)
             {
