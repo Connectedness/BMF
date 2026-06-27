@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Outbound;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Exceptions;
 
 namespace BrilliantMessaging.Transport.RabbitMq;
 
@@ -38,7 +39,8 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
     public async Task ProvisionAsync(CancellationToken cancellationToken = default)
     {
         var outcome = "success";
-        var activity = OutboundDiagnostics.ActivitySource.StartActivity("brilliantmessaging.outbound.topology.provision");
+        var activity =
+            OutboundDiagnostics.ActivitySource.StartActivity("brilliantmessaging.outbound.topology.provision");
         var startedTimestamp = Stopwatch.GetTimestamp();
         KeyValuePair<string, object?>[] attemptTags =
         [
@@ -62,10 +64,8 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
                 await ProvisionQueueAsync(channel, queue, cancellationToken).ConfigureAwait(false);
             }
 
-            foreach (var binding in _topology.Bindings)
-            {
-                await ProvisionBindingAsync(channel, binding, cancellationToken).ConfigureAwait(false);
-            }
+            await ProvisionBindingsAsync(channel, _topology.Bindings, _topology.Queues, cancellationToken)
+               .ConfigureAwait(false);
 
             activity?.SetStatus(ActivityStatusCode.Ok);
         }
@@ -107,12 +107,66 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
         }
     }
 
-    private static Task ProvisionBindingAsync(
+    private static async Task ProvisionBindingsAsync(
         IChannel channel,
-        RabbitMqBindingDefinition binding,
+        IReadOnlyList<RabbitMqBindingDefinition> bindings,
+        IReadOnlyList<RabbitMqQueueDefinition> queues,
         CancellationToken cancellationToken
     )
     {
+        // Build the set of Delete-mode queue names once so each binding can be checked without a per-binding scan.
+        // By the time the binding loop runs, the preceding queue loop has already deleted these queues, so any
+        // binding whose destination is in this set is skipped entirely — RabbitMQ removes bindings automatically
+        // on queue delete, so an explicit unbind is redundant and a re-bind would target a soon-to-be-absent queue.
+        HashSet<string> deleteQueueNames = new (StringComparer.Ordinal);
+
+        foreach (var queue in queues)
+        {
+            if (queue.DeclareMode == RabbitMqDeclareMode.Delete)
+            {
+                deleteQueueNames.Add(queue.Name);
+            }
+        }
+
+        // Two passes guarantee routing continuity: all Active/Skip bindings first (creating/re-asserting
+        // bindings, including a new ex → orders-v2 bind), then all Delete bindings (running the unbinds,
+        // including the old ex → orders-v1 unbind). The exchange is never without a binding mid-provisioning
+        // regardless of the order the user writes the binding calls in the topology.
+        foreach (var binding in bindings)
+        {
+            if (binding.BindingMode is RabbitMqBindingMode.Active or RabbitMqBindingMode.Skip)
+            {
+                await ProvisionBindingAsync(channel, binding, deleteQueueNames, cancellationToken)
+                   .ConfigureAwait(false);
+            }
+        }
+
+        foreach (var binding in bindings)
+        {
+            if (binding.BindingMode == RabbitMqBindingMode.Delete)
+            {
+                await ProvisionBindingAsync(channel, binding, deleteQueueNames, cancellationToken)
+                   .ConfigureAwait(false);
+            }
+        }
+    }
+
+    private static Task ProvisionBindingAsync(
+        IChannel channel,
+        RabbitMqBindingDefinition binding,
+        HashSet<string> deleteQueueNames,
+        CancellationToken cancellationToken
+    )
+    {
+        // A queue binding whose destination queue is in Delete mode is skipped entirely, regardless of the
+        // binding's own mode. RabbitMQ auto-removes bindings on queue delete, so an explicit unbind is
+        // redundant, and an explicit re-bind would target a queue the preceding queue loop just deleted.
+        if (binding is RabbitMqQueueBindingDefinition { QueueName: var skipQueueName } &&
+            deleteQueueNames.Contains(skipQueueName))
+        {
+            return Task.CompletedTask;
+        }
+
         var arguments = CreateMutableArguments(binding.Arguments);
 
         return binding switch
@@ -128,6 +182,8 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
                     false,
                     cancellationToken
                 ),
+            RabbitMqQueueBindingDefinition { BindingMode: RabbitMqBindingMode.Delete } queueBinding =>
+                UnbindQueueBindingAsync(channel, queueBinding, arguments, cancellationToken),
             RabbitMqExchangeBindingDefinition { BindingMode: RabbitMqBindingMode.Skip } =>
                 Task.CompletedTask,
             RabbitMqExchangeBindingDefinition { BindingMode: RabbitMqBindingMode.Active } exchangeBinding =>
@@ -138,6 +194,12 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
                     arguments,
                     false,
                     cancellationToken
+                ),
+            RabbitMqExchangeBindingDefinition { BindingMode: RabbitMqBindingMode.Delete } =>
+                throw new ArgumentOutOfRangeException(
+                    nameof(binding),
+                    RabbitMqBindingMode.Delete,
+                    "Exchange binding deletion is not supported; exchange bindings are out of scope for Delete mode."
                 ),
             RabbitMqQueueBindingDefinition queueBinding => throw new ArgumentOutOfRangeException(
                 nameof(binding),
@@ -151,6 +213,31 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
             ),
             _ => throw new ArgumentOutOfRangeException(nameof(binding), binding, "Unsupported binding type.")
         };
+    }
+
+    private static async Task UnbindQueueBindingAsync(
+        IChannel channel,
+        RabbitMqQueueBindingDefinition queueBinding,
+        IDictionary<string, object?> arguments,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            await channel.QueueUnbindAsync(
+                queueBinding.QueueName,
+                queueBinding.SourceExchangeName,
+                queueBinding.RoutingKey,
+                arguments,
+                cancellationToken
+            ).ConfigureAwait(false);
+        }
+        catch (OperationInterruptedException ex) when (IsBrokerNotFound(ex))
+        {
+            // A not-found error means the binding (or its queue or exchange) is already absent on the broker.
+            // The desired state — binding absent — is already achieved, so Delete mode is idempotent across
+            // restarts. Other broker errors propagate unchanged.
+        }
     }
 
     private static Task ProvisionExchangeAsync(
@@ -173,6 +260,11 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
                 arguments,
                 cancellationToken: cancellationToken
             ),
+            RabbitMqDeclareMode.Delete => throw new ArgumentOutOfRangeException(
+                nameof(exchange),
+                exchange.DeclareMode,
+                "Exchange deletion is not supported; exchanges are out of scope for Delete mode."
+            ),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(exchange),
                 exchange.DeclareMode,
@@ -181,28 +273,85 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
         };
     }
 
-    private static Task ProvisionQueueAsync(
+    private static async Task ProvisionQueueAsync(
         IChannel channel,
         RabbitMqQueueDefinition queue,
         CancellationToken cancellationToken
     )
     {
-        var arguments = CreateMutableArguments(queue.Arguments);
-
-        return queue.DeclareMode switch
+        switch (queue.DeclareMode)
         {
-            RabbitMqDeclareMode.Skip => Task.CompletedTask,
-            RabbitMqDeclareMode.Passive => channel.QueueDeclarePassiveAsync(queue.Name, cancellationToken),
-            RabbitMqDeclareMode.Active => channel.QueueDeclareAsync(
-                queue.Name,
-                queue.Durable,
-                queue.Exclusive,
-                queue.AutoDelete,
-                arguments,
+            case RabbitMqDeclareMode.Skip:
+                return;
+            case RabbitMqDeclareMode.Passive:
+                await channel.QueueDeclarePassiveAsync(queue.Name, cancellationToken).ConfigureAwait(false);
+                return;
+            case RabbitMqDeclareMode.Active:
+                var arguments = CreateMutableArguments(queue.Arguments);
+                await channel
+                   .QueueDeclareAsync(
+                        queue.Name,
+                        queue.Durable,
+                        queue.Exclusive,
+                        queue.AutoDelete,
+                        arguments,
+                        cancellationToken: cancellationToken
+                    )
+                   .ConfigureAwait(false);
+                return;
+            case RabbitMqDeclareMode.Delete:
+                await DeleteQueueAsync(channel, queue.Name, cancellationToken).ConfigureAwait(false);
+                return;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(queue), queue.DeclareMode, "Unsupported declare mode.");
+        }
+    }
+
+    private static async Task DeleteQueueAsync(
+        IChannel channel,
+        string queueName,
+        CancellationToken cancellationToken
+    )
+    {
+        // Quorum queues (the default queue type) do not support the ifUnused or ifEmpty flags on queue.delete,
+        // so the "drain first" safety check is implemented as a pre-delete passive declare: if the queue has
+        // messages, we throw before deleting. In the introduce → drain → delete workflow the binding is already
+        // removed, so no new messages arrive between the check and the delete.
+        QueueDeclareOk declareResult;
+
+        try
+        {
+            declareResult = await channel
+               .QueueDeclarePassiveAsync(queueName, cancellationToken)
+               .ConfigureAwait(false);
+        }
+        catch (OperationInterruptedException ex) when (IsBrokerNotFound(ex))
+        {
+            // A 404 NOT_FOUND means the queue is already absent on the broker. The desired state — resource
+            // absent — is already achieved, so Delete mode is idempotent across restarts.
+            return;
+        }
+
+        if (declareResult.MessageCount > 0)
+        {
+            throw new InvalidOperationException(
+                $"Queue '{queueName}' cannot be deleted because it still has {declareResult.MessageCount} message(s). Drain the queue before setting its declare mode to Delete."
+            );
+        }
+
+        await channel
+           .QueueDeleteAsync(
+                queueName,
+                ifUnused: false,
+                ifEmpty: false,
                 cancellationToken: cancellationToken
-            ),
-            _ => throw new ArgumentOutOfRangeException(nameof(queue), queue.DeclareMode, "Unsupported declare mode.")
-        };
+            )
+           .ConfigureAwait(false);
+    }
+
+    private static bool IsBrokerNotFound(OperationInterruptedException exception)
+    {
+        return exception.ShutdownReason is { ReplyCode: Constants.NotFound };
     }
 
     private static IDictionary<string, object?> CreateMutableArguments(IReadOnlyDictionary<string, object?> arguments)
