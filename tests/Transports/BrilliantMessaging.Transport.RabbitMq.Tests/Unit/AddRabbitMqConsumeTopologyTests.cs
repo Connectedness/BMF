@@ -1062,6 +1062,35 @@ public sealed class AddRabbitMqConsumeTopologyTests
     }
 
     [Fact]
+    public void Compile_RejectsExplicitRedeliveryOnActiveDefaultQueueType()
+    {
+        var services = new ServiceCollection();
+        services.AddTestCloudEvents()
+           .AddRabbitMqTopology(
+                builder =>
+                {
+                    builder.UseConnectionFactory(static _ => new ConnectionFactory());
+                    builder.Queue("default", queue => queue.UseDefaultQueueType());
+                    builder.Consume(
+                        "default",
+                        consumer => consumer
+                           .WithRedelivery(static _ => { })
+                           .Handle<ValidationMessageA, ValidationMessageAHandler>()
+                    );
+                }
+            );
+        using var serviceProvider = services.BuildServiceProvider();
+
+        // ReSharper disable once AccessToDisposedClosure -- act is called before disposal
+        Action act = () => _ = serviceProvider.GetRequiredService<RabbitMqTopology>();
+
+        act.Should().Throw<TopologyValidationException>()
+           .Which.ValidationErrors.Should().Contain(
+                "Inbound consumer for queue 'default' configures redelivery, but the effective queue type is 'unknown'. Redelivery classifiers require a quorum queue with a broker delivery limit; call AsQuorumQueue() on the queue declaration or QueueType(RabbitMqQueueType.Quorum) on the consumer."
+            );
+    }
+
+    [Fact]
     public void Compile_UsesQueueTypeAssertionForPassiveQueueRedelivery()
     {
         var services = new ServiceCollection();

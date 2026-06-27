@@ -236,6 +236,23 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     }
 
     /// <summary>
+    /// Declares the queue using the broker's configured default queue type
+    /// (<c>x-queue-type</c> is not set).
+    /// </summary>
+    /// <returns>The same builder for chaining.</returns>
+    /// <remarks>
+    /// Because the queue type is not declared, the topology compiler cannot detect it, so not all
+    /// queue features and configurations (such as quorum-queue redelivery handling) are available.
+    /// Only use this method when relying on the broker's default is required; otherwise prefer
+    /// explicitly calling <see cref="AsQuorumQueue" /> or <see cref="AsClassicQueue" />.
+    /// </remarks>
+    public RabbitMqQueueBuilder UseDefaultQueueType()
+    {
+        _arguments.Remove("x-queue-type");
+        return this;
+    }
+
+    /// <summary>
     /// Enables single active consumer mode (<c>x-single-active-consumer</c>), so only one consumer processes the
     /// queue at a time.
     /// </summary>

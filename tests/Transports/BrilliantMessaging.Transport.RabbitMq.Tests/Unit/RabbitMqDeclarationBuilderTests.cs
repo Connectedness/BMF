@@ -66,6 +66,38 @@ public sealed class RabbitMqDeclarationBuilderTests
     }
 
     [Fact]
+    public void QueueBuilder_UseDefaultQueueType_RemovesQueueTypeArgument()
+    {
+        var definition = new RabbitMqQueueBuilder("work")
+           .UseDefaultQueueType()
+           .Build();
+
+        definition.Arguments.Should().NotContainKey("x-queue-type");
+    }
+
+    [Fact]
+    public void QueueBuilder_UseDefaultQueueType_IsIdempotent()
+    {
+        var definition = new RabbitMqQueueBuilder("work")
+           .UseDefaultQueueType()
+           .UseDefaultQueueType()
+           .Build();
+
+        definition.Arguments.Should().NotContainKey("x-queue-type");
+    }
+
+    [Fact]
+    public void QueueBuilder_UseDefaultQueueType_OverridesPreviouslySetQueueType()
+    {
+        var definition = new RabbitMqQueueBuilder("work")
+           .AsClassicQueue()
+           .UseDefaultQueueType()
+           .Build();
+
+        definition.Arguments.Should().NotContainKey("x-queue-type");
+    }
+
+    [Fact]
     public void ExchangeBuilder_BuildsAllExchangeDeclarationOptions()
     {
         var definition = new RabbitMqExchangeBuilder("delayed", ExchangeType.Headers)
