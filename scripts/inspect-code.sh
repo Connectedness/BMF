@@ -16,11 +16,17 @@ trap 'rm -rf -- "$caches_home"' EXIT
 
 mkdir -p -- "$report_directory"
 
+# Solution-wide analysis (--swea) is required for the inspections that can only be
+# decided across projects, e.g. unused non-private members. Release is inspected
+# because that is the configuration whose warnings CI treats as errors.
 dotnet tool restore
 dotnet jb inspectcode "$target" \
     --output="$report_file" \
     --format=Xml \
     --severity="$severity" \
+    --swea \
+    --properties:Configuration=Release \
+    --no-updates \
     --caches-home="$caches_home"
 
 echo "Inspection report was written to $report_file."
