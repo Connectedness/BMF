@@ -1,5 +1,5 @@
 /* ------------------------------
-   Source: Light.GuardClauses 15.1.0, commit bd7325c31771ff5e7177ad5eecc0d0e17aa22e0c
+   Source: Light.GuardClauses 15.1.0, commit f8581a1ac6abf6aee3b656061e1254a523e00571
    Light.GuardClauses 15.1.0
    ------------------------------
 
@@ -42,9 +42,11 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using JetBrains.Annotations;
 using BrilliantMessaging.GuardClauses.Exceptions;
 using BrilliantMessaging.GuardClauses.ExceptionFactory;
 using BrilliantMessaging.GuardClauses.FrameworkExtensions;
+using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
 
 #nullable enable annotations
 namespace BrilliantMessaging.GuardClauses
@@ -52,7 +54,7 @@ namespace BrilliantMessaging.GuardClauses
     /// <summary>
     /// The <see cref = "Check"/> class provides access to all assertions of Light.GuardClauses.
     /// </summary>
-     // ReSharper disable once RedundantTypeDeclarationBody -- required for Source Code Transformation
+    // ReSharper disable once RedundantTypeDeclarationBody -- required for Source Code Transformation
     public static class Check
     {
         /// <summary>
@@ -155,7 +157,7 @@ namespace BrilliantMessaging.GuardClauses
         /// Thrown when <paramref name = "parameter"/> or <paramref name = "requiredType"/> is null.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Type MustBeAssignableTo([NotNull]this Type? parameter, [NotNull]Type? requiredType, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
+        public static Type MustBeAssignableTo([NotNull] this Type? parameter, [NotNull] Type? requiredType, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
         {
             parameter.MustNotBeNull(parameterName, message);
             requiredType.MustNotBeNull(nameof(requiredType), message);
@@ -180,7 +182,7 @@ namespace BrilliantMessaging.GuardClauses
         /// </exception>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "parameter"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Type MustBeConcreteClass([NotNull]this Type? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
+        public static Type MustBeConcreteClass([NotNull] this Type? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
         {
             parameter.MustNotBeNull(parameterName, message);
             if (!(parameter.IsClass && !parameter.IsAbstract))
@@ -201,7 +203,7 @@ namespace BrilliantMessaging.GuardClauses
         /// <exception cref = "ArgumentOutOfRangeException">Thrown when the specified <paramref name = "parameter"/> is less than <paramref name = "other"/>.</exception>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "parameter"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T MustBeGreaterThanOrEqualTo<T>([NotNull]this T parameter, T other, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
+        public static T MustBeGreaterThanOrEqualTo<T>([NotNull] this T parameter, T other, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
             where T : IComparable<T>
         {
             if (parameter.MustNotBeNullReference(parameterName, message).CompareTo(other) < 0)
@@ -223,7 +225,7 @@ namespace BrilliantMessaging.GuardClauses
         /// <exception cref = "ArgumentOutOfRangeException">Thrown when <paramref name = "parameter"/> is not within <paramref name = "range"/>.</exception>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "parameter"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T MustBeIn<T>([NotNull]this T parameter, Range<T> range, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
+        public static T MustBeIn<T>([NotNull] this T parameter, Range<T> range, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
             where T : IComparable<T>
         {
             if (!range.IsValueWithinRange(parameter.MustNotBeNullReference(parameterName, message)))
@@ -243,7 +245,7 @@ namespace BrilliantMessaging.GuardClauses
         /// <exception cref = "TypeCastException">Thrown when <paramref name = "parameter"/> cannot be cast to <typeparamref name = "T"/>.</exception>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "parameter"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T MustBeOfType<T>([NotNull] this object? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
+        public static T MustBeOfType<T>([NotNull, NoEnumeration] this object? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
         {
             if (parameter.MustNotBeNull(parameterName, message)is T castValue)
                 return castValue;
@@ -258,7 +260,7 @@ namespace BrilliantMessaging.GuardClauses
         /// <param name = "exceptionFactory">The delegate that creates your custom exception. The <paramref name = "parameter"/> is passed to this delegate.</param>
         /// <exception cref = "Exception">Your custom exception thrown when <paramref name = "parameter"/> cannot be cast to <typeparamref name = "T"/>.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T MustBeOfType<T>([NotNull] this object? parameter, Func<object?, Exception> exceptionFactory)
+        public static T MustBeOfType<T>([NotNull, NoEnumeration] this object? parameter, Func<object?, Exception> exceptionFactory)
         {
             if (parameter is T castValue)
                 return castValue;
@@ -554,7 +556,7 @@ namespace BrilliantMessaging.GuardClauses
         /// </exception>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "parameter"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string MustBeUri([NotNull]this string? parameter, UriKind uriKind = UriKind.RelativeOrAbsolute, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
+        public static string MustBeUri([NotNull] this string? parameter, UriKind uriKind = UriKind.RelativeOrAbsolute, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
         {
             parameter.MustNotBeNull(parameterName, message);
             if (!Uri.TryCreate(parameter, uriKind, out _))
@@ -578,7 +580,7 @@ namespace BrilliantMessaging.GuardClauses
         /// Your custom exception thrown when <paramref name = "parameter"/> is null or not a valid URI of the supplied kind.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string MustBeUri([NotNull]this string? parameter, UriKind uriKind, Func<string?, Exception> exceptionFactory)
+        public static string MustBeUri([NotNull] this string? parameter, UriKind uriKind, Func<string?, Exception> exceptionFactory)
         {
             if (parameter is null || !Uri.TryCreate(parameter, uriKind, out _))
             {
@@ -602,7 +604,7 @@ namespace BrilliantMessaging.GuardClauses
         /// Your custom exception thrown when <paramref name = "parameter"/> is null or not a valid URI of the supplied kind.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string MustBeUri([NotNull]this string? parameter, UriKind uriKind, Func<string?, UriKind, Exception> exceptionFactory)
+        public static string MustBeUri([NotNull] this string? parameter, UriKind uriKind, Func<string?, UriKind, Exception> exceptionFactory)
         {
             if (parameter is null || !Uri.TryCreate(parameter, uriKind, out _))
             {
@@ -930,7 +932,7 @@ namespace BrilliantMessaging.GuardClauses
         /// <exception cref = "ArgumentOutOfRangeException">Thrown when the specified <paramref name = "parameter"/> is less than <paramref name = "other"/>.</exception>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "parameter"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T MustNotBeLessThan<T>([NotNull]this T parameter, T other, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
+        public static T MustNotBeLessThan<T>([NotNull] this T parameter, T other, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
             where T : IComparable<T>
         {
             if (parameter.MustNotBeNullReference(parameterName, message).CompareTo(other) < 0)
@@ -1117,7 +1119,7 @@ namespace BrilliantMessaging.GuardClauses
         /// <param name = "message">The message that will be passed to the resulting exception (optional).</param>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "parameter"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T MustNotBeNull<T>([NotNull] this T? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
+        public static T MustNotBeNull<T>([NotNull, NoEnumeration] this T? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
             where T : class
         {
             if (parameter is null)
@@ -1135,7 +1137,7 @@ namespace BrilliantMessaging.GuardClauses
         /// <param name = "exceptionFactory">The delegate that creates your custom exception.</param>
         /// <exception cref = "Exception">Your custom exception thrown when <paramref name = "parameter"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T MustNotBeNull<T>([NotNull] this T? parameter, Func<Exception> exceptionFactory)
+        public static T MustNotBeNull<T>([NotNull, NoEnumeration] this T? parameter, Func<Exception> exceptionFactory)
             where T : class
         {
             if (parameter is null)
@@ -1155,7 +1157,7 @@ namespace BrilliantMessaging.GuardClauses
         /// <exception cref = "EmptyCollectionException">Thrown when <paramref name = "parameter"/> has no items.</exception>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "parameter"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TCollection MustNotBeNullOrEmpty<TCollection>([NotNull]this TCollection? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
+        public static TCollection MustNotBeNullOrEmpty<TCollection>([NotNull] this TCollection? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
             where TCollection : class, IEnumerable
         {
             if (parameter.Count(parameterName, message) == 0)
@@ -1175,7 +1177,7 @@ namespace BrilliantMessaging.GuardClauses
         /// <exception cref = "EmptyStringException">Thrown when <paramref name = "parameter"/> is an empty string.</exception>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "parameter"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string MustNotBeNullOrEmpty([NotNull]this string? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
+        public static string MustNotBeNullOrEmpty([NotNull] this string? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
         {
             if (parameter is null)
             {
@@ -1200,7 +1202,7 @@ namespace BrilliantMessaging.GuardClauses
         /// <exception cref = "EmptyStringException">Thrown when <paramref name = "parameter"/> is an empty string.</exception>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "parameter"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string MustNotBeNullOrWhiteSpace([NotNull]this string? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
+        public static string MustNotBeNullOrWhiteSpace([NotNull] this string? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
         {
             parameter.MustNotBeNullOrEmpty(parameterName, message);
             foreach (var character in parameter)
@@ -1222,7 +1224,7 @@ namespace BrilliantMessaging.GuardClauses
         /// <param name = "exceptionFactory">The delegate that creates your custom exception. <paramref name = "parameter"/> is passed to this delegate.</param>
         /// <exception cref = "Exception">Your custom exception thrown when <paramref name = "parameter"/> is null, empty, or contains only white space.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string MustNotBeNullOrWhiteSpace([NotNull]this string? parameter, Func<string?, Exception> exceptionFactory)
+        public static string MustNotBeNullOrWhiteSpace([NotNull] this string? parameter, Func<string?, Exception> exceptionFactory)
         {
             if (parameter.IsNullOrWhiteSpace())
             {
@@ -1242,7 +1244,7 @@ namespace BrilliantMessaging.GuardClauses
         /// <param name = "message">The message that will be passed to the resulting exception (optional).</param>
         /// <exception cref = "ArgumentNullException">Thrown when <typeparamref name = "T"/> is a reference type and <paramref name = "parameter"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T MustNotBeNullReference<T>([NotNull] this T parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
+        public static T MustNotBeNullReference<T>([NotNull, NoEnumeration] this T parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
         {
             if (default(T) != null)
             {
@@ -1275,7 +1277,7 @@ namespace BrilliantMessaging.GuardClauses
         /// receivers are enumerated once. Empty collections succeed. Non-generic access boxes value-type items.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TCollection MustNotContainNull<TCollection>([NotNull]this TCollection? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
+        public static TCollection MustNotContainNull<TCollection>([NotNull] this TCollection? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
             where TCollection : class, IEnumerable
         {
             var position = FindNullItem(parameter.MustNotBeNull(parameterName, message));
@@ -2045,7 +2047,7 @@ namespace BrilliantMessaging.GuardClauses.ExceptionFactory
     /// <summary>
     /// Provides static factory methods that throw default exceptions.
     /// </summary>
-     // ReSharper disable once RedundantTypeDeclarationBody - requried for the Source Code Transformation
+    // ReSharper disable once RedundantTypeDeclarationBody - requried for the Source Code Transformation
     public static class Throw
     {
         /// <summary>
@@ -2240,7 +2242,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "source"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         // ReSharper disable once RedundantNullableFlowAttribute -- NotNull has an effect, see Issue72NotNullAttributeTests
-        public static IList<T> AsList<T>([NotNull]this IEnumerable<T> source) => source as IList<T> ?? source.ToList();
+        public static IList<T> AsList<T>([NotNull] this IEnumerable<T> source) => source as IList<T> ?? source.ToList();
         /// <summary>
         /// Tries to cast the specified enumerable to an <see cref = "IList{T}"/>, or
         /// creates a new collection containing the enumerable items by calling the specified delegate.
@@ -2252,7 +2254,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "source"/> or <paramref name = "createCollection"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IList<T> AsList<T>(// ReSharper disable once RedundantNullableFlowAttribute -- NotNull has an effect, see Issue72NotNullAttributeTests
-        [NotNull]this IEnumerable<T> source, Func<IEnumerable<T>, IList<T>> createCollection) => source as IList<T> ?? createCollection.MustNotBeNull(nameof(createCollection))(source.MustNotBeNull(nameof(source)));
+        [NotNull] this IEnumerable<T> source, Func<IEnumerable<T>, IList<T>> createCollection) => source as IList<T> ?? createCollection.MustNotBeNull(nameof(createCollection))(source.MustNotBeNull(nameof(source)));
         /// <summary>
         /// Tries to downcast the specified enumerable to an array, or creates a new array with the specified items.
         /// </summary>
@@ -2262,7 +2264,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "source"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         // ReSharper disable once RedundantNullableFlowAttribute -- NotNull has an effect, see Issue72NotNullAttributeTests
-        public static T[] AsArray<T>([NotNull]this IEnumerable<T> source) => source as T[] ?? source.ToArray();
+        public static T[] AsArray<T>([NotNull] this IEnumerable<T> source) => source as T[] ?? source.ToArray();
         /// <summary>
         /// Performs the action on each item of the specified enumerable. If the enumerable contains items that are null, this
         /// method can either throw an exception or ignore the value (your delegate will not be called in this case).
@@ -2274,7 +2276,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "enumerable"/> or <paramref name = "action"/> is null.</exception>
         /// <exception cref = "CollectionException">Thrown when <paramref name = "enumerable"/> contains a value that is null and <paramref name = "throwWhenItemIsNull"/> is set to true.</exception>
         public static IEnumerable<T> ForEach<T>(// ReSharper disable once RedundantNullableFlowAttribute -- NotNull has an effect, see Issue72NotNullAttributeTests
-        [NotNull]this IEnumerable<T> enumerable, Action<T> action, bool throwWhenItemIsNull = true)
+        [NotNull] this IEnumerable<T> enumerable, Action<T> action, bool throwWhenItemIsNull = true)
         {
             // ReSharper disable PossibleMultipleEnumeration
             action.MustNotBeNull(nameof(action));
@@ -2331,7 +2333,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "source"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         // ReSharper disable once RedundantNullableFlowAttribute -- NotNull has an effect, see Issue72NotNullAttributeTests
-        public static IReadOnlyList<T> AsReadOnlyList<T>([NotNull]this IEnumerable<T> source) => source as IReadOnlyList<T> ?? source.ToList();
+        public static IReadOnlyList<T> AsReadOnlyList<T>([NotNull] this IEnumerable<T> source) => source as IReadOnlyList<T> ?? source.ToList();
         /// <summary>
         /// Tries to cast the specified enumerable as an <see cref = "IReadOnlyList{T}"/>, or
         /// creates a new collection containing the enumerable items by calling the specified delegate.
@@ -2343,7 +2345,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "source"/> or <paramref name = "createCollection"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         // ReSharper disable RedundantNullableFlowAttribute -- NotNull has an effect, see Issue72NotNullAttributeTests
-        public static IReadOnlyList<T> AsReadOnlyList<T>([NotNull]this IEnumerable<T> source, [NotNull]Func<IEnumerable<T>, IReadOnlyList<T>> createCollection) => source as IReadOnlyList<T> ?? createCollection.MustNotBeNull(nameof(createCollection))(source.MustNotBeNull(nameof(source)));
+        public static IReadOnlyList<T> AsReadOnlyList<T>([NotNull] this IEnumerable<T> source, [NotNull] Func<IEnumerable<T>, IReadOnlyList<T>> createCollection) => source as IReadOnlyList<T> ?? createCollection.MustNotBeNull(nameof(createCollection))(source.MustNotBeNull(nameof(source)));
         // ReSharper restore RedundantNullableFlowAttribute
         /// <summary>
         /// Gets the count of the specified enumerable.
@@ -2352,7 +2354,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "enumerable"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         // ReSharper disable once RedundantNullableFlowAttribute -- NotNull has an effect, see Issue72NotNullAttributeTests
-        public static int Count([NotNull]this IEnumerable enumerable)
+        public static int Count([NotNull] this IEnumerable enumerable)
         {
             if (enumerable is ICollection collection)
             {
@@ -2375,7 +2377,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <param name = "message">The message that is passed to the <see cref = "ArgumentNullException"/> (optional).</param>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "enumerable"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int Count([NotNull]this IEnumerable? enumerable, string? parameterName, string? message)
+        public static int Count([NotNull] this IEnumerable? enumerable, string? parameterName, string? message)
         {
             if (enumerable is ICollection collection)
             {
@@ -2397,7 +2399,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "enumerable"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         // ReSharper disable RedundantNullableFlowAttribute -- NotNull has an effect, see Issue72NotNullAttributeTests
-        public static int GetCount<T>([NotNull]this IEnumerable<T> enumerable)
+        public static int GetCount<T>([NotNull] this IEnumerable<T> enumerable)
         {
             if (enumerable is ICollection collection)
             {
@@ -2425,7 +2427,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <param name = "message">The message that is passed to the <see cref = "ArgumentNullException"/> (optional).</param>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "enumerable"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetCount<T>([NotNull]this IEnumerable<T> enumerable, string? parameterName, string? message = null)
+        public static int GetCount<T>([NotNull] this IEnumerable<T> enumerable, string? parameterName, string? message = null)
         {
             if (enumerable is ICollection collection)
             {
@@ -2445,7 +2447,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
             return DetermineCountViaEnumerating(enumerable, parameterName, message);
         }
 
-        private static bool TryGetCollectionOfTCount<T>(this IEnumerable<T> enumerable, out int count)
+        private static bool TryGetCollectionOfTCount<T>([NoEnumeration] this IEnumerable<T> enumerable, out int count)
         {
             if (enumerable is ICollection<T> collectionOfT)
             {
@@ -2917,7 +2919,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <paramref name = "value"/> is not one of <see cref = "UnquotedTypes"/>, then the resulting string will be wrapped in quotation marks.
         /// </summary>
         /// <param name = "value">The value whose string representation is requested.</param>
-        public static string? ToStringRepresentation<T>([NotNull]this T value)
+        public static string? ToStringRepresentation<T>([NotNull] this T value)
         {
             value.MustNotBeNullReference(nameof(value));
             var content = value.ToString();
@@ -2954,7 +2956,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "stringBuilder"/> or <paramref name = "items"/>is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         // ReSharper disable RedundantNullableFlowAttribute
-        public static StringBuilder AppendCollectionContent<T>([NotNull]this StringBuilder stringBuilder, [NotNull]IEnumerable<T> items, string headerLine = "Content of the collection:", bool finishWithNewLine = true) => stringBuilder.MustNotBeNull(nameof(stringBuilder)).AppendLine(headerLine).AppendItemsWithNewLine(items, finishWithNewLine: finishWithNewLine);
+        public static StringBuilder AppendCollectionContent<T>([NotNull] this StringBuilder stringBuilder, [NotNull] IEnumerable<T> items, string headerLine = "Content of the collection:", bool finishWithNewLine = true) => stringBuilder.MustNotBeNull(nameof(stringBuilder)).AppendLine(headerLine).AppendItemsWithNewLine(items, finishWithNewLine: finishWithNewLine);
         // ReSharper restore RedundantNullableFlowAttribute
         /// <summary>
         /// Appends the string representations of the specified items to the string builder.
@@ -2965,7 +2967,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <param name = "emptyCollectionText">The text that is appended to the string builder when <paramref name = "items"/> is empty. Defaults to "empty collection".</param>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "stringBuilder"/> or <paramref name = "items"/> is null.</exception>
         // ReSharper disable RedundantNullableFlowAttribute
-        public static StringBuilder AppendItems<T>([NotNull]this StringBuilder stringBuilder, [NotNull]IEnumerable<T> items, string itemSeparator = ", ", string emptyCollectionText = "empty collection")
+        public static StringBuilder AppendItems<T>([NotNull] this StringBuilder stringBuilder, [NotNull] IEnumerable<T> items, string itemSeparator = ", ", string emptyCollectionText = "empty collection")
         // ReSharper restore RedundantNullableFlowAttribute
         {
             stringBuilder.MustNotBeNull(nameof(stringBuilder));
@@ -3003,7 +3005,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "stringBuilder"/> or <paramref name = "items"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         // ReSharper disable RedundantNullableFlowAttribute
-        public static StringBuilder AppendItemsWithNewLine<T>([NotNull]this StringBuilder stringBuilder, [NotNull]IEnumerable<T> items, string emptyCollectionText = "empty collection", bool finishWithNewLine = true) => stringBuilder.AppendItems(items, DefaultNewLineSeparator, emptyCollectionText).AppendLineIf(finishWithNewLine);
+        public static StringBuilder AppendItemsWithNewLine<T>([NotNull] this StringBuilder stringBuilder, [NotNull] IEnumerable<T> items, string emptyCollectionText = "empty collection", bool finishWithNewLine = true) => stringBuilder.AppendItems(items, DefaultNewLineSeparator, emptyCollectionText).AppendLineIf(finishWithNewLine);
         // ReSharper restore RedundantNullableFlowAttribute
         /// <summary>
         /// Appends the value to the specified string builder if the condition is true.
@@ -3014,7 +3016,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "stringBuilder"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static StringBuilder AppendIf(// ReSharper disable once RedundantNullableFlowAttribute
-        [NotNull]this StringBuilder stringBuilder, bool condition, string value)
+        [NotNull] this StringBuilder stringBuilder, bool condition, string value)
         {
             if (condition)
             {
@@ -3033,7 +3035,7 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "stringBuilder"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static StringBuilder AppendLineIf(// ReSharper disable once RedundantNullableFlowAttribute
-        [NotNull]this StringBuilder stringBuilder, bool condition, string value = "")
+        [NotNull] this StringBuilder stringBuilder, bool condition, string value = "")
         {
             if (condition)
             {
@@ -3048,8 +3050,8 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// specified <paramref name = "stringBuilder"/>.
         /// </summary>
         /// <exception cref = "ArgumentNullException">Thrown when any parameter is null.</exception>
-         // ReSharper disable RedundantNullableFlowAttribute
-        public static StringBuilder AppendExceptionMessages([NotNull]this StringBuilder stringBuilder, [NotNull]Exception exception)
+        // ReSharper disable RedundantNullableFlowAttribute
+        public static StringBuilder AppendExceptionMessages([NotNull] this StringBuilder stringBuilder, [NotNull] Exception exception)
         // ReSharper restore RedundantNullableFlowAttribute
         {
             stringBuilder.MustNotBeNull(nameof(stringBuilder));
@@ -3073,8 +3075,8 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
         /// a single string.
         /// </summary>
         /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "exception"/> is null.</exception>
-         // ReSharper disable once RedundantNullableFlowAttribute
-        public static string GetAllExceptionMessages([NotNull]this Exception exception) => new StringBuilder().AppendExceptionMessages(exception).ToString();
+        // ReSharper disable once RedundantNullableFlowAttribute
+        public static string GetAllExceptionMessages([NotNull] this Exception exception) => new StringBuilder().AppendExceptionMessages(exception).ToString();
         /// <summary>
         /// Checks if the two strings are equal using ordinal sorting rules as well as ignoring the white space
         /// of the provided strings.
@@ -3169,5 +3171,127 @@ namespace BrilliantMessaging.GuardClauses.FrameworkExtensions
 
             return false;
         }
+    }
+}
+
+/* 
+License information for JetBrains.Annotations
+
+MIT License
+Copyright (c) 2016 JetBrains http://www.jetbrains.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE. */
+namespace JetBrains.Annotations
+{
+    /// <summary>
+    /// Indicates that the value of the marked element can never be <c>null</c>.
+    /// </summary>
+    /// <example><code>
+    /// [NotNull] object Foo() {
+    ///   return null; // Warning: Possible 'null' assignment
+    /// }
+    /// </code></example>
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.Delegate | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.GenericParameter)]
+    internal sealed class NotNullAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Describes dependence between method input and output.
+    /// </summary>
+    /// <syntax>
+    /// <p>Function Definition Table syntax:</p>
+    /// <list>
+    /// <item>FDT      ::= FDTRow [;FDTRow]*</item>
+    /// <item>FDTRow   ::= Input =&gt; Output | Output &lt;= Input</item>
+    /// <item>Input    ::= ParameterName: Value [, Input]*</item>
+    /// <item>Output   ::= [ParameterName: Value]* {halt|stop|void|nothing|Value}</item>
+    /// <item>Value    ::= true | false | null | notnull | canbenull</item>
+    /// </list>
+    /// If the method has a single input parameter, its name could be omitted.<br/>
+    /// Using <c>halt</c> (or <c>void</c>/<c>nothing</c>, which is the same) for the method output
+    /// means that the method doesn't return normally (throws or terminates the process).<br/>
+    /// Value <c>canbenull</c> is only applicable for output parameters.<br/>
+    /// You can use multiple <c>[ContractAnnotation]</c> for each FDT row, or use single attribute
+    /// with rows separated by the semicolon. There is no notion of order rows, all rows are checked
+    /// for applicability and applied per each program state tracked by the analysis engine.<br/>
+    /// </syntax>
+    /// <examples><list>
+    /// <item><code>
+    /// [ContractAnnotation("=&gt; halt")]
+    /// public void TerminationMethod()
+    /// </code></item>
+    /// <item><code>
+    /// [ContractAnnotation("null &lt;= param:null")] // reverse condition syntax
+    /// public string GetName(string surname)
+    /// </code></item>
+    /// <item><code>
+    /// [ContractAnnotation("s:null =&gt; true")]
+    /// public bool IsNullOrEmpty(string s) // string.IsNullOrEmpty()
+    /// </code></item>
+    /// <item><code>
+    /// // A method that returns null if the parameter is null,
+    /// // and not null if the parameter is not null
+    /// [ContractAnnotation("null =&gt; null; notnull =&gt; notnull")]
+    /// public object Transform(object data)
+    /// </code></item>
+    /// <item><code>
+    /// [ContractAnnotation("=&gt; true, result: notnull; =&gt; false, result: null")]
+    /// public bool TryParse(string s, out Person result)
+    /// </code></item>
+    /// </list></examples>
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    internal sealed class ContractAnnotationAttribute : Attribute
+    {
+        public ContractAnnotationAttribute([NotNull] string contract) : this(contract, false)
+        {
+        }
+
+        public ContractAnnotationAttribute([NotNull] string contract, bool forceFullStates)
+        {
+            Contract = contract;
+            ForceFullStates = forceFullStates;
+        }
+
+        [NotNull]
+        public string Contract { get; }
+        public bool ForceFullStates { get; }
+    }
+
+    /// <summary>
+    /// Indicates that IEnumerable passed as a parameter is not enumerated.
+    /// Use this annotation to suppress the 'Possible multiple enumeration of IEnumerable' inspection.
+    /// </summary>
+    /// <example><code>
+    /// static void ThrowIfNull&lt;T&gt;([NoEnumeration] T v, string n) where T : class
+    /// {
+    ///   // custom check for null but no enumeration
+    /// }
+    ///
+    /// void Foo(IEnumerable&lt;string&gt; values)
+    /// {
+    ///   ThrowIfNull(values, nameof(values));
+    ///   var x = values.ToList(); // No warnings about multiple enumeration
+    /// }
+    /// </code></example>
+    [AttributeUsage(AttributeTargets.Parameter)]
+    internal sealed class NoEnumerationAttribute : Attribute
+    {
     }
 }

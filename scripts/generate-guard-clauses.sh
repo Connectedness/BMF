@@ -72,6 +72,7 @@ required_options=(
     RemoveCallerArgumentExpressions
     RemoveContractAnnotations
     RemoveDoesNotReturn
+    RemoveNoEnumeration
     RemoveNotNullWhen
     RemoveOverloadsWithExceptionFactory
     RemoveValidatedNotNull
@@ -136,8 +137,9 @@ arguments=(
     --ChangePublicTypesToInternalTypes false
     --BaseNamespace BrilliantMessaging.GuardClauses
     --RemoveContractAnnotations true
-    --IncludeJetBrainsAnnotations false
-    --IncludeJetBrainsAnnotationsUsing false
+    --IncludeJetBrainsAnnotations true
+    --IncludeJetBrainsAnnotationsUsing true
+    --RemoveNoEnumeration false
     --IncludeVersionComment true
     --RemoveOverloadsWithExceptionFactory false
     --IncludeCodeAnalysisNullableAttributes false
@@ -169,19 +171,6 @@ done
     cd -- "$exporter_directory"
     dotnet run --project "$exporter_project" -- "${arguments[@]}"
 )
-
-# Some JetBrains annotations can share a line with nullable-flow annotations.
-# The upstream cleanup flags intentionally retain the nullable-flow annotation
-# while this final generated-source cleanup removes only the JetBrains tokens.
-sed -i.bak \
-    -e 's/ValidatedNotNull, //g' \
-    -e 's/, ValidatedNotNull//g' \
-    -e 's/\[ValidatedNotNull\] //g' \
-    -e 's/NoEnumeration, //g' \
-    -e 's/, NoEnumeration//g' \
-    -e 's/\[NoEnumeration\] //g' \
-    "$temporary_file"
-rm -- "$temporary_file.bak"
 
 source_version="$(
     sed -n 's:.*<Version>\([^<]*\)</Version>.*:\1:p' "$light_guard_clauses_root/Directory.Build.props" |

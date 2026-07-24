@@ -2,6 +2,8 @@
 
 > Implementation approach changed on 2026-07-24: the source exporter is invoked with ValidateGeneratedFileBuild=false because the exported nullable-flow and caller-argument-expression attributes are supplied by BrilliantMessaging.Core's Polyfill dependency. The exact committed export is instead validated by BrilliantMessaging's warning-clean Release build and direct test-project runs in its real consuming context. This supersedes the later instruction requiring the exporter's standalone matching build validation.
 
+> Implementation approach changed on 2026-07-24: Light.GuardClauses now cleans up annotations correctly during source export, so the generation script no longer post-processes the generated file. The export retains the JetBrains `NoEnumeration` annotations and emits the JetBrains annotation types, because ReSharper otherwise reports "possible multiple enumeration" when a guard clause is applied to an `IEnumerable<T>` that is enumerated afterwards. This supersedes the instruction to remove all JetBrains annotations from the export.
+
 ## Rationale
 
 BrilliantMessaging currently repeats private guard helpers and inline precondition checks across Core, OpenTelemetry, and the transport projects. Consolidate these checks behind a curated, public source export from a compatible Light.GuardClauses checkout, compiled once into BrilliantMessaging.Core. The resulting API should live under `BrilliantMessaging.GuardClauses` and its generated sub-namespaces, giving BrilliantMessaging, its transports, and third-party extensions the same guard-clause surface without adding a runtime package dependency.
@@ -26,6 +28,8 @@ The generated surface should embrace the Light.GuardClauses exception taxonomy. 
 - [x] Automated tests need to be written, following the repository test rules.
 - [x] All test projects pass when run directly with the Microsoft Testing Platform runner.
 - [x] Release builds stay warning-clean with `TreatWarningsAsErrors`.
+- [x] The generation script produces the committed file without post-processing the exporter output.
+- [x] ReSharper's InspectCode is available as a local dotnet tool and reports no "possible multiple enumeration" issues for guard-clause call sites.
 
 ## Technical Details
 
@@ -37,7 +41,9 @@ Pass all transformation settings as command-line overrides to `dotnet run --proj
 
 Do not invoke generation from the regular MSBuild graph; consumers and contributors should build the committed output without the sibling checkout or transformation project.
 
-Configure the exporter with `TargetFramework` set to `NetStandard2_0`, `ChangePublicTypesToInternalTypes` set to `false`, `BaseNamespace` set to `BrilliantMessaging.GuardClauses`, and `IncludeVersionComment` enabled. Remove JetBrains contract annotations and validated-null annotations from the export. Do not emit code-analysis nullable attributes or `CallerArgumentExpressionAttribute`, because Core's private Polyfill dependency already supplies those types; retain their usages so nullable flow analysis and inferred parameter names continue to work.
+Configure the exporter with `TargetFramework` set to `NetStandard2_0`, `ChangePublicTypesToInternalTypes` set to `false`, `BaseNamespace` set to `BrilliantMessaging.GuardClauses`, and `IncludeVersionComment` enabled. Remove JetBrains contract annotations and validated-null annotations from the export, but retain the `NoEnumeration` annotations and let the exporter emit the JetBrains annotation types so ReSharper keeps its enumeration analysis intact at guard-clause call sites. Do not emit code-analysis nullable attributes or `CallerArgumentExpressionAttribute`, because Core's private Polyfill dependency already supplies those types; retain their usages so nullable flow analysis and inferred parameter names continue to work.
+
+Add ReSharper's InspectCode as a local dotnet tool in the repository-root `dotnet-tools.json` and a `scripts/inspect-code.sh` wrapper. InspectCode reuses analysis caches between runs and reports stale results after sources change, so the wrapper must run every inspection with a throwaway caches home.
 
 Enable `AssertionWhitelist` and explicitly disable every catalog entry that is not selected, because omitted entries default to enabled. Use these assertion roots:
 
