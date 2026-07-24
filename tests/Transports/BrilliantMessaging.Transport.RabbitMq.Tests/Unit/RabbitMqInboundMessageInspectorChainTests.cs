@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses.Exceptions;
 using BrilliantMessaging.Transport.RabbitMq.Inbound;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -91,7 +92,7 @@ public sealed class RabbitMqInboundMessageInspectorChainTests
         var constructNullInstanceEntry = () => new RabbitMqInstanceInboundMessageInspectorChainEntry(null!);
 
         constructNullChain.Should().Throw<ArgumentNullException>().WithParameterName("entries");
-        constructChainWithNullEntry.Should().Throw<ArgumentNullException>().WithParameterName("entries");
+        constructChainWithNullEntry.Should().Throw<ExistingItemException>().WithParameterName("entries");
         constructInvalidServiceEntry.Should().Throw<ArgumentException>().WithParameterName("inspectorType");
         constructNullInstanceEntry.Should().Throw<ArgumentNullException>().WithParameterName("inspector");
     }

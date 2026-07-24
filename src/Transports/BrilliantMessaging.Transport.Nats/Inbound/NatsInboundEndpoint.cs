@@ -1,5 +1,6 @@
 using System;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.Nats.Inbound;
 
@@ -33,13 +34,9 @@ public sealed class NatsInboundEndpoint<TMessage> : NatsInboundEndpoint
         redeliveryClassifier
     )
     {
-        if (!typeof(IMessageHandler<TMessage>).IsAssignableFrom(handlerType))
-        {
-            throw new ArgumentException(
-                $"Handler type '{handlerType}' must implement '{typeof(IMessageHandler<TMessage>)}'.",
-                nameof(handlerType)
-            );
-        }
+        handlerType
+           .MustBeAssignableTo(typeof(IMessageHandler<TMessage>))
+           .MustBeConcreteClass(nameof(handlerType));
 
         Subject = subject;
     }

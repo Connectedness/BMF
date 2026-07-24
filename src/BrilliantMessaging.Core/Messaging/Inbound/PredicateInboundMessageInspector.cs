@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
 
@@ -28,9 +29,9 @@ public sealed class PredicateInboundMessageInspector : IInboundMessageInspector
         Type messageType
     )
     {
-        _predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
-        _discriminator = RequireText(discriminator, nameof(discriminator));
-        _messageType = messageType ?? throw new ArgumentNullException(nameof(messageType));
+        _predicate = predicate.MustNotBeNull();
+        _discriminator = discriminator.MustNotBeNullOrWhiteSpace();
+        _messageType = messageType.MustNotBeNull();
     }
 
     /// <inheritdoc />
@@ -39,25 +40,12 @@ public sealed class PredicateInboundMessageInspector : IInboundMessageInspector
         CancellationToken cancellationToken = default
     )
     {
-        if (transportMessage is null)
-        {
-            throw new ArgumentNullException(nameof(transportMessage));
-        }
+        transportMessage.MustNotBeNull();
 
         return new ValueTask<InboundMessageInspectionResult?>(
             _predicate(transportMessage) ?
                 new InboundMessageInspectionResult(_discriminator, _messageType) :
                 null
         );
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

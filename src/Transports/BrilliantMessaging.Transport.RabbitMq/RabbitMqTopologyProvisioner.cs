@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
 
@@ -32,7 +33,7 @@ public sealed class RabbitMqTopologyProvisioner : ITopologyProvisioner
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="topology" /> is <see langword="null" />.</exception>
     public RabbitMqTopologyProvisioner(RabbitMqTopology topology)
     {
-        _topology = topology ?? throw new ArgumentNullException(nameof(topology));
+        _topology = topology.MustNotBeNull();
     }
 
     /// <inheritdoc />

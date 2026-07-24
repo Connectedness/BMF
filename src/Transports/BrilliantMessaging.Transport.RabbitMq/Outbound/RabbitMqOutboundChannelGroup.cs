@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using BrilliantMessaging.GuardClauses;
 using RabbitMQ.Client;
 
 namespace BrilliantMessaging.Transport.RabbitMq.Outbound;
@@ -22,7 +23,14 @@ public sealed class RabbitMqOutboundChannelGroup : IAsyncDisposable, IDisposable
     /// <param name="publisherConfirmMode">The publisher-confirm mode for channels in the group.</param>
     /// <param name="publisherConfirmTimeout">The bounded wait for publisher confirmations, or <see langword="null" /> for the default.</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="maximumChannelCount" /> is less than one, <paramref name="publisherConfirmMode" /> is undefined, or the confirm timeout is out of range.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="maximumChannelCount" /> is less than one or the confirm timeout is out of
+    /// range.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EnumValueNotDefinedException">
+    /// Thrown when <paramref name="publisherConfirmMode" /> is
+    /// undefined.
+    /// </exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="channelFactory" /> is <see langword="null" />.</exception>
     public RabbitMqOutboundChannelGroup(
         string name,
@@ -32,39 +40,21 @@ public sealed class RabbitMqOutboundChannelGroup : IAsyncDisposable, IDisposable
         TimeSpan? publisherConfirmTimeout = null
     )
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
-        if (maximumChannelCount < 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(maximumChannelCount),
-                maximumChannelCount,
-                "The value must be greater than zero."
+        maximumChannelCount.MustBePositive();
+
+        publisherConfirmMode.MustBeValidEnumValue();
+
+        var resolvedPublisherConfirmTimeout = (publisherConfirmTimeout ?? RabbitMqPublisherConfirmDefaults.Timeout)
+           .MustBeIn(
+                new Range<TimeSpan>(
+                    TimeSpan.Zero,
+                    TimeSpan.FromMilliseconds(uint.MaxValue - 1d),
+                    isFromInclusive: false
+                ),
+                nameof(publisherConfirmTimeout)
             );
-        }
-
-        if (!Enum.IsDefined(typeof(RabbitMqPublisherConfirmMode), publisherConfirmMode))
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(publisherConfirmMode),
-                publisherConfirmMode,
-                "Unsupported publisher confirm mode."
-            );
-        }
-
-        var resolvedPublisherConfirmTimeout = publisherConfirmTimeout ?? RabbitMqPublisherConfirmDefaults.Timeout;
-
-        if (!RabbitMqPublisherConfirmDefaults.IsValidTimeout(resolvedPublisherConfirmTimeout))
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(publisherConfirmTimeout),
-                resolvedPublisherConfirmTimeout,
-                "The value must be finite and greater than zero."
-            );
-        }
 
         Name = name;
         MaximumChannelCount = maximumChannelCount;
@@ -72,7 +62,7 @@ public sealed class RabbitMqOutboundChannelGroup : IAsyncDisposable, IDisposable
         PublisherConfirmTimeout = resolvedPublisherConfirmTimeout;
         _channelPool = new DefaultRabbitMqChannelPool(
             maximumChannelCount,
-            channelFactory ?? throw new ArgumentNullException(nameof(channelFactory))
+            channelFactory.MustNotBeNull()
         );
     }
 

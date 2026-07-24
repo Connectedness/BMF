@@ -1,5 +1,6 @@
 using System;
 using BrilliantMessaging.Abstractions;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Outbound;
 
@@ -17,15 +18,20 @@ public static class CloudEventsOptionsValidation
     /// <exception cref="CloudEventMetadataException">Thrown when <paramref name="source" /> is missing or not a valid URI-reference.</exception>
     public static string GetRequiredSource(string? source)
     {
-        if (!IsValidSource(source))
-        {
-            throw new CloudEventMetadataException(
-                CloudEventAttributeNames.Source,
-                "Configure CloudEventsOptions.Source with a non-empty URI-reference or pass a per-call CloudEventMetadata.Source override."
+        return source
+           .MustNotBeNullOrWhiteSpace(
+                static _ => new CloudEventMetadataException(
+                    CloudEventAttributeNames.Source,
+                    "Configure CloudEventsOptions.Source with a non-empty URI-reference or pass a per-call CloudEventMetadata.Source override."
+                )
+            )
+           .MustBeUri(
+                UriKind.RelativeOrAbsolute,
+                static (_, _) => new CloudEventMetadataException(
+                    CloudEventAttributeNames.Source,
+                    "Configure CloudEventsOptions.Source with a non-empty URI-reference or pass a per-call CloudEventMetadata.Source override."
+                )
             );
-        }
-
-        return source!;
     }
 
     /// <summary>

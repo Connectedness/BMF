@@ -1,4 +1,5 @@
 using System;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
 
@@ -21,8 +22,8 @@ public sealed class InboundMessageRecognizerBuilder
         Func<TransportMessage, bool> predicate
     )
     {
-        _chainBuilder = chainBuilder ?? throw new ArgumentNullException(nameof(chainBuilder));
-        _predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
+        _chainBuilder = chainBuilder.MustNotBeNull();
+        _predicate = predicate.MustNotBeNull();
     }
 
     /// <summary>
@@ -46,8 +47,10 @@ public sealed class InboundMessageRecognizerBuilder
     /// <exception cref="ArgumentException">Thrown when <paramref name="explicitDiscriminator" /> is null or whitespace.</exception>
     public InboundMessageInspectorChainBuilder As<TMessage>(string explicitDiscriminator)
     {
-        return string.IsNullOrWhiteSpace(explicitDiscriminator) ?
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(explicitDiscriminator)) :
-            _chainBuilder.AddRecognizer(_predicate, typeof(TMessage), explicitDiscriminator);
+        return _chainBuilder.AddRecognizer(
+            _predicate,
+            typeof(TMessage),
+            explicitDiscriminator.MustNotBeNullOrWhiteSpace()
+        );
     }
 }

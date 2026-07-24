@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.RabbitMq.Inbound;
 
@@ -17,7 +18,10 @@ public sealed class RabbitMqInboundConsumer
     /// <param name="copyBody">Whether the delivery body is copied into message-owned memory.</param>
     /// <param name="channelGroup">The channel group the consumer's channels belong to.</param>
     /// <param name="endpoints">The endpoints the consumer dispatches to, keyed by discriminator.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="inspectorChain" />, <paramref name="channelGroup" />, or <paramref name="endpoints" /> is <see langword="null" />.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="inspectorChain" />, <paramref name="channelGroup" />, or
+    /// <paramref name="endpoints" /> is <see langword="null" />.
+    /// </exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="queueName" /> is null or whitespace.</exception>
     public RabbitMqInboundConsumer(
         string queueName,
@@ -27,11 +31,11 @@ public sealed class RabbitMqInboundConsumer
         IReadOnlyList<RabbitMqInboundEndpoint> endpoints
     )
     {
-        QueueName = RequireText(queueName, nameof(queueName));
-        InspectorChain = inspectorChain ?? throw new ArgumentNullException(nameof(inspectorChain));
+        QueueName = queueName.MustNotBeNullOrWhiteSpace();
+        InspectorChain = inspectorChain.MustNotBeNull();
         CopyBody = copyBody;
-        ChannelGroup = channelGroup ?? throw new ArgumentNullException(nameof(channelGroup));
-        Endpoints = endpoints ?? throw new ArgumentNullException(nameof(endpoints));
+        ChannelGroup = channelGroup.MustNotBeNull();
+        Endpoints = endpoints.MustNotBeNull();
     }
 
     /// <summary>
@@ -58,14 +62,4 @@ public sealed class RabbitMqInboundConsumer
     /// Gets the endpoints the consumer dispatches to.
     /// </summary>
     public IReadOnlyList<RabbitMqInboundEndpoint> Endpoints { get; }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
-    }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BrilliantMessaging.GuardClauses;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BrilliantMessaging.Core.Messaging;
@@ -22,8 +23,8 @@ public sealed class TopologyRegistry : ITopologyRegistry
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="serviceProvider" /> or <paramref name="catalog" /> is <see langword="null" />.</exception>
     public TopologyRegistry(IServiceProvider serviceProvider, TopologyRegistrationCatalog catalog)
     {
-        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+        _serviceProvider = serviceProvider.MustNotBeNull();
+        _catalog = catalog.MustNotBeNull();
     }
 
     /// <inheritdoc />

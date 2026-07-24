@@ -7,6 +7,7 @@ using BrilliantMessaging.Abstractions;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using NATS.Client.Core;
 using NATS.Client.JetStream;
 using NATS.Client.JetStream.Models;
@@ -42,14 +43,11 @@ public sealed class NatsOutboundTarget<TMessage> : OutboundTarget<TMessage>
         NatsConnectionProvider connectionProvider
     ) : base(name, NatsTopology.TransportNameValue, serializer, messageContractRegistry, topologyName)
     {
-        if (string.IsNullOrWhiteSpace(subject))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(subject));
-        }
+        subject.MustNotBeNullOrWhiteSpace();
 
         _subject = subject;
         _messageIdDeduplication = messageIdDeduplication;
-        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
+        _connectionProvider = connectionProvider.MustNotBeNull();
         DestinationName = subject;
     }
 

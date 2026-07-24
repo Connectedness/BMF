@@ -1,4 +1,5 @@
 using System;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Outbound;
 
@@ -17,7 +18,7 @@ public sealed class CloudEventMetadataException : Exception
     /// <exception cref="ArgumentException">Thrown when <paramref name="attributeName" /> or <paramref name="supplyInstructions" /> is null or whitespace.</exception>
     public CloudEventMetadataException(string attributeName, string supplyInstructions)
         : base(
-            $"CloudEvents attribute '{RequireText(attributeName, nameof(attributeName))}' is missing or invalid. {RequireText(supplyInstructions, nameof(supplyInstructions))}"
+            $"CloudEvents attribute '{attributeName.MustNotBeNullOrWhiteSpace()}' is missing or invalid. {supplyInstructions.MustNotBeNullOrWhiteSpace()}"
         )
     {
         AttributeName = attributeName;
@@ -27,14 +28,4 @@ public sealed class CloudEventMetadataException : Exception
     /// Gets the name of the missing or invalid CloudEvents attribute.
     /// </summary>
     public string AttributeName { get; }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
-    }
 }

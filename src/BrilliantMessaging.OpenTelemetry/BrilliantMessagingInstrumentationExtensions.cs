@@ -1,6 +1,7 @@
 using System;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
@@ -23,21 +24,20 @@ namespace BrilliantMessaging.OpenTelemetry;
 public static class BrilliantMessagingInstrumentationExtensions
 {
     /// <summary>
-    /// Registers Brilliant Messaging outbound and inbound activity sources (<c>BrilliantMessaging.Outbound</c> and <c>BrilliantMessaging.Inbound</c>) with the
+    /// Registers Brilliant Messaging outbound and inbound activity sources (<c>BrilliantMessaging.Outbound</c> and <c>BrilliantMessaging.Inbound</c>) with
+    /// the
     /// tracer provider so their producer and consumer spans are collected.
     /// </summary>
     /// <param name="builder">The tracer provider builder to configure.</param>
     /// <returns>The same <paramref name="builder" /> for chaining.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="builder" /> is <see langword="null" />.</exception>
-    public static TracerProviderBuilder AddBrilliantMessagingInstrumentation(this TracerProviderBuilder builder)
-    {
-        if (builder is null)
-        {
-            throw new ArgumentNullException(nameof(builder));
-        }
-
-        return builder.AddSource(OutboundDiagnostics.ActivitySourceName, InboundDiagnostics.ActivitySourceName);
-    }
+    public static TracerProviderBuilder AddBrilliantMessagingInstrumentation(this TracerProviderBuilder builder) =>
+        builder
+           .MustNotBeNull()
+           .AddSource(
+                OutboundDiagnostics.ActivitySourceName,
+                InboundDiagnostics.ActivitySourceName
+            );
 
     /// <summary>
     /// Registers Brilliant Messaging outbound and inbound meters (<c>BrilliantMessaging.Outbound</c> and <c>BrilliantMessaging.Inbound</c>) with the meter
@@ -46,13 +46,6 @@ public static class BrilliantMessagingInstrumentationExtensions
     /// <param name="builder">The meter provider builder to configure.</param>
     /// <returns>The same <paramref name="builder" /> for chaining.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="builder" /> is <see langword="null" />.</exception>
-    public static MeterProviderBuilder AddBrilliantMessagingInstrumentation(this MeterProviderBuilder builder)
-    {
-        if (builder is null)
-        {
-            throw new ArgumentNullException(nameof(builder));
-        }
-
-        return builder.AddMeter(OutboundDiagnostics.MeterName, InboundDiagnostics.MeterName);
-    }
+    public static MeterProviderBuilder AddBrilliantMessagingInstrumentation(this MeterProviderBuilder builder) =>
+        builder.MustNotBeNull().AddMeter(OutboundDiagnostics.MeterName, InboundDiagnostics.MeterName);
 }

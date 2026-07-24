@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Abstractions;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Outbound;
 
@@ -23,10 +24,8 @@ public readonly struct TopologyPublisher
     /// <exception cref="ArgumentException">Thrown when <paramref name="topologyName" /> is null or whitespace.</exception>
     public TopologyPublisher(MessagePublisher router, string topologyName)
     {
-        Router = router ?? throw new ArgumentNullException(nameof(router));
-        _topologyName = !string.IsNullOrWhiteSpace(topologyName) ?
-            topologyName :
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(topologyName));
+        Router = router.MustNotBeNull();
+        _topologyName = topologyName.MustNotBeNullOrWhiteSpace();
     }
 
     /// <summary>
@@ -85,6 +84,7 @@ public readonly struct TopologyPublisher
         return Router.PublishRawAsync(message, target, _topologyName, cancellationToken);
     }
 
-    private MessagePublisher Router =>
-        field ?? throw new InvalidOperationException("TopologyPublisher must not be the default instance");
+    private MessagePublisher Router => field.MustNotBeNull(
+        static () => new InvalidOperationException("TopologyPublisher must not be the default instance")
+    );
 }

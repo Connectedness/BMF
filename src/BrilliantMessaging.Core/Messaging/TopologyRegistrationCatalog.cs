@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -28,17 +29,12 @@ public sealed class TopologyRegistrationCatalog
     /// <exception cref="InvalidOperationException">Thrown when <paramref name="name" /> is already registered.</exception>
     public void Add(string name)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
-        if (!_namesSet.Add(name))
-        {
-            throw new InvalidOperationException(
-                $"Topology '{name}' is already registered. Registered topologies: {FormatNames(_names)}."
-            );
-        }
+        Check.InvalidOperation(
+            !_namesSet.Add(name),
+            $"Topology '{name}' is already registered. Registered topologies: {FormatNames(_names)}."
+        );
 
         _names.Add(name);
     }

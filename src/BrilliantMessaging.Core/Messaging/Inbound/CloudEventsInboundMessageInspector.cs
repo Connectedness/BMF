@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Abstractions;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
 
@@ -29,8 +30,7 @@ public sealed class CloudEventsInboundMessageInspector : IInboundMessageInspecto
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="messageContractRegistry" /> is <see langword="null" />.</exception>
     public CloudEventsInboundMessageInspector(IMessageContractRegistry messageContractRegistry)
     {
-        _messageContractRegistry = messageContractRegistry ??
-                                   throw new ArgumentNullException(nameof(messageContractRegistry));
+        _messageContractRegistry = messageContractRegistry.MustNotBeNull();
     }
 
     /// <inheritdoc />
@@ -39,10 +39,7 @@ public sealed class CloudEventsInboundMessageInspector : IInboundMessageInspecto
         CancellationToken cancellationToken = default
     )
     {
-        if (transportMessage is null)
-        {
-            throw new ArgumentNullException(nameof(transportMessage));
-        }
+        transportMessage.MustNotBeNull();
 
         if (!TryGetHeader(transportMessage, CloudEventAttributeNames.Type, out var type))
         {

@@ -1,6 +1,7 @@
 using System;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.Nats.Outbound;
 
@@ -26,14 +27,15 @@ public sealed class NatsOutboundTargetBuilder<TMessage> : IBuildable<NatsOutboun
     /// <inheritdoc />
     NatsOutboundTargetDefinition IBuildable<NatsOutboundTargetDefinition>.Build()
     {
-        if (_subject is null)
-        {
-            throw new InvalidOperationException("A NATS outbound target must select a subject with ToSubject(...).");
-        }
+        var subject = _subject.MustNotBeNull(
+            static () => new InvalidOperationException(
+                "A NATS outbound target must select a subject with ToSubject(...)."
+            )
+        );
 
         return new NatsOutboundTargetDefinition(
             typeof(TMessage),
-            _subject,
+            subject,
             _targetName,
             _serializerType,
             _messageIdDeduplication
@@ -45,7 +47,7 @@ public sealed class NatsOutboundTargetBuilder<TMessage> : IBuildable<NatsOutboun
     /// </summary>
     public NatsOutboundTargetBuilder<TMessage> ToSubject(string subject)
     {
-        _subject = RequireText(subject, nameof(subject));
+        _subject = subject.MustNotBeNullOrWhiteSpace();
         return this;
     }
 
@@ -67,15 +69,5 @@ public sealed class NatsOutboundTargetBuilder<TMessage> : IBuildable<NatsOutboun
     {
         _messageIdDeduplication = enabled;
         return this;
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

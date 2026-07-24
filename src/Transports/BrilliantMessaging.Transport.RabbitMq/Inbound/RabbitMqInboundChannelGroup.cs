@@ -1,4 +1,5 @@
 using System;
+using BrilliantMessaging.GuardClauses;
 using RabbitMQ.Client;
 
 namespace BrilliantMessaging.Transport.RabbitMq.Inbound;
@@ -25,37 +26,10 @@ public sealed class RabbitMqInboundChannelGroup
         ushort consumerDispatchConcurrency
     )
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
-
-        if (maximumChannelCount < 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(maximumChannelCount),
-                maximumChannelCount,
-                "The value must be greater than zero."
-            );
-        }
-
-        if (prefetchCount == 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(prefetchCount),
-                prefetchCount,
-                "The value must be greater than zero."
-            );
-        }
-
-        if (consumerDispatchConcurrency == 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(consumerDispatchConcurrency),
-                consumerDispatchConcurrency,
-                "The value must be greater than zero."
-            );
-        }
+        name.MustNotBeNullOrWhiteSpace();
+        maximumChannelCount.MustBePositive();
+        prefetchCount.MustBePositive();
+        consumerDispatchConcurrency.MustBePositive();
 
         Name = name;
         MaximumChannelCount = maximumChannelCount;

@@ -1,6 +1,7 @@
 using System;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.Nats.Inbound;
 
@@ -52,10 +53,7 @@ public sealed class NatsInboundHandlerBuilder : IBuildable<NatsInboundHandlerCon
     /// </summary>
     public NatsInboundHandlerBuilder WithRedelivery(Action<RedeliveryClassifierBuilder> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         RedeliveryClassifierBuilder builder = new ();
         configure(builder);

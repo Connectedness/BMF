@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BrilliantMessaging.Abstractions;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.InMemory.Inbound;
 
 namespace BrilliantMessaging.Transport.InMemory.Outbound;
@@ -46,13 +47,8 @@ public sealed class InMemoryOutboundTarget<TMessage> : OutboundTarget<TMessage>
     )
         : base(name, InMemoryInboundEndpoint.TransportNameValue, serializer, messageContractRegistry, topologyName)
     {
-        if (string.IsNullOrWhiteSpace(topic))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(topic));
-        }
-
-        _topic = topic;
-        _broker = broker ?? throw new ArgumentNullException(nameof(broker));
+        _topic = topic.MustNotBeNullOrWhiteSpace();
+        _broker = broker.MustNotBeNull();
         DestinationName = topic;
     }
 

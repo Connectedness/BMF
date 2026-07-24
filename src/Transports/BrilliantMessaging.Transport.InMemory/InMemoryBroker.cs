@@ -6,6 +6,7 @@ using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.InMemory.Inbound;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -87,11 +88,7 @@ public sealed class InMemoryBroker
     /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
     public IReadOnlyList<InMemoryTransportMessage> GetMessages(string topic)
     {
-        if (string.IsNullOrWhiteSpace(topic))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(topic));
-        }
-
+        topic.MustNotBeNullOrWhiteSpace();
         return _recordings.TryGetValue(topic, out var slot) ? slot.Queue.ToArray() : [];
     }
 
@@ -110,11 +107,7 @@ public sealed class InMemoryBroker
     /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
     public void ClearRecordings(string topic)
     {
-        if (string.IsNullOrWhiteSpace(topic))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(topic));
-        }
-
+        topic.MustNotBeNullOrWhiteSpace();
         _recordings.TryRemove(topic, out _);
     }
 

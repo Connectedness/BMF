@@ -1,4 +1,5 @@
 using System;
+using BrilliantMessaging.GuardClauses.Exceptions;
 using BrilliantMessaging.Transport.RabbitMq.Outbound;
 using BrilliantMessaging.Transport.RabbitMq.Tests.TestSupport;
 using FluentAssertions;
@@ -158,7 +159,7 @@ public sealed class RabbitMqTopologyBuilderValidationTests
 
         Action act = () => builder.WithDefaultPublisherConfirmMode((RabbitMqPublisherConfirmMode) 999);
 
-        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("publisherConfirmMode");
+        act.Should().Throw<EnumValueNotDefinedException>().WithParameterName("publisherConfirmMode");
     }
 
     [Fact]

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.Nats.Inbound;
 using BrilliantMessaging.Transport.Nats.Outbound;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,8 +42,8 @@ public sealed class NatsTopologyRuntime : ITopologyRuntime
         ILogger<NatsTopologyRuntime>? logger = null
     )
     {
-        _topology = topology ?? throw new ArgumentNullException(nameof(topology));
-        _serviceScopeFactory = serviceScopeFactory ?? throw new ArgumentNullException(nameof(serviceScopeFactory));
+        _topology = topology.MustNotBeNull();
+        _serviceScopeFactory = serviceScopeFactory.MustNotBeNull();
         _logger = logger ?? NullLogger<NatsTopologyRuntime>.Instance;
 
         // The inspector must resolve CloudEvents types against the topology's effective contract registry;
@@ -471,15 +472,8 @@ public sealed class NatsTopologyRuntime : ITopologyRuntime
     /// </summary>
     public static string? GetDeadLetterMessageId(NatsInboundConsumer consumer, INatsJSMsg<byte[]> message)
     {
-        if (consumer is null)
-        {
-            throw new ArgumentNullException(nameof(consumer));
-        }
-
-        if (message is null)
-        {
-            throw new ArgumentNullException(nameof(message));
-        }
+        consumer.MustNotBeNull();
+        message.MustNotBeNull();
 
         if (consumer.DeadLetterSubject is null)
         {

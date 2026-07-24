@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
 
@@ -24,7 +25,7 @@ public sealed class PayloadCodecMessageDeserializer : IMessageDeserializer
     /// <exception cref="ArgumentNullException"><paramref name="payloadCodec" /> is <see langword="null" />.</exception>
     public PayloadCodecMessageDeserializer(IPayloadCodec payloadCodec)
     {
-        _payloadCodec = payloadCodec ?? throw new ArgumentNullException(nameof(payloadCodec));
+        _payloadCodec = payloadCodec.MustNotBeNull();
     }
 
     /// <inheritdoc />
@@ -33,10 +34,7 @@ public sealed class PayloadCodecMessageDeserializer : IMessageDeserializer
         CancellationToken cancellationToken = default
     )
     {
-        if (context is null)
-        {
-            throw new ArgumentNullException(nameof(context));
-        }
+        context.MustNotBeNull();
 
         try
         {

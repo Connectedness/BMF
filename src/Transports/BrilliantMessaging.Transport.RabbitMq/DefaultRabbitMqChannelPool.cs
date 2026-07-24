@@ -2,6 +2,8 @@ using System;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using BrilliantMessaging.GuardClauses;
+using BrilliantMessaging.GuardClauses.ExceptionFactory;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -32,17 +34,10 @@ public sealed class DefaultRabbitMqChannelPool : IRabbitMqChannelPool
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="channelFactory" /> is <see langword="null" />.</exception>
     public DefaultRabbitMqChannelPool(int maximumChannelCount, Func<CancellationToken, Task<IChannel>> channelFactory)
     {
-        if (maximumChannelCount < 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(maximumChannelCount),
-                maximumChannelCount,
-                "The value must be greater than zero."
-            );
-        }
+        maximumChannelCount.MustBePositive();
 
         _maximumChannelCount = maximumChannelCount;
-        _channelFactory = channelFactory ?? throw new ArgumentNullException(nameof(channelFactory));
+        _channelFactory = channelFactory.MustNotBeNull();
         _availableChannels = Channel.CreateBounded<PooledChannel>(
             new BoundedChannelOptions(maximumChannelCount)
             {
@@ -57,7 +52,7 @@ public sealed class DefaultRabbitMqChannelPool : IRabbitMqChannelPool
     /// <exception cref="ObjectDisposedException">Thrown when the pool has been disposed.</exception>
     public async ValueTask<RabbitMqChannelLease> AcquireAsync(CancellationToken cancellationToken = default)
     {
-        ThrowIfDisposed();
+        Check.ObjectDisposed(Volatile.Read(ref _disposed) != 0, nameof(DefaultRabbitMqChannelPool));
 
         while (true)
         {
@@ -106,7 +101,7 @@ public sealed class DefaultRabbitMqChannelPool : IRabbitMqChannelPool
             }
             catch (ChannelClosedException) when (Volatile.Read(ref _disposed) != 0)
             {
-                throw new ObjectDisposedException(nameof(DefaultRabbitMqChannelPool));
+                Throw.ObjectDisposed(nameof(DefaultRabbitMqChannelPool));
             }
 
             if (!pooledChannel.IsHealthy)
@@ -205,7 +200,7 @@ public sealed class DefaultRabbitMqChannelPool : IRabbitMqChannelPool
     {
         while (true)
         {
-            ThrowIfDisposed();
+            Check.ObjectDisposed(Volatile.Read(ref _disposed) != 0, nameof(DefaultRabbitMqChannelPool));
 
             var current = Volatile.Read(ref _liveChannelCount);
 
@@ -218,14 +213,6 @@ public sealed class DefaultRabbitMqChannelPool : IRabbitMqChannelPool
             {
                 return true;
             }
-        }
-    }
-
-    private void ThrowIfDisposed()
-    {
-        if (Volatile.Read(ref _disposed) != 0)
-        {
-            throw new ObjectDisposedException(nameof(DefaultRabbitMqChannelPool));
         }
     }
 
@@ -248,7 +235,7 @@ public sealed class DefaultRabbitMqChannelPool : IRabbitMqChannelPool
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="channel" /> is <see langword="null" />.</exception>
         public PooledChannel(IChannel channel)
         {
-            Channel = channel ?? throw new ArgumentNullException(nameof(channel));
+            Channel = channel.MustNotBeNull();
             Channel.ChannelShutdownAsync += OnChannelShutdownAsync;
 
             if (Channel is IRecoverable recoverableChannel)

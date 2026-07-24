@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 using RabbitMQ.Client;
 
 namespace BrilliantMessaging.Transport.RabbitMq;
@@ -23,8 +24,8 @@ public sealed class RabbitMqExchangeBuilder : IBuildable<RabbitMqExchangeDefinit
     /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> or <paramref name="type" /> is null or whitespace.</exception>
     public RabbitMqExchangeBuilder(string name, string type)
     {
-        Name = RequireText(name, nameof(name));
-        Type = RequireText(type, nameof(type));
+        Name = name.MustNotBeNullOrWhiteSpace();
+        Type = type.MustNotBeNullOrWhiteSpace();
         DeclareMode = RabbitMqDeclareMode.Active;
         Durable = true;
     }
@@ -109,7 +110,7 @@ public sealed class RabbitMqExchangeBuilder : IBuildable<RabbitMqExchangeDefinit
     /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
     public RabbitMqExchangeBuilder WithArgument(string name, object? value)
     {
-        _arguments[RequireText(name, nameof(name))] = value;
+        _arguments[name.MustNotBeNullOrWhiteSpace()] = value;
         return this;
     }
 
@@ -121,7 +122,7 @@ public sealed class RabbitMqExchangeBuilder : IBuildable<RabbitMqExchangeDefinit
     /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
     public RabbitMqExchangeBuilder WithAlternateExchange(string exchangeName)
     {
-        _arguments["alternate-exchange"] = RequireText(exchangeName, nameof(exchangeName));
+        _arguments["alternate-exchange"] = exchangeName.MustNotBeNullOrWhiteSpace();
         return this;
     }
 
@@ -134,17 +135,7 @@ public sealed class RabbitMqExchangeBuilder : IBuildable<RabbitMqExchangeDefinit
     /// <exception cref="ArgumentException">Thrown when <paramref name="delayedExchangeType" /> is null or whitespace.</exception>
     public RabbitMqExchangeBuilder AsDelayedMessageExchange(string delayedExchangeType = ExchangeType.Direct)
     {
-        _arguments["x-delayed-type"] = RequireText(delayedExchangeType, nameof(delayedExchangeType));
+        _arguments["x-delayed-type"] = delayedExchangeType.MustNotBeNullOrWhiteSpace();
         return this;
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

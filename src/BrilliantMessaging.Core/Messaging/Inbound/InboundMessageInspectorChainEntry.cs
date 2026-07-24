@@ -1,4 +1,5 @@
 using System;
+using BrilliantMessaging.GuardClauses;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
@@ -22,22 +23,17 @@ public sealed class ServiceInboundMessageInspectorChainEntry : InboundMessageIns
     /// <param name="inspectorType">The inspector type resolved from dependency injection.</param>
     /// <param name="serviceLifetime">The lifetime used when the inspector type is auto-registered.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="inspectorType" /> is <see langword="null" />.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="serviceLifetime" /> is not a defined value.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EnumValueNotDefinedException">
+    /// Thrown when <paramref name="serviceLifetime" /> is not a
+    /// defined value.
+    /// </exception>
     public ServiceInboundMessageInspectorChainEntry(
         Type inspectorType,
         ServiceLifetime serviceLifetime = ServiceLifetime.Singleton
     )
     {
-        if (!Enum.IsDefined(typeof(ServiceLifetime), serviceLifetime))
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(serviceLifetime),
-                serviceLifetime,
-                "Unsupported service lifetime."
-            );
-        }
-
-        InspectorType = inspectorType ?? throw new ArgumentNullException(nameof(inspectorType));
+        serviceLifetime.MustBeValidEnumValue();
+        InspectorType = inspectorType.MustNotBeNull();
         ServiceLifetime = serviceLifetime;
     }
 
@@ -75,14 +71,9 @@ public sealed class RecognizerInboundMessageInspectorChainEntry : InboundMessage
         string? explicitDiscriminator = null
     )
     {
-        if (explicitDiscriminator is not null && string.IsNullOrWhiteSpace(explicitDiscriminator))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(explicitDiscriminator));
-        }
-
-        Predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
-        MessageType = messageType ?? throw new ArgumentNullException(nameof(messageType));
-        ExplicitDiscriminator = explicitDiscriminator;
+        Predicate = predicate.MustNotBeNull();
+        MessageType = messageType.MustNotBeNull();
+        ExplicitDiscriminator = explicitDiscriminator?.MustNotBeNullOrWhiteSpace();
     }
 
     /// <summary>

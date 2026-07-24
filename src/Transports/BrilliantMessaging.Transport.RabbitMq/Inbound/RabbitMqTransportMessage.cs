@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 using RabbitMQ.Client;
 
 namespace BrilliantMessaging.Transport.RabbitMq.Inbound;
@@ -98,7 +99,7 @@ public sealed class RabbitMqTransportMessage : TransportMessage
         DeliveryTag = deliveryTag;
         Exchange = exchange;
         RoutingKey = routingKey;
-        BasicProperties = basicProperties ?? throw new ArgumentNullException(nameof(basicProperties));
+        BasicProperties = basicProperties.MustNotBeNull();
         DeliveryMode = basicProperties.DeliveryMode;
     }
 

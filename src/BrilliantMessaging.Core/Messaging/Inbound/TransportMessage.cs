@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
 
@@ -62,10 +63,10 @@ public abstract class TransportMessage
         string? appId = null
     )
     {
-        TransportName = RequireText(transportName, nameof(transportName));
-        Source = RequireText(source, nameof(source));
+        TransportName = transportName.MustNotBeNullOrWhiteSpace();
+        Source = source.MustNotBeNullOrWhiteSpace();
         Body = body;
-        Headers = headers ?? throw new ArgumentNullException(nameof(headers));
+        Headers = headers.MustNotBeNull();
         ContentType = contentType;
         ContentEncoding = contentEncoding;
         MessageId = messageId;
@@ -189,10 +190,7 @@ public abstract class TransportMessage
     /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
     public bool TryGetHeaderString(string name, out string? value)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
         if (!Headers.TryGetValue(name, out var rawValue) || rawValue is null)
         {
@@ -210,15 +208,5 @@ public abstract class TransportMessage
             _ => rawValue.ToString()
         };
         return true;
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

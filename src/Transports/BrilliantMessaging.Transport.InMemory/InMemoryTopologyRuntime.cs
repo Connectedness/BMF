@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.InMemory;
 
@@ -20,10 +21,7 @@ public sealed class InMemoryTopologyRuntime : ITopologyRuntime
     /// </summary>
     /// <param name="topology">The topology whose broker workers this runtime drives.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="topology" /> is <see langword="null" />.</exception>
-    public InMemoryTopologyRuntime(InMemoryTopology topology)
-    {
-        _topology = topology ?? throw new ArgumentNullException(nameof(topology));
-    }
+    public InMemoryTopologyRuntime(InMemoryTopology topology) => _topology = topology.MustNotBeNull();
 
     /// <inheritdoc />
     public string TopologyName => _topology.Name;

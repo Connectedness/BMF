@@ -1,3 +1,4 @@
+using BrilliantMessaging.GuardClauses;
 using System;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
@@ -38,13 +39,10 @@ public sealed class RabbitMqInboundHandlerBuilder : IBuildable<RabbitMqInboundHa
     /// </summary>
     /// <param name="ackMode">The acknowledgement mode.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="ackMode" /> is not a defined value.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EnumValueNotDefinedException">Thrown when <paramref name="ackMode" /> is not a defined value.</exception>
     public RabbitMqInboundHandlerBuilder WithAckMode(MessageAckMode ackMode)
     {
-        if (!Enum.IsDefined(typeof(MessageAckMode), ackMode))
-        {
-            throw new ArgumentOutOfRangeException(nameof(ackMode), ackMode, "Unsupported acknowledgement mode.");
-        }
+        ackMode.MustBeValidEnumValue();
 
         _ackMode = ackMode;
         return this;
@@ -59,10 +57,7 @@ public sealed class RabbitMqInboundHandlerBuilder : IBuildable<RabbitMqInboundHa
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="configure" /> is <see langword="null" />.</exception>
     public RabbitMqInboundHandlerBuilder WithRedelivery(Action<RedeliveryClassifierBuilder> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         RedeliveryClassifierBuilder builder = new ();
         configure(builder);

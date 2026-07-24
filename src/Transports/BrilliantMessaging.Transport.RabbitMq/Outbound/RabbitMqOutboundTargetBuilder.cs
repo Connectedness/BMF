@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.RabbitMq.Outbound;
 
@@ -37,6 +38,56 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// </summary>
     public bool IsMandatory { get; private set; }
 
+    /// <inheritdoc />
+    RabbitMqOutboundTargetDefinition IBuildable<RabbitMqOutboundTargetDefinition>.Build()
+    {
+        var exchangeName = _exchangeName.MustNotBeNull(
+            static () => new InvalidOperationException("A RabbitMQ outbound target must select an exchange.")
+        );
+
+        return _scenario switch
+        {
+            RabbitMqOutboundRouteScenario.Fanout => new RabbitMqFanoutOutboundTargetDefinition(
+                typeof(TMessage),
+                exchangeName,
+                _channelGroupName,
+                _targetName,
+                _serializerType,
+                IsMandatory
+            ),
+            RabbitMqOutboundRouteScenario.Direct => new RabbitMqDirectOutboundTargetDefinition(
+                typeof(TMessage),
+                exchangeName,
+                _channelGroupName,
+                _targetName,
+                _serializerType,
+                IsMandatory,
+                _routingKey,
+                _routingKeyFactory
+            ),
+            RabbitMqOutboundRouteScenario.Topic => new RabbitMqTopicOutboundTargetDefinition(
+                typeof(TMessage),
+                exchangeName,
+                _channelGroupName,
+                _targetName,
+                _serializerType,
+                IsMandatory,
+                _routingKey,
+                _routingKeyFactory
+            ),
+            RabbitMqOutboundRouteScenario.Headers => new RabbitMqHeadersOutboundTargetDefinition(
+                typeof(TMessage),
+                exchangeName,
+                _channelGroupName,
+                _targetName,
+                _serializerType,
+                IsMandatory,
+                new ReadOnlyDictionary<string, object?>(_headers)
+            ),
+            _ => throw new ArgumentOutOfRangeException(nameof(_scenario), _scenario, "Unsupported route scenario.")
+        };
+    }
+
     /// <summary>
     /// Routes published messages to a fanout exchange, which broadcasts to all bound queues regardless of
     /// routing key.
@@ -46,7 +97,7 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
     public RabbitMqOutboundTargetBuilder<TMessage> ToFanoutExchange(string exchangeName)
     {
-        _exchangeName = RequireText(exchangeName, nameof(exchangeName));
+        _exchangeName = exchangeName.MustNotBeNullOrWhiteSpace();
         _scenario = RabbitMqOutboundRouteScenario.Fanout;
         _routingKey = null;
         _routingKeyFactory = null;
@@ -63,7 +114,7 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
     public RabbitMqOutboundTargetBuilder<TMessage> ToDirectExchange(string exchangeName, string routingKey)
     {
-        _exchangeName = RequireText(exchangeName, nameof(exchangeName));
+        _exchangeName = exchangeName.MustNotBeNullOrWhiteSpace();
         _scenario = RabbitMqOutboundRouteScenario.Direct;
         _routingKey = routingKey ?? string.Empty;
         _routingKeyFactory = null;
@@ -84,10 +135,10 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
         Func<TMessage, string> routingKeyFactory
     )
     {
-        _exchangeName = RequireText(exchangeName, nameof(exchangeName));
+        _exchangeName = exchangeName.MustNotBeNullOrWhiteSpace();
         _scenario = RabbitMqOutboundRouteScenario.Direct;
         _routingKey = null;
-        _routingKeyFactory = routingKeyFactory ?? throw new ArgumentNullException(nameof(routingKeyFactory));
+        _routingKeyFactory = routingKeyFactory.MustNotBeNull();
         _headers.Clear();
         return this;
     }
@@ -101,7 +152,7 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
     public RabbitMqOutboundTargetBuilder<TMessage> ToTopicExchange(string exchangeName, string routingKey)
     {
-        _exchangeName = RequireText(exchangeName, nameof(exchangeName));
+        _exchangeName = exchangeName.MustNotBeNullOrWhiteSpace();
         _scenario = RabbitMqOutboundRouteScenario.Topic;
         _routingKey = routingKey ?? string.Empty;
         _routingKeyFactory = null;
@@ -122,10 +173,10 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
         Func<TMessage, string> routingKeyFactory
     )
     {
-        _exchangeName = RequireText(exchangeName, nameof(exchangeName));
+        _exchangeName = exchangeName.MustNotBeNullOrWhiteSpace();
         _scenario = RabbitMqOutboundRouteScenario.Topic;
         _routingKey = null;
-        _routingKeyFactory = routingKeyFactory ?? throw new ArgumentNullException(nameof(routingKeyFactory));
+        _routingKeyFactory = routingKeyFactory.MustNotBeNull();
         _headers.Clear();
         return this;
     }
@@ -139,7 +190,7 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
     public RabbitMqOutboundTargetBuilder<TMessage> ToHeadersExchange(string exchangeName)
     {
-        _exchangeName = RequireText(exchangeName, nameof(exchangeName));
+        _exchangeName = exchangeName.MustNotBeNullOrWhiteSpace();
         _scenario = RabbitMqOutboundRouteScenario.Headers;
         _routingKey = null;
         _routingKeyFactory = null;
@@ -155,7 +206,7 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// <exception cref="ArgumentException">Thrown when <paramref name="channelGroupName" /> is null or whitespace.</exception>
     public RabbitMqOutboundTargetBuilder<TMessage> UseChannelGroup(string channelGroupName)
     {
-        _channelGroupName = RequireText(channelGroupName, nameof(channelGroupName));
+        _channelGroupName = channelGroupName.MustNotBeNullOrWhiteSpace();
         return this;
     }
 
@@ -169,7 +220,7 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
     public RabbitMqOutboundTargetBuilder<TMessage> WithHeader(string name, object? value)
     {
-        _headers[RequireText(name, nameof(name))] = value;
+        _headers[name.MustNotBeNullOrWhiteSpace()] = value;
         return this;
     }
 
@@ -204,66 +255,5 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     {
         IsMandatory = mandatory;
         return this;
-    }
-
-    /// <inheritdoc />
-    RabbitMqOutboundTargetDefinition IBuildable<RabbitMqOutboundTargetDefinition>.Build()
-    {
-        if (_exchangeName is null)
-        {
-            throw new InvalidOperationException("A RabbitMQ outbound target must select an exchange.");
-        }
-
-        return _scenario switch
-        {
-            RabbitMqOutboundRouteScenario.Fanout => new RabbitMqFanoutOutboundTargetDefinition(
-                typeof(TMessage),
-                _exchangeName,
-                _channelGroupName,
-                _targetName,
-                _serializerType,
-                IsMandatory
-            ),
-            RabbitMqOutboundRouteScenario.Direct => new RabbitMqDirectOutboundTargetDefinition(
-                typeof(TMessage),
-                _exchangeName,
-                _channelGroupName,
-                _targetName,
-                _serializerType,
-                IsMandatory,
-                _routingKey,
-                _routingKeyFactory
-            ),
-            RabbitMqOutboundRouteScenario.Topic => new RabbitMqTopicOutboundTargetDefinition(
-                typeof(TMessage),
-                _exchangeName,
-                _channelGroupName,
-                _targetName,
-                _serializerType,
-                IsMandatory,
-                _routingKey,
-                _routingKeyFactory
-            ),
-            RabbitMqOutboundRouteScenario.Headers => new RabbitMqHeadersOutboundTargetDefinition(
-                typeof(TMessage),
-                _exchangeName,
-                _channelGroupName,
-                _targetName,
-                _serializerType,
-                IsMandatory,
-                new ReadOnlyDictionary<string, object?>(_headers)
-            ),
-            _ => throw new ArgumentOutOfRangeException(nameof(_scenario), _scenario, "Unsupported route scenario.")
-        };
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

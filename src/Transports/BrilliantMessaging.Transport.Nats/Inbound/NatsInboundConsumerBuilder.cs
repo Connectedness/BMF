@@ -2,6 +2,7 @@ using System;
 using System.Collections.Immutable;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.Nats.Inbound;
 
@@ -31,19 +32,17 @@ public sealed class NatsInboundConsumerBuilder : IBuildable<NatsInboundConsumerD
     /// </summary>
     public NatsInboundConsumerBuilder(string streamName, string durableName)
     {
-        _streamName = RequireText(streamName, nameof(streamName));
-        _durableName = RequireText(durableName, nameof(durableName));
+        _streamName = streamName.MustNotBeNullOrWhiteSpace();
+        _durableName = durableName.MustNotBeNullOrWhiteSpace();
     }
 
     /// <inheritdoc />
     NatsInboundConsumerDefinition IBuildable<NatsInboundConsumerDefinition>.Build()
     {
-        if (_deadLetterAfterDeliveryAttempt > _maxDeliver)
-        {
-            throw new InvalidOperationException(
-                $"DeadLetterAfterDeliveryAttempt ({_deadLetterAfterDeliveryAttempt}) must not exceed MaxDeliver ({_maxDeliver})."
-            );
-        }
+        Check.InvalidOperation(
+            _deadLetterAfterDeliveryAttempt > _maxDeliver,
+            $"DeadLetterAfterDeliveryAttempt ({_deadLetterAfterDeliveryAttempt}) must not exceed MaxDeliver ({_maxDeliver})."
+        );
 
         return new NatsInboundConsumerDefinition(
             _streamName,
@@ -67,7 +66,7 @@ public sealed class NatsInboundConsumerBuilder : IBuildable<NatsInboundConsumerD
     /// </summary>
     public NatsInboundConsumerBuilder FilterSubject(string subject)
     {
-        _filterSubject = RequireText(subject, nameof(subject));
+        _filterSubject = subject.MustNotBeNullOrWhiteSpace();
         return this;
     }
 
@@ -76,10 +75,7 @@ public sealed class NatsInboundConsumerBuilder : IBuildable<NatsInboundConsumerD
     /// </summary>
     public NatsInboundConsumerBuilder Concurrency(int concurrency)
     {
-        if (concurrency <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(concurrency), concurrency, "The value must be positive.");
-        }
+        concurrency.MustBePositive();
 
         _concurrency = concurrency;
         return this;
@@ -92,14 +88,11 @@ public sealed class NatsInboundConsumerBuilder : IBuildable<NatsInboundConsumerD
     /// </summary>
     public NatsInboundConsumerBuilder AckWait(TimeSpan ackWait)
     {
-        if (ackWait < NatsTopologyBuilderDefaults.MinimumAckWait)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(ackWait),
-                ackWait,
-                $"The value must be at least {NatsTopologyBuilderDefaults.MinimumAckWait.TotalSeconds} seconds so the AckProgress heartbeat (AckWait / 3) fires safely before the ack deadline."
-            );
-        }
+        ackWait.MustBeGreaterThanOrEqualTo(
+            NatsTopologyBuilderDefaults.MinimumAckWait,
+            message:
+            $"The value must be at least {NatsTopologyBuilderDefaults.MinimumAckWait.TotalSeconds} seconds so the AckProgress heartbeat (AckWait / 3) fires safely before the ack deadline."
+        );
 
         _ackWait = ackWait;
         return this;
@@ -110,10 +103,7 @@ public sealed class NatsInboundConsumerBuilder : IBuildable<NatsInboundConsumerD
     /// </summary>
     public NatsInboundConsumerBuilder MaxDeliver(int maxDeliver)
     {
-        if (maxDeliver <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(maxDeliver), maxDeliver, "The value must be positive.");
-        }
+        maxDeliver.MustBePositive();
 
         _maxDeliver = maxDeliver;
         return this;
@@ -127,14 +117,7 @@ public sealed class NatsInboundConsumerBuilder : IBuildable<NatsInboundConsumerD
     /// </summary>
     public NatsInboundConsumerBuilder DeadLetterAfterDeliveryAttempt(int deliveryAttempt)
     {
-        if (deliveryAttempt <= 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(deliveryAttempt),
-                deliveryAttempt,
-                "The value must be positive."
-            );
-        }
+        deliveryAttempt.MustBePositive();
 
         _deadLetterAfterDeliveryAttempt = deliveryAttempt;
         return this;
@@ -145,14 +128,7 @@ public sealed class NatsInboundConsumerBuilder : IBuildable<NatsInboundConsumerD
     /// </summary>
     public NatsInboundConsumerBuilder MaxAckPending(int maxAckPending)
     {
-        if (maxAckPending <= 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(maxAckPending),
-                maxAckPending,
-                "The value must be positive."
-            );
-        }
+        maxAckPending.MustBePositive();
 
         _maxAckPending = maxAckPending;
         return this;
@@ -165,14 +141,7 @@ public sealed class NatsInboundConsumerBuilder : IBuildable<NatsInboundConsumerD
     /// </summary>
     public NatsInboundConsumerBuilder MaxBufferedMessages(int maxBufferedMessages)
     {
-        if (maxBufferedMessages <= 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(maxBufferedMessages),
-                maxBufferedMessages,
-                "The value must be positive."
-            );
-        }
+        maxBufferedMessages.MustBePositive();
 
         _maxBufferedMessages = maxBufferedMessages;
         return this;
@@ -183,7 +152,7 @@ public sealed class NatsInboundConsumerBuilder : IBuildable<NatsInboundConsumerD
     /// </summary>
     public NatsInboundConsumerBuilder DeadLetterSubject(string subject)
     {
-        _deadLetterSubject = RequireText(subject, nameof(subject));
+        _deadLetterSubject = subject.MustNotBeNullOrWhiteSpace();
         return this;
     }
 
@@ -192,10 +161,7 @@ public sealed class NatsInboundConsumerBuilder : IBuildable<NatsInboundConsumerD
     /// </summary>
     public NatsInboundConsumerBuilder WithRedelivery(Action<RedeliveryClassifierBuilder> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         RedeliveryClassifierBuilder builder = new ();
         configure(builder);
@@ -223,13 +189,7 @@ public sealed class NatsInboundConsumerBuilder : IBuildable<NatsInboundConsumerD
     )
         where THandler : class, IMessageHandler<TMessage>
     {
-        if (typeof(THandler).IsInterface || typeof(THandler).IsAbstract)
-        {
-            throw new ArgumentException(
-                $"Handler type '{typeof(THandler)}' must be a concrete class.",
-                nameof(THandler)
-            );
-        }
+        typeof(THandler).MustBeConcreteClass(nameof(THandler));
 
         NatsInboundHandlerBuilder builder = new ();
         configure?.Invoke(builder);
@@ -247,15 +207,5 @@ public sealed class NatsInboundConsumerBuilder : IBuildable<NatsInboundConsumerD
             )
         );
         return this;
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

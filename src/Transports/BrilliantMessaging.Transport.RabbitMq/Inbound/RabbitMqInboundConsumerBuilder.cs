@@ -2,7 +2,7 @@ using System;
 using System.Collections.Immutable;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
-using BrilliantMessaging.Transport.RabbitMq;
+using BrilliantMessaging.GuardClauses;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BrilliantMessaging.Transport.RabbitMq.Inbound;
@@ -21,8 +21,6 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
     private string? _channelGroupName;
     private ushort _consumerDispatchConcurrency = 1;
     private bool _copyBody = true;
-    private RabbitMqQueueType? _queueType;
-    private RedeliveryClassifier? _redeliveryClassifier;
 
     private ImmutableArray<InboundMessageInspectorChainEntry> _inspectorChain =
     [
@@ -30,6 +28,8 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
     ];
 
     private ushort _prefetchCount = 1;
+    private RabbitMqQueueType? _queueType;
+    private RedeliveryClassifier? _redeliveryClassifier;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RabbitMqInboundConsumerBuilder" /> class for the given queue.
@@ -38,7 +38,7 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
     /// <exception cref="ArgumentException">Thrown when <paramref name="queueName" /> is null or whitespace.</exception>
     public RabbitMqInboundConsumerBuilder(string queueName)
     {
-        _queueName = RequireText(queueName, nameof(queueName));
+        _queueName = queueName.MustNotBeNullOrWhiteSpace();
     }
 
     /// <inheritdoc />
@@ -66,14 +66,7 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="prefetchCount" /> is zero.</exception>
     public RabbitMqInboundConsumerBuilder PrefetchCount(ushort prefetchCount)
     {
-        if (prefetchCount == 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(prefetchCount),
-                prefetchCount,
-                "The value must be greater than zero."
-            );
-        }
+        prefetchCount.MustBePositive();
 
         _prefetchCount = prefetchCount;
         return this;
@@ -87,14 +80,7 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="consumerDispatchConcurrency" /> is zero.</exception>
     public RabbitMqInboundConsumerBuilder Concurrency(ushort consumerDispatchConcurrency)
     {
-        if (consumerDispatchConcurrency == 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(consumerDispatchConcurrency),
-                consumerDispatchConcurrency,
-                "The value must be greater than zero."
-            );
-        }
+        consumerDispatchConcurrency.MustBePositive();
 
         _consumerDispatchConcurrency = consumerDispatchConcurrency;
         return this;
@@ -108,14 +94,7 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="channelCount" /> is less than one.</exception>
     public RabbitMqInboundConsumerBuilder ChannelCount(int channelCount)
     {
-        if (channelCount < 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(channelCount),
-                channelCount,
-                "The value must be greater than zero."
-            );
-        }
+        channelCount.MustBePositive();
 
         _channelCount = channelCount;
         return this;
@@ -129,7 +108,7 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
     /// <exception cref="ArgumentException">Thrown when <paramref name="channelGroupName" /> is null or whitespace.</exception>
     public RabbitMqInboundConsumerBuilder UseChannelGroup(string channelGroupName)
     {
-        _channelGroupName = RequireText(channelGroupName, nameof(channelGroupName));
+        _channelGroupName = channelGroupName.MustNotBeNullOrWhiteSpace();
         return this;
     }
 
@@ -138,13 +117,13 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
     /// </summary>
     /// <param name="queueType">The queue type to use for compile-time redelivery decisions.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="queueType" /> is not a defined value.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EnumValueNotDefinedException">
+    /// Thrown when <paramref name="queueType" /> is not a defined
+    /// value.
+    /// </exception>
     public RabbitMqInboundConsumerBuilder QueueType(RabbitMqQueueType queueType)
     {
-        if (!Enum.IsDefined(typeof(RabbitMqQueueType), queueType))
-        {
-            throw new ArgumentOutOfRangeException(nameof(queueType), queueType, "Unsupported RabbitMQ queue type.");
-        }
+        queueType.MustBeValidEnumValue();
 
         _queueType = queueType;
         return this;
@@ -158,10 +137,7 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="configure" /> is <see langword="null" />.</exception>
     public RabbitMqInboundConsumerBuilder WithRedelivery(Action<RedeliveryClassifierBuilder> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         RedeliveryClassifierBuilder builder = new ();
         configure(builder);
@@ -196,10 +172,7 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="configure" /> is <see langword="null" />.</exception>
     public RabbitMqInboundConsumerBuilder UseInspectors(Action<InboundMessageInspectorChainBuilder> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         InboundMessageInspectorChainBuilder builder = new ();
         configure(builder);
@@ -253,13 +226,7 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
     )
         where THandler : class, IMessageHandler<TMessage>
     {
-        if (typeof(THandler).IsInterface || typeof(THandler).IsAbstract)
-        {
-            throw new ArgumentException(
-                $"Handler type '{typeof(THandler)}' must be a concrete class.",
-                nameof(THandler)
-            );
-        }
+        typeof(THandler).MustBeConcreteClass(nameof(THandler));
 
         var handlerBuilder = new RabbitMqInboundHandlerBuilder();
         configure?.Invoke(handlerBuilder);
@@ -277,15 +244,5 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
             )
         );
         return this;
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

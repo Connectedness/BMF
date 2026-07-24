@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using BrilliantMessaging.Abstractions;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.RabbitMq.Outbound;
 
@@ -46,15 +47,10 @@ public abstract class RabbitMqRoutingKeyOutboundTarget<TMessage>
     )
         : base(name, serializer, messageContractRegistry, topologyName, channelGroup, exchangeName, isMandatory)
     {
-        if (constantRoutingKey is null && routingKeyFactory is null)
-        {
-            throw new ArgumentException("A routing-key target must provide a constant key or a key factory.");
-        }
-
-        if (constantRoutingKey is not null && routingKeyFactory is not null)
-        {
-            throw new ArgumentException("A routing-key target cannot provide both a constant key and a key factory.");
-        }
+        Check.InvalidArgument(
+            constantRoutingKey is null == routingKeyFactory is null,
+            message: "A routing-key target must provide exactly one constant key or key factory."
+        );
 
         _constantRoutingKey = constantRoutingKey;
         _routingKeyFactory = routingKeyFactory;
@@ -69,7 +65,7 @@ public abstract class RabbitMqRoutingKeyOutboundTarget<TMessage>
         CancellationToken cancellationToken = default
     )
     {
-        EnsureRoutingKey(routingKey);
+        routingKey.MustNotBeNullOrWhiteSpace();
 
         if (message is not ICloudEvent cloudEvent)
         {
@@ -92,7 +88,7 @@ public abstract class RabbitMqRoutingKeyOutboundTarget<TMessage>
         CancellationToken cancellationToken = default
     )
     {
-        EnsureRoutingKey(routingKey);
+        routingKey.MustNotBeNullOrWhiteSpace();
         return PublishCoreAsync(message, metadata, type: null, dataSchema: null, routingKey, cancellationToken);
     }
 
@@ -107,17 +103,18 @@ public abstract class RabbitMqRoutingKeyOutboundTarget<TMessage>
         CancellationToken cancellationToken = default
     )
     {
-        EnsureRoutingKey(routingKey);
+        routingKey.MustNotBeNullOrWhiteSpace();
         return PublishCoreAsync(message, metadata, type, dataSchema, routingKey, cancellationToken);
     }
 
     /// <inheritdoc />
     protected override string GetRawRoutingKey()
     {
-        return _constantRoutingKey ??
-               throw new InvalidOperationException(
-                   "Raw publishing is not supported for RabbitMQ outbound targets with message-derived routing keys."
-               );
+        return _constantRoutingKey.MustNotBeNull(
+            static () => new InvalidOperationException(
+                "Raw publishing is not supported for RabbitMQ outbound targets with message-derived routing keys."
+            )
+        );
     }
 
     /// <inheritdoc />
@@ -128,15 +125,8 @@ public abstract class RabbitMqRoutingKeyOutboundTarget<TMessage>
             return _constantRoutingKey;
         }
 
-        return _routingKeyFactory!(message) ??
-               throw new InvalidOperationException("The RabbitMQ routing key factory returned null.");
-    }
-
-    private static void EnsureRoutingKey(string routingKey)
-    {
-        if (string.IsNullOrWhiteSpace(routingKey))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(routingKey));
-        }
+        return _routingKeyFactory!(message).MustNotBeNull(
+            static () => new InvalidOperationException("The RabbitMQ routing key factory returned null.")
+        );
     }
 }

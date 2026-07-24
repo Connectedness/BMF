@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.RabbitMq;
 
@@ -22,8 +23,8 @@ public sealed class RabbitMqQueueBindingBuilder : IBuildable<RabbitMqQueueBindin
     /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> or <paramref name="queueName" /> is null or whitespace.</exception>
     public RabbitMqQueueBindingBuilder(string exchangeName, string queueName, string routingKey)
     {
-        SourceExchangeName = RequireText(exchangeName, nameof(exchangeName));
-        QueueName = RequireText(queueName, nameof(queueName));
+        SourceExchangeName = exchangeName.MustNotBeNullOrWhiteSpace();
+        QueueName = queueName.MustNotBeNullOrWhiteSpace();
         RoutingKey = routingKey ?? string.Empty;
         BindingMode = RabbitMqBindingMode.Active;
     }
@@ -80,7 +81,7 @@ public sealed class RabbitMqQueueBindingBuilder : IBuildable<RabbitMqQueueBindin
     /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
     public RabbitMqQueueBindingBuilder WithArgument(string name, object? value)
     {
-        _arguments[RequireText(name, nameof(name))] = value;
+        _arguments[name.MustNotBeNullOrWhiteSpace()] = value;
         return this;
     }
 
@@ -127,15 +128,9 @@ public sealed class RabbitMqQueueBindingBuilder : IBuildable<RabbitMqQueueBindin
     /// </remarks>
     public RabbitMqQueueBindingBuilder WithHeader(string name, object? value)
     {
-        var validatedName = RequireText(name, nameof(name));
+        var validatedName = name.MustNotBeNullOrWhiteSpace();
 
-        if (string.Equals(validatedName, "x-match", StringComparison.Ordinal))
-        {
-            throw new ArgumentException(
-                "The 'x-match' header is the match-mode control argument; use WithHeaderMatch to set it.",
-                nameof(name)
-            );
-        }
+        validatedName.MustNotBe("x-match", StringComparison.Ordinal, nameof(name));
 
         if (!_arguments.ContainsKey("x-match"))
         {
@@ -156,15 +151,5 @@ public sealed class RabbitMqQueueBindingBuilder : IBuildable<RabbitMqQueueBindin
             RabbitMqHeaderMatch.AnyWithX => "any-with-x",
             _ => throw new ArgumentOutOfRangeException(nameof(match), match, "Unsupported header match mode.")
         };
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

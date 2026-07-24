@@ -3,6 +3,7 @@ using System.Collections.Frozen;
 using System.Collections.Immutable;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -30,10 +31,7 @@ public abstract class Topology
     /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
     protected Topology(string name, TopologyData data)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
         Name = name;
         _targetsByMessageType = data.TargetsByMessageType;
@@ -82,10 +80,7 @@ public abstract class Topology
     /// <exception cref="OutboundTargetNotFoundException">Thrown when no target is registered for <paramref name="messageType" />.</exception>
     public OutboundTarget GetRequiredTarget(Type messageType)
     {
-        if (messageType is null)
-        {
-            throw new ArgumentNullException(nameof(messageType));
-        }
+        messageType.MustNotBeNull();
 
         if (!_targetsByMessageType.TryGetValue(messageType, out var target))
         {
@@ -166,10 +161,7 @@ public abstract class Topology
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="messageType" /> is <see langword="null" />.</exception>
     public bool TryGetTarget(Type messageType, out OutboundTarget? target)
     {
-        if (messageType is null)
-        {
-            throw new ArgumentNullException(nameof(messageType));
-        }
+        messageType.MustNotBeNull();
 
         return _targetsByMessageType.TryGetValue(messageType, out target);
     }
@@ -183,10 +175,7 @@ public abstract class Topology
     /// <exception cref="OutboundTargetNotFoundException">Thrown when no target with <paramref name="name" /> is registered.</exception>
     public OutboundTarget GetRequiredTarget(string name)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
         if (!_targetsByName.TryGetValue(name, out var target))
         {
@@ -226,10 +215,7 @@ public abstract class Topology
     /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
     public bool TryGetTarget(string name, out OutboundTarget? target)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
         return _targetsByName.TryGetValue(name, out target);
     }
@@ -243,10 +229,7 @@ public abstract class Topology
     /// <exception cref="InboundEndpointNotFoundException">Thrown when no endpoint with <paramref name="name" /> is registered.</exception>
     public InboundEndpoint GetRequiredEndpoint(string name)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
         if (!_endpointsByName.TryGetValue(name, out var endpoint))
         {
@@ -265,10 +248,7 @@ public abstract class Topology
     /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
     public bool TryGetEndpoint(string name, out InboundEndpoint? endpoint)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
         return _endpointsByName.TryGetValue(name, out endpoint);
     }

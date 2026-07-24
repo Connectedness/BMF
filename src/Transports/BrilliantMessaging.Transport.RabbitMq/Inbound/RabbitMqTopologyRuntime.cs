@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -51,8 +52,8 @@ public sealed class RabbitMqTopologyRuntime : ITopologyRuntime
         ILogger<RabbitMqTopologyRuntime>? logger = null
     )
     {
-        _topology = topology ?? throw new ArgumentNullException(nameof(topology));
-        _serviceScopeFactory = serviceScopeFactory ?? throw new ArgumentNullException(nameof(serviceScopeFactory));
+        _topology = topology.MustNotBeNull();
+        _serviceScopeFactory = serviceScopeFactory.MustNotBeNull();
         _logger = logger ?? NullLogger<RabbitMqTopologyRuntime>.Instance;
     }
 

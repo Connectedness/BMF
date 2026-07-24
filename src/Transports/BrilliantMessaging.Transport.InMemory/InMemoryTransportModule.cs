@@ -3,6 +3,7 @@ using System.Linq;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -77,10 +78,7 @@ public static class InMemoryTransportModule
         Action<IInMemoryOutboundTopologyBuilder> configure
     )
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         return AddInMemoryTopologyCore(builder, topologyName, topologyBuilder => configure(topologyBuilder));
     }
@@ -110,10 +108,7 @@ public static class InMemoryTransportModule
         Action<IInMemoryInboundTopologyBuilder> configure
     )
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         return AddInMemoryTopologyCore(builder, topologyName, topologyBuilder => configure(topologyBuilder));
     }
@@ -124,20 +119,9 @@ public static class InMemoryTransportModule
         Action<InMemoryTopologyBuilder> configure
     )
     {
-        if (builder is null)
-        {
-            throw new ArgumentNullException(nameof(builder));
-        }
-
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
-
-        if (string.IsNullOrWhiteSpace(topologyName))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(topologyName));
-        }
+        builder.MustNotBeNull();
+        configure.MustNotBeNull();
+        topologyName.MustNotBeNullOrWhiteSpace();
 
         var topologyBuilder = new InMemoryTopologyBuilder();
         configure(topologyBuilder);

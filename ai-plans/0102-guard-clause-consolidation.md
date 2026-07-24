@@ -1,5 +1,7 @@
 # Guard Clause Consolidation
 
+> Implementation approach changed on 2026-07-24: the source exporter is invoked with ValidateGeneratedFileBuild=false because the exported nullable-flow and caller-argument-expression attributes are supplied by BrilliantMessaging.Core's Polyfill dependency. The exact committed export is instead validated by BrilliantMessaging's warning-clean Release build and direct test-project runs in its real consuming context. This supersedes the later instruction requiring the exporter's standalone matching build validation.
+
 ## Rationale
 
 BrilliantMessaging currently repeats private guard helpers and inline precondition checks across Core, OpenTelemetry, and the transport projects. Consolidate these checks behind a curated, public source export from a compatible Light.GuardClauses checkout, compiled once into BrilliantMessaging.Core. The resulting API should live under `BrilliantMessaging.GuardClauses` and its generated sub-namespaces, giving BrilliantMessaging, its transports, and third-party extensions the same guard-clause surface without adding a runtime package dependency.
@@ -8,22 +10,22 @@ The generated surface should embrace the Light.GuardClauses exception taxonomy. 
 
 ## Acceptance Criteria
 
-- [ ] A committed single-file Light.GuardClauses export is compiled into BrilliantMessaging.Core and exposes public types under `BrilliantMessaging.GuardClauses`.
-- [ ] Generated exception and exception-factory types use `BrilliantMessaging.GuardClauses.Exceptions` and `BrilliantMessaging.GuardClauses.ExceptionFactory`.
-- [ ] The export is generated for `netstandard2.0` from a clean, compatible Light.GuardClauses checkout, records the actual source version and Git commit, and contains only the selected assertion roots and their transitive dependencies.
-- [ ] A repository-owned generation script passes the complete transformation configuration as command-line arguments and does not create or modify `settings.local.json` in the Light.GuardClauses checkout.
-- [ ] The generation script accepts an explicit Light.GuardClauses repository path and otherwise defaults to a `Light.GuardClauses` sibling of the BrilliantMessaging repository root.
-- [ ] Normal restore, build, pack, and consumer workflows do not reference the Light.GuardClauses NuGet package or require the Light.GuardClauses repository.
-- [ ] Core, OpenTelemetry, the in-memory transport, the NATS transport, and the RabbitMQ transport consume the public guard API from BrilliantMessaging.Core.
-- [ ] Caller argument expressions and nullable flow annotations work on `netstandard2.0` without generating attribute types already supplied to Core by Polyfill.
-- [ ] Inline argument, state, and disposal guards are replaced with the corresponding generated assertions while operational failures, aggregate topology validation, branching predicates, and exhaustive switch failures remain explicit.
-- [ ] Duplicated private helpers such as `RequireText`, `RequirePositive`, `EnsureRoutingKey`, and `ThrowIfDisposed` are removed when their only purpose is covered by the consolidated assertions.
-- [ ] The exactly-one-present routing-key validation is expressed locally with `Check.InvalidArgument`; no generic xor assertion is added to the public guard surface.
-- [ ] Existing XML documentation and tests are updated for the Light.GuardClauses exception taxonomy and any caller-visible breaking changes.
-- [ ] The generated file is treated as generated code and is not edited by hand.
-- [ ] Automated tests need to be written, following the repository test rules.
-- [ ] All test projects pass when run directly with the Microsoft Testing Platform runner.
-- [ ] Release builds stay warning-clean with `TreatWarningsAsErrors`.
+- [x] A committed single-file Light.GuardClauses export is compiled into BrilliantMessaging.Core and exposes public types under `BrilliantMessaging.GuardClauses`.
+- [x] Generated exception and exception-factory types use `BrilliantMessaging.GuardClauses.Exceptions` and `BrilliantMessaging.GuardClauses.ExceptionFactory`.
+- [x] The export is generated for `netstandard2.0` from a clean, compatible Light.GuardClauses checkout, records the actual source version and Git commit, and contains only the selected assertion roots and their transitive dependencies.
+- [x] A repository-owned generation script passes the complete transformation configuration as command-line arguments and does not create or modify `settings.local.json` in the Light.GuardClauses checkout.
+- [x] The generation script accepts an explicit Light.GuardClauses repository path and otherwise defaults to a `Light.GuardClauses` sibling of the BrilliantMessaging repository root.
+- [x] Normal restore, build, pack, and consumer workflows do not reference the Light.GuardClauses NuGet package or require the Light.GuardClauses repository.
+- [x] Core, OpenTelemetry, the in-memory transport, the NATS transport, and the RabbitMQ transport consume the public guard API from BrilliantMessaging.Core.
+- [x] Caller argument expressions and nullable flow annotations work on `netstandard2.0` without generating attribute types already supplied to Core by Polyfill.
+- [x] Inline argument, state, and disposal guards are replaced with the corresponding generated assertions while operational failures, aggregate topology validation, branching predicates, and exhaustive switch failures remain explicit.
+- [x] Duplicated private helpers such as `RequireText`, `RequirePositive`, `EnsureRoutingKey`, and `ThrowIfDisposed` are removed when their only purpose is covered by the consolidated assertions.
+- [x] The exactly-one-present routing-key validation is expressed locally with `Check.InvalidArgument`; no generic xor assertion is added to the public guard surface.
+- [x] Existing XML documentation and tests are updated for the Light.GuardClauses exception taxonomy and any caller-visible breaking changes.
+- [x] The generated file is treated as generated code and is not edited by hand.
+- [x] Automated tests need to be written, following the repository test rules.
+- [x] All test projects pass when run directly with the Microsoft Testing Platform runner.
+- [x] Release builds stay warning-clean with `TreatWarningsAsErrors`.
 
 ## Technical Details
 

@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -40,20 +41,9 @@ public readonly record struct TopologyData(
         IDictionary<string, InboundEndpoint> endpointsByName
     )
     {
-        if (targetsByMessageType is null)
-        {
-            throw new ArgumentNullException(nameof(targetsByMessageType));
-        }
-
-        if (targetsByName is null)
-        {
-            throw new ArgumentNullException(nameof(targetsByName));
-        }
-
-        if (endpointsByName is null)
-        {
-            throw new ArgumentNullException(nameof(endpointsByName));
-        }
+        targetsByMessageType.MustNotBeNull();
+        targetsByName.MustNotBeNull();
+        endpointsByName.MustNotBeNull();
 
         var frozenTargetsByMessageType = targetsByMessageType.ToFrozenDictionary();
         var frozenTargetsByName = targetsByName.ToFrozenDictionary(StringComparer.Ordinal);

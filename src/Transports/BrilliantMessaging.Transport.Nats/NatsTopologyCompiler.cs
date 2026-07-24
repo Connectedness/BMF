@@ -5,6 +5,7 @@ using System.Reflection;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.Nats.Inbound;
 using BrilliantMessaging.Transport.Nats.Outbound;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,11 +38,10 @@ public sealed class NatsTopologyCompiler
         Func<Type, bool> serviceIsRegistered
     )
     {
-        _globalMessageContractRegistry = globalMessageContractRegistry ??
-                                         throw new ArgumentNullException(nameof(globalMessageContractRegistry));
-        _defaultSerializer = defaultSerializer ?? throw new ArgumentNullException(nameof(defaultSerializer));
-        _resolveSerializer = resolveSerializer ?? throw new ArgumentNullException(nameof(resolveSerializer));
-        _serviceIsRegistered = serviceIsRegistered ?? throw new ArgumentNullException(nameof(serviceIsRegistered));
+        _globalMessageContractRegistry = globalMessageContractRegistry.MustNotBeNull();
+        _defaultSerializer = defaultSerializer.MustNotBeNull();
+        _resolveSerializer = resolveSerializer.MustNotBeNull();
+        _serviceIsRegistered = serviceIsRegistered.MustNotBeNull();
     }
 
     /// <summary>
@@ -53,15 +53,8 @@ public sealed class NatsTopologyCompiler
         NatsConnectionProvider connectionProvider
     )
     {
-        if (configuration is null)
-        {
-            throw new ArgumentNullException(nameof(configuration));
-        }
-
-        if (connectionProvider is null)
-        {
-            throw new ArgumentNullException(nameof(connectionProvider));
-        }
+        configuration.MustNotBeNull();
+        connectionProvider.MustNotBeNull();
 
         var effectiveRegistry = configuration.MessageContractDialect is null ?
             _globalMessageContractRegistry :

@@ -1,5 +1,6 @@
 using System;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.InMemory.Inbound;
 
@@ -27,14 +28,7 @@ public sealed class InMemoryRetryPolicyBuilder : IBuildable<InMemoryRetryPolicy>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="maxAttempts" /> is less than one.</exception>
     public InMemoryRetryPolicyBuilder MaxAttempts(int maxAttempts)
     {
-        if (maxAttempts < 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(maxAttempts),
-                maxAttempts,
-                "The value must be greater than zero."
-            );
-        }
+        maxAttempts.MustBePositive();
 
         _maxAttempts = maxAttempts;
         return this;
@@ -49,7 +43,7 @@ public sealed class InMemoryRetryPolicyBuilder : IBuildable<InMemoryRetryPolicy>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="delay" /> is not greater than zero.</exception>
     public InMemoryRetryPolicyBuilder LinearBackoff(TimeSpan delay)
     {
-        _backoff = new InMemoryBackoff(InMemoryBackoffKind.Linear, RequirePositive(delay));
+        _backoff = new InMemoryBackoff(InMemoryBackoffKind.Linear, delay.MustBePositive());
         return this;
     }
 
@@ -62,17 +56,7 @@ public sealed class InMemoryRetryPolicyBuilder : IBuildable<InMemoryRetryPolicy>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="delay" /> is not greater than zero.</exception>
     public InMemoryRetryPolicyBuilder ExponentialBackoff(TimeSpan delay)
     {
-        _backoff = new InMemoryBackoff(InMemoryBackoffKind.Exponential, RequirePositive(delay));
+        _backoff = new InMemoryBackoff(InMemoryBackoffKind.Exponential, delay.MustBePositive());
         return this;
-    }
-
-    private static TimeSpan RequirePositive(TimeSpan delay)
-    {
-        if (delay <= TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(nameof(delay), delay, "The value must be greater than zero.");
-        }
-
-        return delay;
     }
 }

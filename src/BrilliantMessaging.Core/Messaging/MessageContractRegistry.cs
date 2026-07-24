@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -29,20 +30,9 @@ public sealed class MessageContractRegistry : IMessageContractRegistry
         IDictionary<Type, string> dataSchemasByMessageType
     )
     {
-        if (discriminatorsByMessageType is null)
-        {
-            throw new ArgumentNullException(nameof(discriminatorsByMessageType));
-        }
-
-        if (messageTypesByDiscriminator is null)
-        {
-            throw new ArgumentNullException(nameof(messageTypesByDiscriminator));
-        }
-
-        if (dataSchemasByMessageType is null)
-        {
-            throw new ArgumentNullException(nameof(dataSchemasByMessageType));
-        }
+        discriminatorsByMessageType.MustNotBeNull();
+        messageTypesByDiscriminator.MustNotBeNull();
+        dataSchemasByMessageType.MustNotBeNull();
 
         _discriminatorsByMessageType = new ReadOnlyDictionary<Type, string>(
             new Dictionary<Type, string>(discriminatorsByMessageType)
@@ -67,11 +57,7 @@ public sealed class MessageContractRegistry : IMessageContractRegistry
     /// <inheritdoc />
     public string GetDiscriminator(Type messageType)
     {
-        if (messageType is null)
-        {
-            throw new ArgumentNullException(nameof(messageType));
-        }
-
+        messageType.MustNotBeNull();
         if (!_discriminatorsByMessageType.TryGetValue(messageType, out var discriminator))
         {
             throw new MessageContractNotRegisteredException(messageType);
@@ -83,33 +69,21 @@ public sealed class MessageContractRegistry : IMessageContractRegistry
     /// <inheritdoc />
     public bool TryGetDiscriminator(Type messageType, out string? discriminator)
     {
-        if (messageType is null)
-        {
-            throw new ArgumentNullException(nameof(messageType));
-        }
-
+        messageType.MustNotBeNull();
         return _discriminatorsByMessageType.TryGetValue(messageType, out discriminator);
     }
 
     /// <inheritdoc />
     public string? GetDataSchema(Type messageType)
     {
-        if (messageType is null)
-        {
-            throw new ArgumentNullException(nameof(messageType));
-        }
-
+        messageType.MustNotBeNull();
         return _dataSchemasByMessageType.TryGetValue(messageType, out var dataSchema) ? dataSchema : null;
     }
 
     /// <inheritdoc />
     public IReadOnlyCollection<string> GetInboundDiscriminators(Type messageType)
     {
-        if (messageType is null)
-        {
-            throw new ArgumentNullException(nameof(messageType));
-        }
-
+        messageType.MustNotBeNull();
         return _messageTypesByDiscriminator
            .Where(pair => pair.Value == messageType)
            .Select(static pair => pair.Key)
@@ -120,11 +94,7 @@ public sealed class MessageContractRegistry : IMessageContractRegistry
     /// <inheritdoc />
     public bool TryResolveType(string discriminator, out Type? messageType)
     {
-        if (string.IsNullOrWhiteSpace(discriminator))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(discriminator));
-        }
-
+        discriminator.MustNotBeNullOrWhiteSpace();
         return _messageTypesByDiscriminator.TryGetValue(discriminator, out messageType);
     }
 
@@ -137,11 +107,7 @@ public sealed class MessageContractRegistry : IMessageContractRegistry
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="messageType" /> is <see langword="null" />.</exception>
     public bool TryGetDataSchema(Type messageType, out string? dataSchema)
     {
-        if (messageType is null)
-        {
-            throw new ArgumentNullException(nameof(messageType));
-        }
-
+        messageType.MustNotBeNull();
         return _dataSchemasByMessageType.TryGetValue(messageType, out dataSchema);
     }
 }

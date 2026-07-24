@@ -1,5 +1,5 @@
 using System;
-using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
 
@@ -24,7 +24,7 @@ public sealed class RedeliveryClassifierBuilder : IBuildable<RedeliveryClassifie
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="shouldRetry" /> is <see langword="null" />.</exception>
     public RedeliveryClassifierBuilder ShouldRetry(Func<Exception, bool> shouldRetry)
     {
-        _shouldRetry = shouldRetry ?? throw new ArgumentNullException(nameof(shouldRetry));
+        _shouldRetry = shouldRetry.MustNotBeNull();
         return this;
     }
 }

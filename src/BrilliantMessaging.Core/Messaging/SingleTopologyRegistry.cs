@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -18,7 +19,7 @@ public sealed class SingleTopologyRegistry : ITopologyRegistry
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="topology" /> is <see langword="null" />.</exception>
     public SingleTopologyRegistry(Topology topology)
     {
-        _topology = topology ?? throw new ArgumentNullException(nameof(topology));
+        _topology = topology.MustNotBeNull();
         Names = [Topology.DefaultName];
     }
 

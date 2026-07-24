@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 using NATS.Client.Core;
 using NATS.Client.JetStream;
 
@@ -21,10 +22,8 @@ public sealed class NatsConnectionProvider : IAsyncDisposable
     /// <summary>
     /// Initializes a new instance of the <see cref="NatsConnectionProvider" /> class.
     /// </summary>
-    public NatsConnectionProvider(Func<CancellationToken, Task<NatsOpts>> createOptions)
-    {
-        _createOptions = createOptions ?? throw new ArgumentNullException(nameof(createOptions));
-    }
+    public NatsConnectionProvider(Func<CancellationToken, Task<NatsOpts>> createOptions) =>
+        _createOptions = createOptions.MustNotBeNull();
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
@@ -57,10 +56,7 @@ public sealed class NatsConnectionProvider : IAsyncDisposable
         // The fast path reads both fields outside the semaphore that publishes them, so it needs the
         // matching acquire fence: without it the context reference can become visible before the writes
         // its constructor performed, handing a caller a partially initialized object.
-        if (Volatile.Read(ref _disposed))
-        {
-            throw new ObjectDisposedException(nameof(NatsConnectionProvider));
-        }
+        Check.ObjectDisposed(Volatile.Read(ref _disposed), nameof(NatsConnectionProvider));
 
         if (Volatile.Read(ref _jetStream) is { } cached)
         {
@@ -70,10 +66,7 @@ public sealed class NatsConnectionProvider : IAsyncDisposable
         await _sync.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(NatsConnectionProvider));
-            }
+            Check.ObjectDisposed(_disposed, nameof(NatsConnectionProvider));
 
             if (_jetStream is not null)
             {

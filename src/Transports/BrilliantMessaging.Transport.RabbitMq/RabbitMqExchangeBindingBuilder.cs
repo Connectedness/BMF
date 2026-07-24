@@ -1,3 +1,4 @@
+using BrilliantMessaging.GuardClauses;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -29,8 +30,8 @@ public sealed class RabbitMqExchangeBindingBuilder : IBuildable<RabbitMqExchange
         string routingKey
     )
     {
-        SourceExchangeName = RequireText(sourceExchangeName, nameof(sourceExchangeName));
-        DestinationExchangeName = RequireText(destinationExchangeName, nameof(destinationExchangeName));
+        SourceExchangeName = sourceExchangeName.MustNotBeNullOrWhiteSpace();
+        DestinationExchangeName = destinationExchangeName.MustNotBeNullOrWhiteSpace();
         RoutingKey = routingKey ?? string.Empty;
         BindingMode = RabbitMqBindingMode.Active;
     }
@@ -87,7 +88,7 @@ public sealed class RabbitMqExchangeBindingBuilder : IBuildable<RabbitMqExchange
     /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
     public RabbitMqExchangeBindingBuilder WithArgument(string name, object? value)
     {
-        _arguments[RequireText(name, nameof(name))] = value;
+        _arguments[name.MustNotBeNullOrWhiteSpace()] = value;
         return this;
     }
 
@@ -134,15 +135,9 @@ public sealed class RabbitMqExchangeBindingBuilder : IBuildable<RabbitMqExchange
     /// </remarks>
     public RabbitMqExchangeBindingBuilder WithHeader(string name, object? value)
     {
-        var validatedName = RequireText(name, nameof(name));
+        var validatedName = name.MustNotBeNullOrWhiteSpace();
 
-        if (string.Equals(validatedName, "x-match", StringComparison.Ordinal))
-        {
-            throw new ArgumentException(
-                "The 'x-match' header is the match-mode control argument; use WithHeaderMatch to set it.",
-                nameof(name)
-            );
-        }
+        validatedName.MustNotBe("x-match", StringComparison.Ordinal, nameof(name));
 
         if (!_arguments.ContainsKey("x-match"))
         {
@@ -165,13 +160,4 @@ public sealed class RabbitMqExchangeBindingBuilder : IBuildable<RabbitMqExchange
         };
     }
 
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
-    }
 }

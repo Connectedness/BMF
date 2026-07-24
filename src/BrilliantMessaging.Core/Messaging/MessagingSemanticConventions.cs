@@ -1,5 +1,6 @@
 using System;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -113,10 +114,7 @@ public static class MessagingSemanticConventions
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="exception" /> is <see langword="null" />.</exception>
     public static string ResolveErrorType(Exception exception)
     {
-        if (exception is null)
-        {
-            throw new ArgumentNullException(nameof(exception));
-        }
+        exception.MustNotBeNull();
 
         return exception is MessageDeliveryException deliveryException ?
             ToErrorType(deliveryException.Reason) :

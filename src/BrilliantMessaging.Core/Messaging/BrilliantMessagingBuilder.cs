@@ -1,18 +1,21 @@
 using System;
-using Microsoft.Extensions.DependencyInjection;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BrilliantMessaging.Core.Messaging;
 
 /// <summary>
-/// The fluent entry point for configuring BrilliantMessaging after <see cref="BrilliantMessagingServiceCollectionExtensions.AddBrilliantMessaging" />. It
+/// The fluent entry point for configuring BrilliantMessaging after <see cref="BrilliantMessagingServiceCollectionExtensions.AddBrilliantMessaging" />.
+/// It
 /// exposes the service collection, the message-contract registry builder, and the topology catalog so that the
 /// core and the transport packages can layer their registrations onto a single shared configuration.
 /// </summary>
 /// <remarks>
 /// The builder is returned by <see cref="BrilliantMessagingServiceCollectionExtensions.AddBrilliantMessaging" /> and threaded through the
 /// transport-specific extension methods (for example the RabbitMQ topology configuration). Calling
-/// <see cref="BrilliantMessagingServiceCollectionExtensions.AddBrilliantMessaging" /> more than once returns a builder over the same underlying registry and catalog, so
+/// <see cref="BrilliantMessagingServiceCollectionExtensions.AddBrilliantMessaging" /> more than once returns a builder over the same underlying registry
+/// and catalog, so
 /// configuration accumulates rather than being replaced.
 /// </remarks>
 public sealed class BrilliantMessagingBuilder
@@ -30,9 +33,9 @@ public sealed class BrilliantMessagingBuilder
         TopologyRegistrationCatalog topologies
     )
     {
-        Services = services ?? throw new ArgumentNullException(nameof(services));
-        MessageContracts = messageContracts ?? throw new ArgumentNullException(nameof(messageContracts));
-        Topologies = topologies ?? throw new ArgumentNullException(nameof(topologies));
+        Services = services.MustNotBeNull();
+        MessageContracts = messageContracts.MustNotBeNull();
+        Topologies = topologies.MustNotBeNull();
     }
 
     /// <summary>
@@ -58,11 +61,7 @@ public sealed class BrilliantMessagingBuilder
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="configure" /> is <see langword="null" />.</exception>
     public BrilliantMessagingBuilder MapMessageContracts(Action<MessageContractRegistryBuilder> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
-
+        configure.MustNotBeNull();
         configure(MessageContracts);
         return this;
     }
@@ -76,11 +75,7 @@ public sealed class BrilliantMessagingBuilder
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="configure" /> is <see langword="null" />.</exception>
     public BrilliantMessagingBuilder UseCloudEvents(Action<CloudEventsOptions> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
-
+        configure.MustNotBeNull();
         Services.Configure(configure);
         return this;
     }

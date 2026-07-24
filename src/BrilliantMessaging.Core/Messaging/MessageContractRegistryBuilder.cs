@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -80,7 +81,7 @@ public sealed class MessageContractRegistryBuilder : IBuildable<IMessageContract
     {
         var registration = new MessageContractRegistration(
             messageType,
-            RequireText(discriminator, nameof(discriminator)),
+            discriminator.MustNotBeNullOrWhiteSpace(),
             acceptsCanonicalInbound
         );
         _registrations.Add(registration);
@@ -178,15 +179,6 @@ public sealed class MessageContractRegistryBuilder : IBuildable<IMessageContract
         return messageType.FullName ?? messageType.Name;
     }
 
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
-    }
 
     private sealed record DiscriminatorMapping(string Discriminator, Type MessageType);
 }

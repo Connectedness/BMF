@@ -1,5 +1,6 @@
 using System;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.InMemory.Inbound;
 
@@ -30,10 +31,7 @@ public sealed class InMemoryDeliveryPolicyBuilder : IBuildable<InMemoryDeliveryP
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="configure" /> is <see langword="null" />.</exception>
     public InMemoryDeliveryPolicyBuilder Retry(Action<InMemoryRetryPolicyBuilder> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         InMemoryRetryPolicyBuilder builder = new ();
         configure(builder);
@@ -50,10 +48,7 @@ public sealed class InMemoryDeliveryPolicyBuilder : IBuildable<InMemoryDeliveryP
     /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
     public InMemoryDeliveryPolicyBuilder DeadLetterTo(string topic)
     {
-        if (string.IsNullOrWhiteSpace(topic))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(topic));
-        }
+        topic.MustNotBeNullOrWhiteSpace();
 
         _deadLetterTopic = topic;
         return this;

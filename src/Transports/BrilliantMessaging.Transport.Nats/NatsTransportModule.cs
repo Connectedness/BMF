@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.Nats.Inbound;
 using BrilliantMessaging.Transport.Nats.Outbound;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,15 +41,8 @@ public static class NatsTransportModule
         Action<NatsTopologyBuilder> configure
     )
     {
-        if (builder is null)
-        {
-            throw new ArgumentNullException(nameof(builder));
-        }
-
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        builder.MustNotBeNull();
+        configure.MustNotBeNull();
 
         NatsTopologyBuilder topologyBuilder = new ();
         configure(topologyBuilder);
@@ -79,15 +73,8 @@ public static class NatsTransportModule
         Action<INatsOutboundTopologyBuilder> configure
     )
     {
-        if (builder is null)
-        {
-            throw new ArgumentNullException(nameof(builder));
-        }
-
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        builder.MustNotBeNull();
+        configure.MustNotBeNull();
 
         NatsTopologyBuilder topologyBuilder = new ();
         configure(topologyBuilder);
@@ -119,15 +106,8 @@ public static class NatsTransportModule
         Action<INatsInboundTopologyBuilder> configure
     )
     {
-        if (builder is null)
-        {
-            throw new ArgumentNullException(nameof(builder));
-        }
-
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        builder.MustNotBeNull();
+        configure.MustNotBeNull();
 
         NatsTopologyBuilder topologyBuilder = new ();
         configure(topologyBuilder);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.InMemory;
 
@@ -30,8 +31,8 @@ public sealed class InMemoryTopology : Topology
     )
         : base(name, data)
     {
-        Broker = broker ?? throw new ArgumentNullException(nameof(broker));
-        Routes = routes ?? throw new ArgumentNullException(nameof(routes));
+        Broker = broker.MustNotBeNull();
+        Routes = routes.MustNotBeNull();
         ShutdownTimeout = shutdownTimeout;
     }
 

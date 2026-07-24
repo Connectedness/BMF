@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -18,20 +19,17 @@ public sealed class TopologyValidationException : Exception
     /// </summary>
     /// <param name="validationErrors">The non-empty set of validation error messages.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="validationErrors" /> is <see langword="null" />.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="validationErrors" /> is empty.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyCollectionException">Thrown when <paramref name="validationErrors" /> is empty.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.ExistingItemException">Thrown when a validation error is <see langword="null" />.</exception>
     public TopologyValidationException(IReadOnlyList<string> validationErrors)
-        : base(BuildMessage(validationErrors))
+        : base(
+            BuildMessage(
+                validationErrors
+                   .MustNotBeNullOrEmpty()
+                   .MustNotContainNull(nameof(validationErrors))
+            )
+        )
     {
-        if (validationErrors is null)
-        {
-            throw new ArgumentNullException(nameof(validationErrors));
-        }
-
-        if (validationErrors.Count == 0)
-        {
-            throw new ArgumentException("At least one validation error must be provided.", nameof(validationErrors));
-        }
-
         ValidationErrors = Array.AsReadOnly(
             validationErrors.OrderBy(static error => error, StringComparer.Ordinal).ToArray()
         );
@@ -50,12 +48,13 @@ public sealed class TopologyValidationException : Exception
         }
 
         StringBuilder builder = new ("Topology validation failed:");
-        for (int i = 0; i < validationErrors.Count; i++)
+        for (var i = 0; i < validationErrors.Count; i++)
         {
             builder.AppendLine();
             builder.Append("- ");
             builder.Append(validationErrors[i]);
         }
+
         return builder.ToString();
     }
 }

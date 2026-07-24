@@ -1,4 +1,5 @@
 using System;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -13,10 +14,8 @@ public sealed class MessageContractNotRegisteredException : Exception
     /// <param name="messageType">The unregistered message type.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="messageType" /> is <see langword="null" />.</exception>
     public MessageContractNotRegisteredException(Type messageType)
-        : base($"No canonical CloudEvents discriminator is registered for message type '{messageType}'.")
-    {
-        MessageType = messageType ?? throw new ArgumentNullException(nameof(messageType));
-    }
+        : base($"No canonical CloudEvents discriminator is registered for message type '{messageType}'.") =>
+        MessageType = messageType.MustNotBeNull();
 
     /// <summary>
     /// Gets the message type that is not registered.

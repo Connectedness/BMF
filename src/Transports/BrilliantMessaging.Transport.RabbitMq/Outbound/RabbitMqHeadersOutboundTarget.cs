@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.RabbitMq.Outbound;
 
@@ -38,7 +39,7 @@ public sealed class RabbitMqHeadersOutboundTarget<TMessage> : RabbitMqOutboundTa
     )
         : base(name, serializer, messageContractRegistry, topologyName, channelGroup, exchangeName, isMandatory)
     {
-        _headers = headers ?? throw new ArgumentNullException(nameof(headers));
+        _headers = headers.MustNotBeNull();
     }
 
     /// <inheritdoc />

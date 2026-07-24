@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
+using System.Text;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -23,10 +26,7 @@ public static class TraceContextHeaders
     /// <param name="activity">The activity to inject, or <see langword="null" /> to use <see cref="Activity.Current" />.</param>
     public static void Inject(IDictionary<string, string?> headers, Activity? activity = null)
     {
-        if (headers is null)
-        {
-            throw new ArgumentNullException(nameof(headers));
-        }
+        headers.MustNotBeNull();
 
         DistributedContextPropagator.Current.Inject(
             activity ?? Activity.Current,
@@ -42,10 +42,7 @@ public static class TraceContextHeaders
     /// <param name="activity">The activity to inject, or <see langword="null" /> to use <see cref="Activity.Current" />.</param>
     public static void Inject(IDictionary<string, object?> headers, Activity? activity = null)
     {
-        if (headers is null)
-        {
-            throw new ArgumentNullException(nameof(headers));
-        }
+        headers.MustNotBeNull();
 
         DistributedContextPropagator.Current.Inject(
             activity ?? Activity.Current,
@@ -70,10 +67,7 @@ public static class TraceContextHeaders
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="transportMessage" /> is <see langword="null" />.</exception>
     public static TraceContextHeadersExtractResult Extract(TransportMessage transportMessage)
     {
-        if (transportMessage is null)
-        {
-            throw new ArgumentNullException(nameof(transportMessage));
-        }
+        transportMessage.MustNotBeNull();
 
         var propagator = DistributedContextPropagator.Current;
         propagator.ExtractTraceIdAndState(
@@ -98,10 +92,7 @@ public static class TraceContextHeaders
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="headers" /> is <see langword="null" />.</exception>
     public static TraceContextHeadersExtractResult Extract(IReadOnlyDictionary<string, object?> headers)
     {
-        if (headers is null)
-        {
-            throw new ArgumentNullException(nameof(headers));
-        }
+        headers.MustNotBeNull();
 
         var propagator = DistributedContextPropagator.Current;
         propagator.ExtractTraceIdAndState(
@@ -170,10 +161,10 @@ public static class TraceContextHeaders
         fieldValue = rawValue switch
         {
             string stringValue => stringValue,
-            byte[] bytes => System.Text.Encoding.UTF8.GetString(bytes),
-            ReadOnlyMemory<byte> memory => System.Text.Encoding.UTF8.GetString(memory.Span),
-            Memory<byte> memory => System.Text.Encoding.UTF8.GetString(memory.Span),
-            IFormattable formattable => formattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture),
+            byte[] bytes => Encoding.UTF8.GetString(bytes),
+            ReadOnlyMemory<byte> memory => Encoding.UTF8.GetString(memory.Span),
+            Memory<byte> memory => Encoding.UTF8.GetString(memory.Span),
+            IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
             _ => rawValue.ToString()
         };
     }

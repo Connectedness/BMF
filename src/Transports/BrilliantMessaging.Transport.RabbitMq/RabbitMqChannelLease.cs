@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using BrilliantMessaging.GuardClauses;
 using RabbitMQ.Client;
 
 namespace BrilliantMessaging.Transport.RabbitMq;
@@ -22,8 +23,8 @@ public readonly struct RabbitMqChannelLease : IAsyncDisposable
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="pool" /> or <paramref name="channel" /> is <see langword="null" />.</exception>
     public RabbitMqChannelLease(IRabbitMqChannelPool pool, IChannel channel, object? state = null, long token = 0)
     {
-        _pool = pool ?? throw new ArgumentNullException(nameof(pool));
-        Channel = channel ?? throw new ArgumentNullException(nameof(channel));
+        _pool = pool.MustNotBeNull();
+        Channel = channel.MustNotBeNull();
         State = state;
         Token = token;
     }
@@ -32,8 +33,9 @@ public readonly struct RabbitMqChannelLease : IAsyncDisposable
     /// Gets the leased channel.
     /// </summary>
     /// <exception cref="InvalidOperationException">Thrown when accessed on a default-constructed lease.</exception>
-    public IChannel Channel =>
-        field ?? throw new InvalidOperationException("RabbitMqChannelLease must not be the default instance");
+    public IChannel Channel => field.MustNotBeNull(
+        static () => new InvalidOperationException("RabbitMqChannelLease must not be the default instance")
+    );
 
     /// <summary>
     /// Gets the pool-owned state associated with the lease.
