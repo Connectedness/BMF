@@ -236,10 +236,15 @@ public sealed class MessagePublisher : IMessagePublisher
         bool hasExplicitTarget = true
     )
     {
-        Check.InvalidOperation(
-            hasExplicitTarget &&
-            !string.Equals(topologyName, Topology.DefaultName, StringComparison.Ordinal) &&
-            !string.Equals(target.TopologyName, topologyName, StringComparison.Ordinal),
+        // This runs on every publish, so the failure message is only built when the check actually fails.
+        if (!hasExplicitTarget ||
+            string.Equals(topologyName, Topology.DefaultName, StringComparison.Ordinal) ||
+            string.Equals(target.TopologyName, topologyName, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
             $"Outbound target '{target.Name}' belongs to outbound topology '{target.TopologyName}', but publish requested outbound topology '{topologyName}'."
         );
     }
