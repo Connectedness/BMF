@@ -1,5 +1,6 @@
 using System;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.InMemory.Inbound;
 
@@ -92,12 +93,7 @@ public sealed class InMemoryInboundEndpoint<TMessage> : InMemoryInboundEndpoint
             redeliveryClassifier
         )
     {
-        if (!typeof(IMessageHandler<TMessage>).IsAssignableFrom(handlerType))
-        {
-            throw new ArgumentException(
-                $"Handler type '{handlerType}' must implement '{typeof(IMessageHandler<TMessage>)}'.",
-                nameof(handlerType)
-            );
-        }
+        // InboundEndpoint's constructor already ensured that handlerType is a concrete class.
+        handlerType.MustBeAssignableTo(typeof(IMessageHandler<TMessage>));
     }
 }

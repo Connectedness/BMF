@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses.Exceptions;
 using BrilliantMessaging.Transport.Nats.Inbound;
 using BrilliantMessaging.Transport.Nats.Tests.TestSupport;
 using FluentAssertions;
@@ -118,8 +119,8 @@ public sealed class NatsConfigurationBuilderTests
         var storage = () => builder.Storage((NatsStreamStorage) 99);
         var retention = () => builder.Retention((NatsStreamRetention) 99);
 
-        storage.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("storage");
-        retention.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("retention");
+        storage.Should().Throw<EnumValueNotDefinedException>().WithParameterName("storage");
+        retention.Should().Throw<EnumValueNotDefinedException>().WithParameterName("retention");
     }
 
     [Fact]
@@ -200,7 +201,7 @@ public sealed class NatsConfigurationBuilderTests
         useOptionsFactory.Should().Throw<ArgumentNullException>().WithParameterName("createOptions");
         mapContracts.Should().Throw<ArgumentNullException>().WithParameterName("configure");
         stream.Should().Throw<ArgumentNullException>().WithParameterName("configure");
-        provisioning.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("mode");
+        provisioning.Should().Throw<EnumValueNotDefinedException>().WithParameterName("mode");
         publish.Should().Throw<ArgumentNullException>().WithParameterName("configure");
         publishNamed.Should().Throw<ArgumentNullException>().WithParameterName("configure");
         consume.Should().Throw<ArgumentNullException>().WithParameterName("configure");

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using BrilliantMessaging.GuardClauses;
 using Microsoft.Extensions.Hosting;
 
 namespace BrilliantMessaging.Core.Messaging;
@@ -21,8 +22,7 @@ public sealed class TopologyProvisioningHostedService : IHostedService
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="topologyProvisioners" /> is <see langword="null" />.</exception>
     public TopologyProvisioningHostedService(IEnumerable<ITopologyProvisioner> topologyProvisioners)
     {
-        _topologyProvisioners = topologyProvisioners ??
-                                throw new ArgumentNullException(nameof(topologyProvisioners));
+        _topologyProvisioners = topologyProvisioners.MustNotBeNull();
     }
 
     /// <summary>

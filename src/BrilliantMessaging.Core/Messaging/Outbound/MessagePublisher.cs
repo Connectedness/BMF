@@ -1,8 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using BrilliantMessaging.Abstractions;
+using BrilliantMessaging.GuardClauses;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BrilliantMessaging.Core.Messaging.Outbound;
 
@@ -20,10 +21,7 @@ public sealed class MessagePublisher : IMessagePublisher
     /// <param name="topologyRegistry">The registry used to resolve topologies and their targets.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="topologyRegistry" /> is <see langword="null" />.</exception>
     [ActivatorUtilitiesConstructor]
-    public MessagePublisher(ITopologyRegistry topologyRegistry)
-    {
-        _topologyRegistry = topologyRegistry ?? throw new ArgumentNullException(nameof(topologyRegistry));
-    }
+    public MessagePublisher(ITopologyRegistry topologyRegistry) => _topologyRegistry = topologyRegistry.MustNotBeNull();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MessagePublisher" /> class over a single topology.
@@ -60,10 +58,7 @@ public sealed class MessagePublisher : IMessagePublisher
         CancellationToken cancellationToken = default
     ) where T : ICloudEvent
     {
-        if (message is null)
-        {
-            throw new ArgumentNullException(nameof(message));
-        }
+        message.MustNotBeNullReference();
 
         var metadata = CloudEventMetadata.From(message);
         return PublishMessageAsync(message, in metadata, Topology.DefaultName, target, routingKey, cancellationToken);
@@ -125,10 +120,7 @@ public sealed class MessagePublisher : IMessagePublisher
         CancellationToken cancellationToken = default
     ) where T : ICloudEvent
     {
-        if (message is null)
-        {
-            throw new ArgumentNullException(nameof(message));
-        }
+        message.MustNotBeNullReference();
 
         var metadata = CloudEventMetadata.From(message);
         return PublishMessageAsync(message, in metadata, topologyName, target, routingKey, cancellationToken);
@@ -166,8 +158,11 @@ public sealed class MessagePublisher : IMessagePublisher
     /// <param name="cancellationToken">A token to observe while publishing.</param>
     /// <returns>A task that completes when the transport has accepted the message.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="target" /> is <see langword="null" />.</exception>
-    /// <exception cref="ArgumentException">Thrown when the serialized message has no body or headers.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when <paramref name="target" /> belongs to a different topology than <paramref name="topologyName" />.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when the serialized message has no body or headers.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <paramref name="target" /> belongs to a different topology than
+    /// <paramref name="topologyName" />.
+    /// </exception>
     public async Task PublishRawAsync(
         SerializedMessage message,
         OutboundTarget target,
@@ -175,20 +170,9 @@ public sealed class MessagePublisher : IMessagePublisher
         CancellationToken cancellationToken = default
     )
     {
-        if (target is null)
-        {
-            throw new ArgumentNullException(nameof(target));
-        }
-
-        if (message.Body is null)
-        {
-            throw new ArgumentException("The serialized message must provide a body.", nameof(message));
-        }
-
-        if (message.Headers is null)
-        {
-            throw new ArgumentException("The serialized message must provide headers.", nameof(message));
-        }
+        target.MustNotBeNull();
+        message.Body.MustNotBeNull(nameof(message), "The serialized message must provide a body.");
+        message.Headers.MustNotBeNull(nameof(message), "The serialized message must provide headers.");
 
         ValidateExplicitTargetTopology(target, topologyName);
 
@@ -205,10 +189,7 @@ public sealed class MessagePublisher : IMessagePublisher
         CancellationToken cancellationToken
     )
     {
-        if (message is null)
-        {
-            throw new ArgumentNullException(nameof(message));
-        }
+        message.MustNotBeNullReference();
 
         var resolvedTarget = target ??
                              _topologyRegistry
@@ -255,6 +236,7 @@ public sealed class MessagePublisher : IMessagePublisher
         bool hasExplicitTarget = true
     )
     {
+        // This runs on every publish, so the failure message is only built when the check actually fails.
         if (!hasExplicitTarget ||
             string.Equals(topologyName, Topology.DefaultName, StringComparison.Ordinal) ||
             string.Equals(target.TopologyName, topologyName, StringComparison.Ordinal))

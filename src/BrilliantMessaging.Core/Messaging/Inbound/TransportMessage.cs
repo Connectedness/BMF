@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
 
@@ -62,10 +63,10 @@ public abstract class TransportMessage
         string? appId = null
     )
     {
-        TransportName = RequireText(transportName, nameof(transportName));
-        Source = RequireText(source, nameof(source));
+        TransportName = transportName.MustNotBeNullOrWhiteSpace();
+        Source = source.MustNotBeNullOrWhiteSpace();
         Body = body;
-        Headers = headers ?? throw new ArgumentNullException(nameof(headers));
+        Headers = headers.MustNotBeNull();
         ContentType = contentType;
         ContentEncoding = contentEncoding;
         MessageId = messageId;
@@ -186,13 +187,18 @@ public abstract class TransportMessage
     /// <param name="name">The header name.</param>
     /// <param name="value">When this method returns, the header value as a string, or <see langword="null" /> when the header is absent or null.</param>
     /// <returns><see langword="true" /> when the header is present and non-null; otherwise <see langword="false" />.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public bool TryGetHeaderString(string name, out string? value)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
         if (!Headers.TryGetValue(name, out var rawValue) || rawValue is null)
         {
@@ -210,15 +216,5 @@ public abstract class TransportMessage
             _ => rawValue.ToString()
         };
         return true;
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

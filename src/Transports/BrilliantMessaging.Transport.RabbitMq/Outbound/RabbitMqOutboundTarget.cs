@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using BrilliantMessaging.Abstractions;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
 
@@ -58,8 +59,8 @@ public abstract class RabbitMqOutboundTarget<TMessage> : OutboundTarget<TMessage
     )
         : base(name, "rabbitmq", serializer, messageContractRegistry, topologyName)
     {
-        _channelGroup = channelGroup ?? throw new ArgumentNullException(nameof(channelGroup));
-        DestinationName = exchangeName ?? throw new ArgumentNullException(nameof(exchangeName));
+        _channelGroup = channelGroup.MustNotBeNull();
+        DestinationName = exchangeName.MustNotBeNull();
         _isMandatory = isMandatory;
     }
 

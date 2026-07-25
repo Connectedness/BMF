@@ -6,6 +6,7 @@ using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.InMemory.Inbound;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -84,14 +85,18 @@ public sealed class InMemoryBroker
     /// </summary>
     /// <param name="topic">The topic to inspect.</param>
     /// <returns>The recorded messages, or an empty list when nothing has been routed to the topic.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     public IReadOnlyList<InMemoryTransportMessage> GetMessages(string topic)
     {
-        if (string.IsNullOrWhiteSpace(topic))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(topic));
-        }
-
+        topic.MustNotBeNullOrWhiteSpace();
         return _recordings.TryGetValue(topic, out var slot) ? slot.Queue.ToArray() : [];
     }
 
@@ -107,14 +112,18 @@ public sealed class InMemoryBroker
     /// Clears all recorded messages for the given topic.
     /// </summary>
     /// <param name="topic">The topic whose recordings should be cleared.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     public void ClearRecordings(string topic)
     {
-        if (string.IsNullOrWhiteSpace(topic))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(topic));
-        }
-
+        topic.MustNotBeNullOrWhiteSpace();
         _recordings.TryRemove(topic, out _);
     }
 

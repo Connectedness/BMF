@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses.Exceptions;
 using BrilliantMessaging.Transport.RabbitMq.Inbound;
 using BrilliantMessaging.Transport.RabbitMq.Tests.TestSupport;
 using FluentAssertions;
@@ -291,7 +292,7 @@ public sealed class AddRabbitMqConsumeTopologyTests
 
         var act = () => builder.QueueType((RabbitMqQueueType) 999);
 
-        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("queueType");
+        act.Should().Throw<EnumValueNotDefinedException>().WithParameterName("queueType");
     }
 
     [Fact]
@@ -301,7 +302,7 @@ public sealed class AddRabbitMqConsumeTopologyTests
 
         var act = () => builder.UseInspector<RawInspector>((ServiceLifetime) 999);
 
-        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("serviceLifetime");
+        act.Should().Throw<EnumValueNotDefinedException>().WithParameterName("serviceLifetime");
     }
 
     [Fact]
@@ -1196,7 +1197,7 @@ public sealed class AddRabbitMqConsumeTopologyTests
                 }
             );
 
-        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("ackMode");
+        act.Should().Throw<EnumValueNotDefinedException>().WithParameterName("ackMode");
     }
 
     [Fact]

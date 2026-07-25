@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using BrilliantMessaging.GuardClauses;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using RabbitMQ.Client;
@@ -39,8 +40,7 @@ public sealed class RabbitMqConnectionProvider : IAsyncDisposable, IDisposable
         ILogger? logger = null
     )
     {
-        _createConnectionAsync =
-            createConnectionAsync ?? throw new ArgumentNullException(nameof(createConnectionAsync));
+        _createConnectionAsync = createConnectionAsync.MustNotBeNull();
         _logger = logger ?? NullLogger.Instance;
     }
 
@@ -123,8 +123,7 @@ public sealed class RabbitMqConnectionProvider : IAsyncDisposable, IDisposable
 
         try
         {
-            ThrowIfDisposed();
-
+            Check.ObjectDisposed(_disposed, nameof(RabbitMqConnectionProvider));
             _connectionTask ??= CreateConnectionAsync(cancellationToken);
 
             try
@@ -142,14 +141,6 @@ public sealed class RabbitMqConnectionProvider : IAsyncDisposable, IDisposable
         finally
         {
             _semaphore.Release();
-        }
-    }
-
-    private void ThrowIfDisposed()
-    {
-        if (_disposed)
-        {
-            throw new ObjectDisposedException(nameof(RabbitMqConnectionProvider));
         }
     }
 

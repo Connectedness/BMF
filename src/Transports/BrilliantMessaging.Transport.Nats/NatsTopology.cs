@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.Nats.Inbound;
 using NATS.Client.JetStream;
 
@@ -46,17 +47,16 @@ public sealed class NatsTopology : Topology, IAsyncDisposable
         NatsConnectionProvider connectionProvider
     ) : base(name, data)
     {
-        MessageContractRegistry = messageContractRegistry ??
-                                  throw new ArgumentNullException(nameof(messageContractRegistry));
-        Streams = streams ?? throw new ArgumentNullException(nameof(streams));
-        Targets = targets ?? throw new ArgumentNullException(nameof(targets));
-        Consumers = consumers ?? throw new ArgumentNullException(nameof(consumers));
-        Endpoints = endpoints ?? throw new ArgumentNullException(nameof(endpoints));
-        Pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
+        MessageContractRegistry = messageContractRegistry.MustNotBeNull();
+        Streams = streams.MustNotBeNull();
+        Targets = targets.MustNotBeNull();
+        Consumers = consumers.MustNotBeNull();
+        Endpoints = endpoints.MustNotBeNull();
+        Pipeline = pipeline.MustNotBeNull();
         ShutdownTimeout = shutdownTimeout;
         ProvisioningMode = provisioningMode;
         AckProgressEnabled = ackProgressEnabled;
-        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
+        _connectionProvider = connectionProvider.MustNotBeNull();
     }
 
     /// <summary>

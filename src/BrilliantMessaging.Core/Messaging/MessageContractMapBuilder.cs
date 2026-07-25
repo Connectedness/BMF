@@ -1,4 +1,5 @@
 using System;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -21,10 +22,18 @@ public sealed class MessageContractMapBuilder
     /// </summary>
     /// <param name="discriminator">The alias discriminator to accept inbound.</param>
     /// <returns>The same <see cref="MessageContractMapBuilder" /> instance for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="discriminator" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="discriminator" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="discriminator" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="discriminator" /> contains only whitespace.
+    /// </exception>
     public MessageContractMapBuilder WithInboundAlias(string discriminator)
     {
-        _registration.InboundAliases.Add(RequireText(discriminator, nameof(discriminator)));
+        _registration.InboundAliases.Add(discriminator.MustNotBeNullOrWhiteSpace());
         return this;
     }
 
@@ -33,27 +42,21 @@ public sealed class MessageContractMapBuilder
     /// </summary>
     /// <param name="dataSchema">A URI-reference identifying the data schema.</param>
     /// <returns>The same <see cref="MessageContractMapBuilder" /> instance for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="dataSchema" /> is null, whitespace, or not a valid URI-reference.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dataSchema" /> is <see langword="null" />.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">Thrown when <paramref name="dataSchema" /> is empty.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="dataSchema" /> contains only
+    /// whitespace.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.InvalidUriException">
+    /// Thrown when <paramref name="dataSchema" /> is not a valid
+    /// URI-reference.
+    /// </exception>
     public MessageContractMapBuilder WithDataSchema(string dataSchema)
     {
-        var value = RequireText(dataSchema, nameof(dataSchema));
-
-        if (!Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out _))
-        {
-            throw new ArgumentException("The value must be a URI-reference.", nameof(dataSchema));
-        }
-
-        _registration.DataSchema = value;
+        _registration.DataSchema = dataSchema
+           .MustNotBeNullOrWhiteSpace()
+           .MustBeUri(UriKind.RelativeOrAbsolute, nameof(dataSchema));
         return this;
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
 
@@ -26,14 +27,19 @@ public abstract class InboundEndpoint
     /// <param name="ackMode">The acknowledgement mode for the endpoint.</param>
     /// <param name="redeliveryClassifier">The redelivery classifier for handler failures; defaults to <see cref="RedeliveryClassifier.RejectAll" />.</param>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="messageType" />, <paramref name="handlerType" />,
-    /// <paramref name="deserializerType" />, or <paramref name="handlerInvocation" /> is <see langword="null" />.
+    /// Thrown when a reference argument is <see langword="null" />.
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// Thrown when a string argument is null or whitespace, or when <paramref name="deserializerType" /> does not
-    /// implement <see cref="IMessageDeserializer" />.
+    /// Thrown when <paramref name="handlerType" /> is not a concrete class or when
+    /// <paramref name="deserializerType" /> does not implement <see cref="IMessageDeserializer" /> or is not a
+    /// concrete class.
     /// </exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="ackMode" /> is not a defined value.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">Thrown when a string argument is empty.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">Thrown when a string argument contains only whitespace.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EnumValueNotDefinedException">
+    /// Thrown when <paramref name="ackMode" /> is not a defined
+    /// value.
+    /// </exception>
     protected InboundEndpoint(
         string name,
         string transportName,
@@ -47,27 +53,18 @@ public abstract class InboundEndpoint
         RedeliveryClassifier? redeliveryClassifier = null
     )
     {
-        Name = RequireText(name, nameof(name));
-        TransportName = RequireText(transportName, nameof(transportName));
-        TopologyName = RequireText(topologyName, nameof(topologyName));
-        MessageType = messageType ?? throw new ArgumentNullException(nameof(messageType));
-        HandlerType = handlerType ?? throw new ArgumentNullException(nameof(handlerType));
-        DeserializerType = deserializerType ?? throw new ArgumentNullException(nameof(deserializerType));
-        Discriminator = RequireText(discriminator, nameof(discriminator));
-        _handlerInvocation = handlerInvocation ?? throw new ArgumentNullException(nameof(handlerInvocation));
+        Name = name.MustNotBeNullOrWhiteSpace();
+        TransportName = transportName.MustNotBeNullOrWhiteSpace();
+        TopologyName = topologyName.MustNotBeNullOrWhiteSpace();
+        MessageType = messageType.MustNotBeNull();
+        HandlerType = handlerType.MustBeConcreteClass();
+        DeserializerType = deserializerType
+           .MustBeAssignableTo(typeof(IMessageDeserializer))
+           .MustBeConcreteClass(nameof(deserializerType));
+        Discriminator = discriminator.MustNotBeNullOrWhiteSpace();
+        _handlerInvocation = handlerInvocation.MustNotBeNull();
 
-        if (!typeof(IMessageDeserializer).IsAssignableFrom(DeserializerType))
-        {
-            throw new ArgumentException(
-                $"Deserializer type '{DeserializerType}' must implement '{typeof(IMessageDeserializer)}'.",
-                nameof(deserializerType)
-            );
-        }
-
-        if (!Enum.IsDefined(typeof(MessageAckMode), ackMode))
-        {
-            throw new ArgumentOutOfRangeException(nameof(ackMode), ackMode, "Unsupported acknowledgement mode.");
-        }
+        ackMode.MustBeValidEnumValue();
 
         AckMode = ackMode;
         RedeliveryClassifier = redeliveryClassifier ?? RedeliveryClassifier.RejectAll;
@@ -127,27 +124,9 @@ public abstract class InboundEndpoint
     /// <exception cref="InvalidOperationException">Thrown when the message has not been deserialized.</exception>
     public Task InvokeHandlerAsync(IncomingMessageContext context)
     {
-        if (context is null)
-        {
-            throw new ArgumentNullException(nameof(context));
-        }
-
-        if (context.Message is null)
-        {
-            throw new InvalidOperationException("The inbound message has not been deserialized.");
-        }
-
+        context.MustNotBeNull();
+        Check.InvalidOperation(context.Message is null, "The inbound message has not been deserialized.");
         return _handlerInvocation(context);
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }
 
@@ -195,12 +174,7 @@ public class InboundEndpoint<TMessage> : InboundEndpoint
             redeliveryClassifier
         )
     {
-        if (!typeof(IMessageHandler<TMessage>).IsAssignableFrom(handlerType))
-        {
-            throw new ArgumentException(
-                $"Handler type '{handlerType}' must implement '{typeof(IMessageHandler<TMessage>)}'.",
-                nameof(handlerType)
-            );
-        }
+        // The base constructor already ensured that handlerType is a concrete class.
+        handlerType.MustBeAssignableTo(typeof(IMessageHandler<TMessage>));
     }
 }

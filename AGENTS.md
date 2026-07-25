@@ -13,6 +13,11 @@ Plans typically have acceptance criteria with check boxes. Check each box when y
 - `<TreatWarningsAsErrors>` is enabled in Release builds, so your code changes must not generate warnings.
 - Prefer `public` over `internal` when designing types. Users of the library should have access to the same APIs as we do. Hide lower level APIs in plain sight, see https://blog.ploeh.dk/2015/09/21/public-types-hidden-in-plain-sight/.
 
+## Code Analysis
+
+- After finishing a plan, run `./scripts/inspect-code.sh SUGGESTION`. It restores the local ReSharper command line tool, runs solution-wide analysis against the Release configuration, and writes an XML report to `artifacts/inspect-code/inspection-report.xml`. The severity argument is optional and defaults to `WARNING`.
+- Address or report findings introduced by your changes. The report also contains pre-existing findings, so compare them against `main` before acting on them.
+
 ## Plan Rules
 
 Read ./ai-plans/AGENTS.md for details on how to write plans.

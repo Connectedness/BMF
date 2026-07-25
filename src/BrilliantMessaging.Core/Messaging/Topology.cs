@@ -3,6 +3,7 @@ using System.Collections.Frozen;
 using System.Collections.Immutable;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -27,13 +28,18 @@ public abstract class Topology
     /// </summary>
     /// <param name="name">The name of the topology.</param>
     /// <param name="data">The compiled targets and endpoints that make up the topology.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     protected Topology(string name, TopologyData data)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
         Name = name;
         _targetsByMessageType = data.TargetsByMessageType;
@@ -82,10 +88,7 @@ public abstract class Topology
     /// <exception cref="OutboundTargetNotFoundException">Thrown when no target is registered for <paramref name="messageType" />.</exception>
     public OutboundTarget GetRequiredTarget(Type messageType)
     {
-        if (messageType is null)
-        {
-            throw new ArgumentNullException(nameof(messageType));
-        }
+        messageType.MustNotBeNull();
 
         if (!_targetsByMessageType.TryGetValue(messageType, out var target))
         {
@@ -166,10 +169,7 @@ public abstract class Topology
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="messageType" /> is <see langword="null" />.</exception>
     public bool TryGetTarget(Type messageType, out OutboundTarget? target)
     {
-        if (messageType is null)
-        {
-            throw new ArgumentNullException(nameof(messageType));
-        }
+        messageType.MustNotBeNull();
 
         return _targetsByMessageType.TryGetValue(messageType, out target);
     }
@@ -179,14 +179,19 @@ public abstract class Topology
     /// </summary>
     /// <param name="name">The name of the target.</param>
     /// <returns>The matching target.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="OutboundTargetNotFoundException">Thrown when no target with <paramref name="name" /> is registered.</exception>
     public OutboundTarget GetRequiredTarget(string name)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
         if (!_targetsByName.TryGetValue(name, out var target))
         {
@@ -202,7 +207,15 @@ public abstract class Topology
     /// <typeparam name="T">The expected message type of the target.</typeparam>
     /// <param name="name">The name of the target.</param>
     /// <returns>The matching typed target.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="OutboundTargetNotFoundException">Thrown when no target with <paramref name="name" /> is registered.</exception>
     /// <exception cref="OutboundTargetTypeMismatchException">Thrown when the named target is not typed for <typeparamref name="T" />.</exception>
     public OutboundTarget<T> GetRequiredTarget<T>(string name)
@@ -223,13 +236,18 @@ public abstract class Topology
     /// <param name="name">The name of the target.</param>
     /// <param name="target">When this method returns, the matching target, or <see langword="null" /> when none was found.</param>
     /// <returns><see langword="true" /> when a target was found; otherwise <see langword="false" />.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public bool TryGetTarget(string name, out OutboundTarget? target)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
         return _targetsByName.TryGetValue(name, out target);
     }
@@ -239,14 +257,19 @@ public abstract class Topology
     /// </summary>
     /// <param name="name">The name of the endpoint.</param>
     /// <returns>The matching endpoint.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="InboundEndpointNotFoundException">Thrown when no endpoint with <paramref name="name" /> is registered.</exception>
     public InboundEndpoint GetRequiredEndpoint(string name)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
         if (!_endpointsByName.TryGetValue(name, out var endpoint))
         {
@@ -262,13 +285,18 @@ public abstract class Topology
     /// <param name="name">The name of the endpoint.</param>
     /// <param name="endpoint">When this method returns, the matching endpoint, or <see langword="null" /> when none was found.</param>
     /// <returns><see langword="true" /> when an endpoint was found; otherwise <see langword="false" />.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public bool TryGetEndpoint(string name, out InboundEndpoint? endpoint)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
+        name.MustNotBeNullOrWhiteSpace();
 
         return _endpointsByName.TryGetValue(name, out endpoint);
     }

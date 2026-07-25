@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using BrilliantMessaging.GuardClauses;
 using Microsoft.Extensions.Hosting;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
@@ -25,10 +26,7 @@ public sealed class TopologyRuntimeHostedService : IHostedService
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="runtimes" /> is <see langword="null" />.</exception>
     public TopologyRuntimeHostedService(IEnumerable<ITopologyRuntime> runtimes)
     {
-        if (runtimes is null)
-        {
-            throw new ArgumentNullException(nameof(runtimes));
-        }
+        runtimes.MustNotBeNull();
 
         _runtimes = runtimes.ToArray();
     }

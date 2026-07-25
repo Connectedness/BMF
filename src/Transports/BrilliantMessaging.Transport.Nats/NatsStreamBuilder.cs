@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.Nats;
 
@@ -21,10 +22,7 @@ public sealed class NatsStreamBuilder : IBuildable<NatsStreamDefinition>
     /// <summary>
     /// Initializes a new instance of the <see cref="NatsStreamBuilder" /> class.
     /// </summary>
-    public NatsStreamBuilder(string name)
-    {
-        _name = RequireText(name, nameof(name));
-    }
+    public NatsStreamBuilder(string name) => _name = name.MustNotBeNullOrWhiteSpace();
 
     /// <inheritdoc />
     NatsStreamDefinition IBuildable<NatsStreamDefinition>.Build()
@@ -46,7 +44,7 @@ public sealed class NatsStreamBuilder : IBuildable<NatsStreamDefinition>
     /// </summary>
     public NatsStreamBuilder Subject(string subjectPattern)
     {
-        _subjects.Add(RequireText(subjectPattern, nameof(subjectPattern)));
+        _subjects.Add(subjectPattern.MustNotBeNullOrWhiteSpace());
         return this;
     }
 
@@ -55,14 +53,7 @@ public sealed class NatsStreamBuilder : IBuildable<NatsStreamDefinition>
     /// </summary>
     public NatsStreamBuilder DuplicateWindow(TimeSpan duplicateWindow)
     {
-        if (duplicateWindow <= TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(duplicateWindow),
-                duplicateWindow,
-                "The value must be positive."
-            );
-        }
+        duplicateWindow.MustBePositive();
 
         _duplicateWindow = duplicateWindow;
         return this;
@@ -73,10 +64,7 @@ public sealed class NatsStreamBuilder : IBuildable<NatsStreamDefinition>
     /// </summary>
     public NatsStreamBuilder MaxAge(TimeSpan maxAge)
     {
-        if (maxAge <= TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(nameof(maxAge), maxAge, "The value must be positive.");
-        }
+        maxAge.MustBePositive();
 
         _maxAge = maxAge;
         return this;
@@ -87,10 +75,7 @@ public sealed class NatsStreamBuilder : IBuildable<NatsStreamDefinition>
     /// </summary>
     public NatsStreamBuilder MaxMessageSize(int bytes)
     {
-        if (bytes <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(bytes), bytes, "The value must be positive.");
-        }
+        bytes.MustBePositive();
 
         _maxMessageSize = bytes;
         return this;
@@ -101,10 +86,7 @@ public sealed class NatsStreamBuilder : IBuildable<NatsStreamDefinition>
     /// </summary>
     public NatsStreamBuilder Storage(NatsStreamStorage storage)
     {
-        if (!Enum.IsDefined(typeof(NatsStreamStorage), storage))
-        {
-            throw new ArgumentOutOfRangeException(nameof(storage), storage, "Unsupported NATS stream storage.");
-        }
+        storage.MustBeValidEnumValue();
 
         _storage = storage;
         return this;
@@ -115,10 +97,7 @@ public sealed class NatsStreamBuilder : IBuildable<NatsStreamDefinition>
     /// </summary>
     public NatsStreamBuilder Retention(NatsStreamRetention retention)
     {
-        if (!Enum.IsDefined(typeof(NatsStreamRetention), retention))
-        {
-            throw new ArgumentOutOfRangeException(nameof(retention), retention, "Unsupported NATS stream retention.");
-        }
+        retention.MustBeValidEnumValue();
 
         _retention = retention;
         return this;
@@ -129,27 +108,12 @@ public sealed class NatsStreamBuilder : IBuildable<NatsStreamDefinition>
     /// </summary>
     public NatsStreamBuilder Replicas(int replicas)
     {
-        if (replicas is < NatsTopologyBuilderDefaults.MinimumStreamReplicas or
-                        > NatsTopologyBuilderDefaults.MaximumStreamReplicas)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(replicas),
-                replicas,
-                $"The value must be between {NatsTopologyBuilderDefaults.MinimumStreamReplicas} and {NatsTopologyBuilderDefaults.MaximumStreamReplicas}."
-            );
-        }
-
-        _replicas = replicas;
+        _replicas = replicas.MustBeIn(
+            new Range<int>(
+                NatsTopologyBuilderDefaults.MinimumStreamReplicas,
+                NatsTopologyBuilderDefaults.MaximumStreamReplicas
+            )
+        );
         return this;
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

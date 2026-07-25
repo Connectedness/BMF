@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Outbound;
 
@@ -24,20 +25,9 @@ public static class OutboundTargetContractValidator
         ICollection<string> validationErrors
     )
     {
-        if (messageContractRegistry is null)
-        {
-            throw new ArgumentNullException(nameof(messageContractRegistry));
-        }
-
-        if (typedTargets is null)
-        {
-            throw new ArgumentNullException(nameof(typedTargets));
-        }
-
-        if (validationErrors is null)
-        {
-            throw new ArgumentNullException(nameof(validationErrors));
-        }
+        messageContractRegistry.MustNotBeNull();
+        typedTargets.MustNotBeNull();
+        validationErrors.MustNotBeNull();
 
         foreach (var typedTarget in typedTargets)
         {

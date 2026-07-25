@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.RabbitMq;
 
@@ -19,11 +20,19 @@ public sealed class RabbitMqQueueBindingBuilder : IBuildable<RabbitMqQueueBindin
     /// <param name="exchangeName">The name of the source exchange.</param>
     /// <param name="queueName">The name of the bound queue.</param>
     /// <param name="routingKey">The binding routing key; an empty string is permitted.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> or <paramref name="queueName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="exchangeName" /> or <paramref name="queueName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="exchangeName" /> or <paramref name="queueName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="exchangeName" /> or <paramref name="queueName" /> contains only whitespace.
+    /// </exception>
     public RabbitMqQueueBindingBuilder(string exchangeName, string queueName, string routingKey)
     {
-        SourceExchangeName = RequireText(exchangeName, nameof(exchangeName));
-        QueueName = RequireText(queueName, nameof(queueName));
+        SourceExchangeName = exchangeName.MustNotBeNullOrWhiteSpace();
+        QueueName = queueName.MustNotBeNullOrWhiteSpace();
         RoutingKey = routingKey ?? string.Empty;
         BindingMode = RabbitMqBindingMode.Active;
     }
@@ -77,10 +86,18 @@ public sealed class RabbitMqQueueBindingBuilder : IBuildable<RabbitMqQueueBindin
     /// <param name="name">The argument name.</param>
     /// <param name="value">The argument value.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public RabbitMqQueueBindingBuilder WithArgument(string name, object? value)
     {
-        _arguments[RequireText(name, nameof(name))] = value;
+        _arguments[name.MustNotBeNullOrWhiteSpace()] = value;
         return this;
     }
 
@@ -112,10 +129,16 @@ public sealed class RabbitMqQueueBindingBuilder : IBuildable<RabbitMqQueueBindin
     /// </param>
     /// <param name="value">The header value to match.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="name" /> is null or whitespace, or when
-    /// <paramref name="name" /> is <c>x-match</c>.
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
     /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is <c>x-match</c>.</exception>
     /// <remarks>
     /// When no <c>x-match</c> argument has been set yet (by <see cref="WithHeaderMatch" /> or a prior
     /// <see cref="WithHeader" /> call), this method writes a default <c>x-match</c> of <c>all</c> so a single
@@ -127,7 +150,7 @@ public sealed class RabbitMqQueueBindingBuilder : IBuildable<RabbitMqQueueBindin
     /// </remarks>
     public RabbitMqQueueBindingBuilder WithHeader(string name, object? value)
     {
-        var validatedName = RequireText(name, nameof(name));
+        var validatedName = name.MustNotBeNullOrWhiteSpace();
 
         if (string.Equals(validatedName, "x-match", StringComparison.Ordinal))
         {
@@ -156,15 +179,5 @@ public sealed class RabbitMqQueueBindingBuilder : IBuildable<RabbitMqQueueBindin
             RabbitMqHeaderMatch.AnyWithX => "any-with-x",
             _ => throw new ArgumentOutOfRangeException(nameof(match), match, "Unsupported header match mode.")
         };
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Outbound;
 
@@ -14,10 +15,19 @@ public sealed class CloudEventMetadataException : Exception
     /// </summary>
     /// <param name="attributeName">The name of the missing or invalid CloudEvents attribute.</param>
     /// <param name="supplyInstructions">Guidance on how to supply the attribute, appended to the message.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="attributeName" /> or <paramref name="supplyInstructions" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="attributeName" /> or <paramref name="supplyInstructions" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="attributeName" /> or <paramref name="supplyInstructions" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="attributeName" /> or <paramref name="supplyInstructions" /> contains only
+    /// whitespace.
+    /// </exception>
     public CloudEventMetadataException(string attributeName, string supplyInstructions)
         : base(
-            $"CloudEvents attribute '{RequireText(attributeName, nameof(attributeName))}' is missing or invalid. {RequireText(supplyInstructions, nameof(supplyInstructions))}"
+            $"CloudEvents attribute '{attributeName.MustNotBeNullOrWhiteSpace()}' is missing or invalid. {supplyInstructions.MustNotBeNullOrWhiteSpace()}"
         )
     {
         AttributeName = attributeName;
@@ -27,14 +37,4 @@ public sealed class CloudEventMetadataException : Exception
     /// Gets the name of the missing or invalid CloudEvents attribute.
     /// </summary>
     public string AttributeName { get; }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
-    }
 }

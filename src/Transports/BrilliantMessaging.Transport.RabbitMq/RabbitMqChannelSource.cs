@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Client;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
+using RabbitMQ.Client;
 
 namespace BrilliantMessaging.Transport.RabbitMq;
 
@@ -27,7 +28,7 @@ public sealed class RabbitMqChannelSource : IDisposable
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="connectionProvider" /> is <see langword="null" />.</exception>
     public RabbitMqChannelSource(RabbitMqConnectionProvider connectionProvider)
     {
-        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
+        _connectionProvider = connectionProvider.MustNotBeNull();
     }
 
     /// <summary>
@@ -48,15 +49,14 @@ public sealed class RabbitMqChannelSource : IDisposable
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="worstCaseChannelCountDescription" /> is <see langword="null" />.</exception>
     public void SetChannelBudget(int worstCaseChannelCount, string worstCaseChannelCountDescription)
     {
-        if (Interlocked.Exchange(ref _channelBudgetConfigured, 1) != 0)
-        {
-            throw new InvalidOperationException("The RabbitMQ channel budget can only be configured once.");
-        }
+        Check.InvalidOperation(
+            Interlocked.Exchange(ref _channelBudgetConfigured, 1) != 0,
+            "The RabbitMQ channel budget can only be configured once."
+        );
 
         _worstCaseChannelCount = worstCaseChannelCount;
         _worstCaseChannelCountDescription =
-            worstCaseChannelCountDescription ??
-            throw new ArgumentNullException(nameof(worstCaseChannelCountDescription));
+            worstCaseChannelCountDescription.MustNotBeNull();
     }
 
     /// <summary>

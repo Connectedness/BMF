@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.RabbitMq.Inbound;
 using BrilliantMessaging.Transport.RabbitMq.Outbound;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,15 +48,8 @@ public static class RabbitMqTransportModule
         Action<RabbitMqTopologyBuilder> configure
     )
     {
-        if (builder is null)
-        {
-            throw new ArgumentNullException(nameof(builder));
-        }
-
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        builder.MustNotBeNull();
+        configure.MustNotBeNull();
 
         var topologyBuilder = new RabbitMqTopologyBuilder();
         configure(topologyBuilder);
@@ -93,15 +87,8 @@ public static class RabbitMqTransportModule
         Action<IRabbitMqOutboundTopologyBuilder> configure
     )
     {
-        if (builder is null)
-        {
-            throw new ArgumentNullException(nameof(builder));
-        }
-
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        builder.MustNotBeNull();
+        configure.MustNotBeNull();
 
         var topologyBuilder = new RabbitMqTopologyBuilder();
         configure(topologyBuilder);
@@ -139,15 +126,8 @@ public static class RabbitMqTransportModule
         Action<IRabbitMqInboundTopologyBuilder> configure
     )
     {
-        if (builder is null)
-        {
-            throw new ArgumentNullException(nameof(builder));
-        }
-
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        builder.MustNotBeNull();
+        configure.MustNotBeNull();
 
         var topologyBuilder = new RabbitMqTopologyBuilder();
         configure(topologyBuilder);

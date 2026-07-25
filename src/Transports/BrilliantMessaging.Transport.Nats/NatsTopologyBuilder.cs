@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.Nats.Inbound;
 using BrilliantMessaging.Transport.Nats.Outbound;
 using NATS.Client.Core;
@@ -129,10 +129,7 @@ public sealed class NatsTopologyBuilder
     /// </summary>
     public NatsTopologyBuilder UseServer(string serverUrl)
     {
-        if (string.IsNullOrWhiteSpace(serverUrl))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(serverUrl));
-        }
+        serverUrl.MustNotBeNullOrWhiteSpace();
 
         var capturedUrl = serverUrl;
         _createOptions = _ => new NatsOpts { Url = capturedUrl };
@@ -144,10 +141,7 @@ public sealed class NatsTopologyBuilder
     /// </summary>
     public NatsTopologyBuilder UseOptions(NatsOpts options)
     {
-        if (options is null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
+        options.MustNotBeNull();
 
         var capturedOptions = options;
         _createOptions = _ => capturedOptions;
@@ -159,7 +153,7 @@ public sealed class NatsTopologyBuilder
     /// </summary>
     public NatsTopologyBuilder UseOptions(Func<IServiceProvider, NatsOpts> createOptions)
     {
-        _createOptions = createOptions ?? throw new ArgumentNullException(nameof(createOptions));
+        _createOptions = createOptions.MustNotBeNull();
         return this;
     }
 
@@ -168,10 +162,7 @@ public sealed class NatsTopologyBuilder
     /// </summary>
     public NatsTopologyBuilder MapMessageContracts(Action<MessageContractRegistryBuilder> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         _messageContracts ??= new MessageContractRegistryBuilder();
         configure(_messageContracts);
@@ -183,10 +174,7 @@ public sealed class NatsTopologyBuilder
     /// </summary>
     public NatsTopologyBuilder Stream(string name, Action<NatsStreamBuilder> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         NatsStreamBuilder builder = new (name);
         configure(builder);
@@ -199,10 +187,7 @@ public sealed class NatsTopologyBuilder
     /// </summary>
     public NatsTopologyBuilder Provisioning(NatsTopologyProvisioningMode mode)
     {
-        if (!Enum.IsDefined(typeof(NatsTopologyProvisioningMode), mode))
-        {
-            throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unsupported NATS provisioning mode.");
-        }
+        mode.MustBeValidEnumValue();
 
         _provisioningMode = mode;
         return this;
@@ -213,10 +198,7 @@ public sealed class NatsTopologyBuilder
     /// </summary>
     public NatsTopologyBuilder Publish<TMessage>(Action<NatsOutboundTargetBuilder<TMessage>> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         NatsOutboundTargetBuilder<TMessage> targetBuilder = new ();
         configure(targetBuilder);
@@ -232,15 +214,9 @@ public sealed class NatsTopologyBuilder
         Action<NatsOutboundTargetBuilder<TMessage>> configure
     )
     {
-        if (string.IsNullOrWhiteSpace(targetName))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(targetName));
-        }
+        targetName.MustNotBeNullOrWhiteSpace();
 
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         NatsOutboundTargetBuilder<TMessage> targetBuilder = new (targetName);
         configure(targetBuilder);
@@ -257,10 +233,7 @@ public sealed class NatsTopologyBuilder
         Action<NatsInboundConsumerBuilder> configure
     )
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         NatsInboundConsumerBuilder builder = new (streamName, durableName);
         configure(builder);
@@ -273,7 +246,7 @@ public sealed class NatsTopologyBuilder
     /// </summary>
     public NatsTopologyBuilder ConfigureInboundPipeline(Action<MessagePipelineBuilder> configure)
     {
-        _configurePipeline = configure ?? throw new ArgumentNullException(nameof(configure));
+        _configurePipeline = configure.MustNotBeNull();
         return this;
     }
 
@@ -292,14 +265,7 @@ public sealed class NatsTopologyBuilder
     /// </summary>
     public NatsTopologyBuilder WithShutdownTimeout(TimeSpan shutdownTimeout)
     {
-        if (shutdownTimeout != Timeout.InfiniteTimeSpan && shutdownTimeout <= TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(shutdownTimeout),
-                shutdownTimeout,
-                "The value must be positive or Timeout.InfiniteTimeSpan."
-            );
-        }
+        shutdownTimeout.MustBePositiveOrInfinite();
 
         _shutdownTimeout = shutdownTimeout;
         return this;

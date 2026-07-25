@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.RabbitMq;
 
@@ -19,8 +20,15 @@ public sealed class RabbitMqExchangeBindingBuilder : IBuildable<RabbitMqExchange
     /// <param name="sourceExchangeName">The name of the source exchange.</param>
     /// <param name="destinationExchangeName">The name of the destination exchange.</param>
     /// <param name="routingKey">The binding routing key; an empty string is permitted.</param>
-    /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="sourceExchangeName" /> or <paramref name="destinationExchangeName" /> is null or
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="sourceExchangeName" /> or <paramref name="destinationExchangeName" /> is
+    /// <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="sourceExchangeName" /> or <paramref name="destinationExchangeName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="sourceExchangeName" /> or <paramref name="destinationExchangeName" /> contains only
     /// whitespace.
     /// </exception>
     public RabbitMqExchangeBindingBuilder(
@@ -29,8 +37,8 @@ public sealed class RabbitMqExchangeBindingBuilder : IBuildable<RabbitMqExchange
         string routingKey
     )
     {
-        SourceExchangeName = RequireText(sourceExchangeName, nameof(sourceExchangeName));
-        DestinationExchangeName = RequireText(destinationExchangeName, nameof(destinationExchangeName));
+        SourceExchangeName = sourceExchangeName.MustNotBeNullOrWhiteSpace();
+        DestinationExchangeName = destinationExchangeName.MustNotBeNullOrWhiteSpace();
         RoutingKey = routingKey ?? string.Empty;
         BindingMode = RabbitMqBindingMode.Active;
     }
@@ -84,10 +92,18 @@ public sealed class RabbitMqExchangeBindingBuilder : IBuildable<RabbitMqExchange
     /// <param name="name">The argument name.</param>
     /// <param name="value">The argument value.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public RabbitMqExchangeBindingBuilder WithArgument(string name, object? value)
     {
-        _arguments[RequireText(name, nameof(name))] = value;
+        _arguments[name.MustNotBeNullOrWhiteSpace()] = value;
         return this;
     }
 
@@ -119,10 +135,16 @@ public sealed class RabbitMqExchangeBindingBuilder : IBuildable<RabbitMqExchange
     /// </param>
     /// <param name="value">The header value to match.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="name" /> is null or whitespace, or when
-    /// <paramref name="name" /> is <c>x-match</c>.
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
     /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is <c>x-match</c>.</exception>
     /// <remarks>
     /// When no <c>x-match</c> argument has been set yet (by <see cref="WithHeaderMatch" /> or a prior
     /// <see cref="WithHeader" /> call), this method writes a default <c>x-match</c> of <c>all</c> so a single
@@ -134,7 +156,7 @@ public sealed class RabbitMqExchangeBindingBuilder : IBuildable<RabbitMqExchange
     /// </remarks>
     public RabbitMqExchangeBindingBuilder WithHeader(string name, object? value)
     {
-        var validatedName = RequireText(name, nameof(name));
+        var validatedName = name.MustNotBeNullOrWhiteSpace();
 
         if (string.Equals(validatedName, "x-match", StringComparison.Ordinal))
         {
@@ -163,15 +185,5 @@ public sealed class RabbitMqExchangeBindingBuilder : IBuildable<RabbitMqExchange
             RabbitMqHeaderMatch.AnyWithX => "any-with-x",
             _ => throw new ArgumentOutOfRangeException(nameof(match), match, "Unsupported header match mode.")
         };
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

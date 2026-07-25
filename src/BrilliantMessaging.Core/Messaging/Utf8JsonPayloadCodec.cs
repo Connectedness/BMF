@@ -1,6 +1,7 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -29,18 +30,13 @@ public sealed class Utf8JsonPayloadCodec : IPayloadCodec
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="serializerOptions" /> is <see langword="null" />.</exception>
     public Utf8JsonPayloadCodec(JsonSerializerOptions serializerOptions)
     {
-        _serializerOptions = serializerOptions is null ?
-            throw new ArgumentNullException(nameof(serializerOptions)) :
-            new JsonSerializerOptions(serializerOptions);
+        _serializerOptions = new JsonSerializerOptions(serializerOptions.MustNotBeNull());
     }
 
     /// <inheritdoc />
     public EncodedPayload Encode<T>(T message)
     {
-        if (message is null)
-        {
-            throw new ArgumentNullException(nameof(message));
-        }
+        message.MustNotBeNullReference();
 
         var declaredTypeInfo = GetRequiredTypeInfo(typeof(T));
         var runtimeType = message.GetType();
@@ -55,16 +51,14 @@ public sealed class Utf8JsonPayloadCodec : IPayloadCodec
     /// <inheritdoc />
     public object? Decode(ReadOnlyMemory<byte> data, Type messageType)
     {
-        if (messageType is null)
-        {
-            throw new ArgumentNullException(nameof(messageType));
-        }
+        messageType.MustNotBeNull();
 
         return JsonSerializer.Deserialize(data.Span, GetRequiredTypeInfo(messageType));
     }
 
     private JsonTypeInfo GetRequiredTypeInfo(Type type)
     {
+        // This runs per encoded and decoded message, so no closure is allocated for the failure message.
         if (_serializerOptions.TryGetTypeInfo(type, out var typeInfo))
         {
             return typeInfo;

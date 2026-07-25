@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BrilliantMessaging.Transport.RabbitMq.Inbound;
@@ -25,18 +26,11 @@ public sealed class RabbitMqInboundMessageInspectorChain
     /// Initializes a new instance of the <see cref="RabbitMqInboundMessageInspectorChain" /> class.
     /// </summary>
     /// <param name="entries">The compiled chain entries in evaluation order.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="entries" /> or any entry is <see langword="null" />.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="entries" /> is <see langword="null" />.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.ExistingItemException">Thrown when an entry is <see langword="null" />.</exception>
     public RabbitMqInboundMessageInspectorChain(IReadOnlyList<RabbitMqInboundMessageInspectorChainEntry> entries)
     {
-        Entries = entries ?? throw new ArgumentNullException(nameof(entries));
-
-        for (var i = 0; i < entries.Count; i++)
-        {
-            if (entries[i] is null)
-            {
-                throw new ArgumentNullException(nameof(entries), "Inspector chain entries cannot be null.");
-            }
-        }
+        Entries = entries.MustNotBeNull().MustNotContainNull(nameof(entries));
     }
 
     /// <summary>
@@ -61,15 +55,9 @@ public sealed class RabbitMqInboundMessageInspectorChain
         CancellationToken cancellationToken = default
     )
     {
-        if (serviceProvider is null)
-        {
-            throw new ArgumentNullException(nameof(serviceProvider));
-        }
+        serviceProvider.MustNotBeNull();
 
-        if (transportMessage is null)
-        {
-            throw new ArgumentNullException(nameof(transportMessage));
-        }
+        transportMessage.MustNotBeNull();
 
         foreach (var entry in Entries)
         {
@@ -121,15 +109,9 @@ public sealed class RabbitMqServiceInboundMessageInspectorChainEntry : RabbitMqI
     /// <exception cref="ArgumentException">Thrown when <paramref name="inspectorType" /> does not implement <see cref="IInboundMessageInspector" />.</exception>
     public RabbitMqServiceInboundMessageInspectorChainEntry(Type inspectorType)
     {
-        InspectorType = inspectorType ?? throw new ArgumentNullException(nameof(inspectorType));
-
-        if (!typeof(IInboundMessageInspector).IsAssignableFrom(InspectorType))
-        {
-            throw new ArgumentException(
-                $"Inspector type '{InspectorType}' must implement '{typeof(IInboundMessageInspector)}'.",
-                nameof(inspectorType)
-            );
-        }
+        InspectorType = inspectorType
+           .MustBeAssignableTo(typeof(IInboundMessageInspector))
+           .MustBeConcreteClass(nameof(inspectorType));
     }
 
     /// <summary>
@@ -144,10 +126,7 @@ public sealed class RabbitMqServiceInboundMessageInspectorChainEntry : RabbitMqI
         CancellationToken cancellationToken = default
     )
     {
-        if (serviceProvider is null)
-        {
-            throw new ArgumentNullException(nameof(serviceProvider));
-        }
+        serviceProvider.MustNotBeNull();
 
         var inspector = (IInboundMessageInspector) serviceProvider.GetRequiredService(InspectorType);
         return inspector.InspectAsync(transportMessage, cancellationToken);
@@ -166,7 +145,7 @@ public sealed class RabbitMqInstanceInboundMessageInspectorChainEntry : RabbitMq
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="inspector" /> is <see langword="null" />.</exception>
     public RabbitMqInstanceInboundMessageInspectorChainEntry(IInboundMessageInspector inspector)
     {
-        Inspector = inspector ?? throw new ArgumentNullException(nameof(inspector));
+        Inspector = inspector.MustNotBeNull();
     }
 
     /// <summary>

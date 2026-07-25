@@ -4,13 +4,13 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Client;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
-
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.RabbitMq.Inbound;
 using BrilliantMessaging.Transport.RabbitMq.Outbound;
+using RabbitMQ.Client;
 
 namespace BrilliantMessaging.Transport.RabbitMq;
 
@@ -22,7 +22,9 @@ namespace BrilliantMessaging.Transport.RabbitMq;
 /// <see cref="RabbitMqConnectionProvider" />; register separate topology instances when separate publisher and
 /// consumer connections are wanted, preferably via
 /// <see cref="RabbitMqTransportModule.AddRabbitMqOutboundTopology(BrilliantMessagingBuilder, System.Action{BrilliantMessaging.Transport.RabbitMq.Outbound.IRabbitMqOutboundTopologyBuilder})" />
-/// and <see cref="RabbitMqTransportModule.AddRabbitMqInboundTopology(BrilliantMessagingBuilder, System.Action{BrilliantMessaging.Transport.RabbitMq.Inbound.IRabbitMqInboundTopologyBuilder})" />.
+/// and
+/// <see cref="RabbitMqTransportModule.AddRabbitMqInboundTopology(BrilliantMessagingBuilder, System.Action{BrilliantMessaging.Transport.RabbitMq.Inbound.IRabbitMqInboundTopologyBuilder})" />
+/// .
 /// </summary>
 public sealed class RabbitMqTopology : Topology, IAsyncDisposable, IDisposable
 {
@@ -81,21 +83,20 @@ public sealed class RabbitMqTopology : Topology, IAsyncDisposable, IDisposable
         RabbitMqChannelSource channelSource
     ) : base(name, data)
     {
-        MessageContractRegistry = messageContractRegistry ??
-                                  throw new ArgumentNullException(nameof(messageContractRegistry));
-        Exchanges = exchanges ?? throw new ArgumentNullException(nameof(exchanges));
-        Queues = queues ?? throw new ArgumentNullException(nameof(queues));
-        Bindings = bindings ?? throw new ArgumentNullException(nameof(bindings));
-        OutboundChannelGroups = outboundChannelGroups ?? throw new ArgumentNullException(nameof(outboundChannelGroups));
-        Targets = targets ?? throw new ArgumentNullException(nameof(targets));
-        InboundChannelGroups = inboundChannelGroups ?? throw new ArgumentNullException(nameof(inboundChannelGroups));
-        Consumers = consumers ?? throw new ArgumentNullException(nameof(consumers));
-        Endpoints = endpoints ?? throw new ArgumentNullException(nameof(endpoints));
-        _dispatchIndex = dispatchIndex ?? throw new ArgumentNullException(nameof(dispatchIndex));
-        Pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
+        MessageContractRegistry = messageContractRegistry.MustNotBeNull();
+        Exchanges = exchanges.MustNotBeNull();
+        Queues = queues.MustNotBeNull();
+        Bindings = bindings.MustNotBeNull();
+        OutboundChannelGroups = outboundChannelGroups.MustNotBeNull();
+        Targets = targets.MustNotBeNull();
+        InboundChannelGroups = inboundChannelGroups.MustNotBeNull();
+        Consumers = consumers.MustNotBeNull();
+        Endpoints = endpoints.MustNotBeNull();
+        _dispatchIndex = dispatchIndex.MustNotBeNull();
+        Pipeline = pipeline.MustNotBeNull();
         ShutdownTimeout = shutdownTimeout;
-        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
-        _channelSource = channelSource ?? throw new ArgumentNullException(nameof(channelSource));
+        _connectionProvider = connectionProvider.MustNotBeNull();
+        _channelSource = channelSource.MustNotBeNull();
     }
 
     /// <summary>

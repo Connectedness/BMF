@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses.Exceptions;
 using BrilliantMessaging.Transport.InMemory.Inbound;
 using BrilliantMessaging.Transport.InMemory.Outbound;
 using BrilliantMessaging.Transport.InMemory.Tests.TestSupport;
@@ -346,7 +347,7 @@ public sealed class InMemoryBuilderTests
 
         var act = () => builder.WithAckMode((MessageAckMode) 99);
 
-        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("ackMode");
+        act.Should().Throw<EnumValueNotDefinedException>().WithParameterName("ackMode");
     }
 }
 

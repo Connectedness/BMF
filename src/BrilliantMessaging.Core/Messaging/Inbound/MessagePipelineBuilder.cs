@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using BrilliantMessaging.GuardClauses;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
@@ -21,7 +22,7 @@ public sealed class MessagePipelineBuilder
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="middleware" /> is <see langword="null" />.</exception>
     public MessagePipelineBuilder Use(Func<MessageDelegate, MessageDelegate> middleware)
     {
-        _components.Add(middleware ?? throw new ArgumentNullException(nameof(middleware)));
+        _components.Add(middleware.MustNotBeNull());
         return this;
     }
 
@@ -34,11 +35,7 @@ public sealed class MessagePipelineBuilder
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="middleware" /> is <see langword="null" />.</exception>
     public MessagePipelineBuilder Use(Func<IncomingMessageContext, MessageDelegate, Task> middleware)
     {
-        if (middleware is null)
-        {
-            throw new ArgumentNullException(nameof(middleware));
-        }
-
+        middleware.MustNotBeNull();
         return Use(next => context => middleware(context, next));
     }
 
@@ -69,10 +66,7 @@ public sealed class MessagePipelineBuilder
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="terminal" /> is <see langword="null" />.</exception>
     public MessageDelegate Build(MessageDelegate terminal)
     {
-        if (terminal is null)
-        {
-            throw new ArgumentNullException(nameof(terminal));
-        }
+        terminal.MustNotBeNull();
 
         var app = terminal;
 

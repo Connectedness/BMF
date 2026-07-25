@@ -1,4 +1,5 @@
 using System;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
 
@@ -24,7 +25,7 @@ public sealed class RedeliveryClassifier
 
     private RedeliveryClassifier(Func<Exception, bool> shouldRetry, bool retryMarkerOverrides)
     {
-        _shouldRetry = shouldRetry ?? throw new ArgumentNullException(nameof(shouldRetry));
+        _shouldRetry = shouldRetry.MustNotBeNull();
         _retryMarkerOverrides = retryMarkerOverrides;
     }
 
@@ -49,10 +50,7 @@ public sealed class RedeliveryClassifier
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="failure" /> is <see langword="null" />.</exception>
     public bool ShouldRetry(Exception failure)
     {
-        if (failure is null)
-        {
-            throw new ArgumentNullException(nameof(failure));
-        }
+        failure.MustNotBeNull();
 
         if (failure is RejectMessageException)
         {

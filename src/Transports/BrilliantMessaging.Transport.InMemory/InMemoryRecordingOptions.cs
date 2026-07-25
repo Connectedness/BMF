@@ -1,4 +1,5 @@
 using System;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.InMemory;
 
@@ -43,15 +44,7 @@ public readonly record struct InMemoryRecordingOptions
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="maxPerTopic" /> is not positive.</exception>
     public static InMemoryRecordingOptions Bounded(int maxPerTopic)
     {
-        if (maxPerTopic <= 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(maxPerTopic),
-                maxPerTopic,
-                "The value must be positive."
-            );
-        }
-
+        maxPerTopic.MustBePositive();
         return new InMemoryRecordingOptions(enabled: true, maxPerTopic);
     }
 }

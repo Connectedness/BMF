@@ -6,6 +6,7 @@ using System.Reflection;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.RabbitMq.Inbound;
 using BrilliantMessaging.Transport.RabbitMq.Outbound;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,11 +48,10 @@ public sealed class RabbitMqTopologyCompiler
         Func<Type, bool> isServiceRegistered
     )
     {
-        _canonicalMessageContracts = canonicalMessageContracts ??
-                                     throw new ArgumentNullException(nameof(canonicalMessageContracts));
-        _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-        _resolveSerializer = resolveSerializer ?? throw new ArgumentNullException(nameof(resolveSerializer));
-        _isServiceRegistered = isServiceRegistered ?? throw new ArgumentNullException(nameof(isServiceRegistered));
+        _canonicalMessageContracts = canonicalMessageContracts.MustNotBeNull();
+        _loggerFactory = loggerFactory.MustNotBeNull();
+        _resolveSerializer = resolveSerializer.MustNotBeNull();
+        _isServiceRegistered = isServiceRegistered.MustNotBeNull();
     }
 
     /// <summary>
@@ -72,15 +72,8 @@ public sealed class RabbitMqTopologyCompiler
         RabbitMqConnectionProvider connectionProvider
     )
     {
-        if (configuration is null)
-        {
-            throw new ArgumentNullException(nameof(configuration));
-        }
-
-        if (connectionProvider is null)
-        {
-            throw new ArgumentNullException(nameof(connectionProvider));
-        }
+        configuration.MustNotBeNull();
+        connectionProvider.MustNotBeNull();
 
         var effectiveMessageContracts = CreateEffectiveMessageContracts(configuration);
         var validationErrors = Validate(configuration, effectiveMessageContracts);

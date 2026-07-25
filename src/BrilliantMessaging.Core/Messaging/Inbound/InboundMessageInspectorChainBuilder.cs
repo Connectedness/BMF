@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Immutable;
+using BrilliantMessaging.GuardClauses;
 using Microsoft.Extensions.DependencyInjection;
 using ImmutableArrayType =
-    System.Collections.Immutable.ImmutableArray<BrilliantMessaging.Core.Messaging.Inbound.InboundMessageInspectorChainEntry>;
+    System.Collections.Immutable.ImmutableArray<
+        BrilliantMessaging.Core.Messaging.Inbound.InboundMessageInspectorChainEntry>;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
 
@@ -15,7 +17,8 @@ namespace BrilliantMessaging.Core.Messaging.Inbound;
 /// </remarks>
 public sealed class InboundMessageInspectorChainBuilder : IBuildable<ImmutableArrayType>
 {
-    private readonly ImmutableArrayType.Builder _entries = ImmutableArray.CreateBuilder<InboundMessageInspectorChainEntry>();
+    private readonly ImmutableArrayType.Builder _entries =
+        ImmutableArray.CreateBuilder<InboundMessageInspectorChainEntry>();
 
     /// <inheritdoc />
     ImmutableArrayType IBuildable<ImmutableArrayType>.Build()
@@ -28,7 +31,10 @@ public sealed class InboundMessageInspectorChainBuilder : IBuildable<ImmutableAr
     /// </summary>
     /// <param name="serviceLifetime">The lifetime used when the inspector type is auto-registered.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="serviceLifetime" /> is not a defined value.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EnumValueNotDefinedException">
+    /// Thrown when <paramref name="serviceLifetime" /> is not a
+    /// defined value.
+    /// </exception>
     public InboundMessageInspectorChainBuilder CloudEvents(ServiceLifetime serviceLifetime = ServiceLifetime.Singleton)
     {
         return Use<CloudEventsInboundMessageInspector>(serviceLifetime);
@@ -41,7 +47,10 @@ public sealed class InboundMessageInspectorChainBuilder : IBuildable<ImmutableAr
     /// <typeparam name="TInspector">The inspector type.</typeparam>
     /// <param name="serviceLifetime">The lifetime used when the inspector type is auto-registered.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="serviceLifetime" /> is not a defined value.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EnumValueNotDefinedException">
+    /// Thrown when <paramref name="serviceLifetime" /> is not a
+    /// defined value.
+    /// </exception>
     public InboundMessageInspectorChainBuilder Use<TInspector>(
         ServiceLifetime serviceLifetime = ServiceLifetime.Singleton
     )
@@ -67,10 +76,18 @@ public sealed class InboundMessageInspectorChainBuilder : IBuildable<ImmutableAr
     /// </summary>
     /// <param name="name">The header name.</param>
     /// <returns>A recognizer builder that must be completed with <c>As&lt;T&gt;()</c>.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public InboundMessageRecognizerBuilder WhenHeader(string name)
     {
-        var headerName = RequireText(name, nameof(name));
+        var headerName = name.MustNotBeNullOrWhiteSpace();
         return When(message => message.TryGetHeaderString(headerName, out _));
     }
 
@@ -80,11 +97,19 @@ public sealed class InboundMessageInspectorChainBuilder : IBuildable<ImmutableAr
     /// <param name="name">The header name.</param>
     /// <param name="value">The expected header value.</param>
     /// <returns>A recognizer builder that must be completed with <c>As&lt;T&gt;()</c>.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> or <paramref name="value" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> or <paramref name="value" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> or <paramref name="value" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> or <paramref name="value" /> contains only whitespace.
+    /// </exception>
     public InboundMessageRecognizerBuilder WhenHeader(string name, string value)
     {
-        var headerName = RequireText(name, nameof(name));
-        var expectedValue = RequireText(value, nameof(value));
+        var headerName = name.MustNotBeNullOrWhiteSpace();
+        var expectedValue = value.MustNotBeNullOrWhiteSpace();
         return When(
             message => message.TryGetHeaderString(headerName, out var actualValue) &&
                        string.Equals(actualValue, expectedValue, StringComparison.Ordinal)
@@ -96,10 +121,18 @@ public sealed class InboundMessageInspectorChainBuilder : IBuildable<ImmutableAr
     /// </summary>
     /// <param name="value">The expected content type.</param>
     /// <returns>A recognizer builder that must be completed with <c>As&lt;T&gt;()</c>.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="value" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="value" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="value" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="value" /> contains only whitespace.
+    /// </exception>
     public InboundMessageRecognizerBuilder WhenContentType(string value)
     {
-        var expectedValue = RequireText(value, nameof(value));
+        var expectedValue = value.MustNotBeNullOrWhiteSpace();
         return When(
             message => string.Equals(message.ContentType, expectedValue, StringComparison.OrdinalIgnoreCase)
         );
@@ -113,15 +146,5 @@ public sealed class InboundMessageInspectorChainBuilder : IBuildable<ImmutableAr
     {
         _entries.Add(new RecognizerInboundMessageInspectorChainEntry(predicate, messageType, explicitDiscriminator));
         return this;
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

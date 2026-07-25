@@ -1,4 +1,5 @@
 using System;
+using BrilliantMessaging.GuardClauses;
 using RabbitMQ.Client;
 
 namespace BrilliantMessaging.Transport.RabbitMq.Inbound;
@@ -16,7 +17,15 @@ public sealed class RabbitMqInboundChannelGroup
     /// <param name="maximumChannelCount">The maximum number of consumer channels the group may open; must be greater than zero.</param>
     /// <param name="prefetchCount">The per-consumer prefetch (QoS) count; must be greater than zero.</param>
     /// <param name="consumerDispatchConcurrency">The consumer dispatch concurrency per channel; must be greater than zero.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when any numeric argument is out of range.</exception>
     public RabbitMqInboundChannelGroup(
         string name,
@@ -25,37 +34,10 @@ public sealed class RabbitMqInboundChannelGroup
         ushort consumerDispatchConcurrency
     )
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
-
-        if (maximumChannelCount < 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(maximumChannelCount),
-                maximumChannelCount,
-                "The value must be greater than zero."
-            );
-        }
-
-        if (prefetchCount == 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(prefetchCount),
-                prefetchCount,
-                "The value must be greater than zero."
-            );
-        }
-
-        if (consumerDispatchConcurrency == 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(consumerDispatchConcurrency),
-                consumerDispatchConcurrency,
-                "The value must be greater than zero."
-            );
-        }
+        name.MustNotBeNullOrWhiteSpace();
+        maximumChannelCount.MustBePositive();
+        prefetchCount.MustBePositive();
+        consumerDispatchConcurrency.MustBePositive();
 
         Name = name;
         MaximumChannelCount = maximumChannelCount;

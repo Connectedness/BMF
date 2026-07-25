@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.RabbitMq.Inbound;
 using BrilliantMessaging.Transport.RabbitMq.Outbound;
 using RabbitMQ.Client;
@@ -193,10 +194,7 @@ public sealed class RabbitMqTopologyBuilder
     /// <inheritdoc cref="IRabbitMqTopologyBuilder{TSelf}.UseConnectionFactory(ConnectionFactory)" />
     public RabbitMqTopologyBuilder UseConnectionFactory(ConnectionFactory connectionFactory)
     {
-        if (connectionFactory is null)
-        {
-            throw new ArgumentNullException(nameof(connectionFactory));
-        }
+        connectionFactory.MustNotBeNull();
 
         var capturedFactory = connectionFactory;
         _createConnectionFactory = _ => capturedFactory;
@@ -208,8 +206,7 @@ public sealed class RabbitMqTopologyBuilder
         Func<IServiceProvider, ConnectionFactory> createConnectionFactory
     )
     {
-        _createConnectionFactory = createConnectionFactory ??
-                                   throw new ArgumentNullException(nameof(createConnectionFactory));
+        _createConnectionFactory = createConnectionFactory.MustNotBeNull();
         return this;
     }
 
@@ -266,10 +263,7 @@ public sealed class RabbitMqTopologyBuilder
     /// <inheritdoc cref="IRabbitMqTopologyBuilder{TSelf}.MapMessageContracts" />
     public RabbitMqTopologyBuilder MapMessageContracts(Action<MessageContractRegistryBuilder> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         _messageContracts ??= new MessageContractRegistryBuilder();
         configure(_messageContracts);
@@ -302,14 +296,7 @@ public sealed class RabbitMqTopologyBuilder
         TimeSpan? publisherConfirmTimeout = null
     )
     {
-        if (maximumChannelCount < 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(maximumChannelCount),
-                maximumChannelCount,
-                "The value must be greater than zero."
-            );
-        }
+        maximumChannelCount.MustBePositive();
 
         if (publisherConfirmMode is not null)
         {
@@ -321,18 +308,14 @@ public sealed class RabbitMqTopologyBuilder
             ValidatePublisherConfirmTimeout(publisherConfirmTimeout.Value, nameof(publisherConfirmTimeout));
         }
 
-        var channelGroupName = RequireText(name, nameof(name));
+        var channelGroupName = name.MustNotBeNullOrWhiteSpace();
 
-        if (channelGroupName.StartsWith(
-                RabbitMqOutboundChannelGroupDefinition.ReservedImplicitNamePrefix,
-                StringComparison.Ordinal
-            ))
-        {
-            throw new ArgumentException(
-                $"Channel group names beginning with '{RabbitMqOutboundChannelGroupDefinition.ReservedImplicitNamePrefix}' are reserved.",
-                nameof(name)
-            );
-        }
+        channelGroupName.MustNotStartWith(
+            RabbitMqOutboundChannelGroupDefinition.ReservedImplicitNamePrefix,
+            StringComparison.Ordinal,
+            nameof(name),
+            $"Channel group names beginning with '{RabbitMqOutboundChannelGroupDefinition.ReservedImplicitNamePrefix}' are reserved."
+        );
 
         _outboundChannelGroupDefinitions.Add(
             new RabbitMqOutboundChannelGroupDefinition(
@@ -353,45 +336,16 @@ public sealed class RabbitMqTopologyBuilder
         ushort consumerDispatchConcurrency
     )
     {
-        if (maximumChannelCount < 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(maximumChannelCount),
-                maximumChannelCount,
-                "The value must be greater than zero."
-            );
-        }
-
-        if (prefetchCount == 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(prefetchCount),
-                prefetchCount,
-                "The value must be greater than zero."
-            );
-        }
-
-        if (consumerDispatchConcurrency == 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(consumerDispatchConcurrency),
-                consumerDispatchConcurrency,
-                "The value must be greater than zero."
-            );
-        }
-
-        var channelGroupName = RequireText(name, nameof(name));
-
-        if (channelGroupName.StartsWith(
-                RabbitMqInboundChannelGroupDefinition.ReservedImplicitNamePrefix,
-                StringComparison.Ordinal
-            ))
-        {
-            throw new ArgumentException(
-                $"Channel group names beginning with '{RabbitMqInboundChannelGroupDefinition.ReservedImplicitNamePrefix}' are reserved.",
-                nameof(name)
-            );
-        }
+        maximumChannelCount.MustBePositive();
+        prefetchCount.MustBePositive();
+        consumerDispatchConcurrency.MustBePositive();
+        var channelGroupName = name.MustNotBeNullOrWhiteSpace();
+        channelGroupName.MustNotStartWith(
+            RabbitMqInboundChannelGroupDefinition.ReservedImplicitNamePrefix,
+            StringComparison.Ordinal,
+            nameof(name),
+            $"Channel group names beginning with '{RabbitMqInboundChannelGroupDefinition.ReservedImplicitNamePrefix}' are reserved."
+        );
 
         _inboundChannelGroupDefinitions.Add(
             new RabbitMqInboundChannelGroupDefinition(
@@ -418,7 +372,7 @@ public sealed class RabbitMqTopologyBuilder
         Action<RabbitMqOutboundTargetBuilder<TMessage>> configure
     )
     {
-        return PublishCore(RequireText(targetName, nameof(targetName)), configure);
+        return PublishCore(targetName.MustNotBeNullOrWhiteSpace(), configure);
     }
 
     /// <inheritdoc cref="IRabbitMqInboundTopologyBuilder.Consume" />
@@ -427,10 +381,7 @@ public sealed class RabbitMqTopologyBuilder
         Action<RabbitMqInboundConsumerBuilder> configure
     )
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         RabbitMqInboundConsumerBuilder builder = new (queueName);
         configure(builder);
@@ -441,10 +392,7 @@ public sealed class RabbitMqTopologyBuilder
     /// <inheritdoc cref="IRabbitMqInboundTopologyBuilder.ConfigureInboundPipeline" />
     public RabbitMqTopologyBuilder ConfigureInboundPipeline(Action<MessagePipelineBuilder> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         _configurePipeline += configure;
         return this;
@@ -461,14 +409,7 @@ public sealed class RabbitMqTopologyBuilder
     /// <inheritdoc cref="IRabbitMqInboundTopologyBuilder.WithShutdownTimeout" />
     public RabbitMqTopologyBuilder WithShutdownTimeout(TimeSpan shutdownTimeout)
     {
-        if (shutdownTimeout <= TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(shutdownTimeout),
-                shutdownTimeout,
-                "The value must be greater than zero."
-            );
-        }
+        shutdownTimeout.MustBePositive();
 
         _shutdownTimeout = shutdownTimeout;
         return this;
@@ -479,10 +420,7 @@ public sealed class RabbitMqTopologyBuilder
         Action<RabbitMqOutboundTargetBuilder<TMessage>> configure
     )
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         RabbitMqOutboundTargetBuilder<TMessage> builder = new (targetName);
         configure(builder);
@@ -495,35 +433,18 @@ public sealed class RabbitMqTopologyBuilder
         string parameterName
     )
     {
-        if (!Enum.IsDefined(typeof(RabbitMqPublisherConfirmMode), publisherConfirmMode))
-        {
-            throw new ArgumentOutOfRangeException(
-                parameterName,
-                publisherConfirmMode,
-                "Unsupported publisher confirm mode."
-            );
-        }
+        publisherConfirmMode.MustBeValidEnumValue(parameterName);
     }
 
     private static void ValidatePublisherConfirmTimeout(TimeSpan publisherConfirmTimeout, string parameterName)
     {
-        if (!RabbitMqPublisherConfirmDefaults.IsValidTimeout(publisherConfirmTimeout))
-        {
-            throw new ArgumentOutOfRangeException(
-                parameterName,
-                publisherConfirmTimeout,
-                "The value must be finite and greater than zero."
-            );
-        }
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
+        publisherConfirmTimeout.MustBeIn(
+            new Range<TimeSpan>(
+                TimeSpan.Zero,
+                TimeSpan.FromMilliseconds(uint.MaxValue - 1d),
+                isFromInclusive: false
+            ),
+            parameterName
+        );
     }
 }

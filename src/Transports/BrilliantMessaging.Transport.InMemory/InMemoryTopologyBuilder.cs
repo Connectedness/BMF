@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.InMemory.Inbound;
 using BrilliantMessaging.Transport.InMemory.Outbound;
 
@@ -27,8 +28,9 @@ public sealed class InMemoryTopologyBuilder
     private readonly ImmutableArray<InMemoryOutboundTargetDefinition>.Builder _targets =
         ImmutableArray.CreateBuilder<InMemoryOutboundTargetDefinition>();
 
-    private readonly ImmutableArray<string>.Builder _topics = ImmutableArray.CreateBuilder<string>();
     private readonly HashSet<string> _topicSet = new (StringComparer.Ordinal);
+
+    private readonly ImmutableArray<string>.Builder _topics = ImmutableArray.CreateBuilder<string>();
 
     private InMemoryRecordingOptions _recordingOptions = InMemoryRecordingOptions.Unbounded;
     private TimeSpan _shutdownTimeout = DefaultShutdownTimeout;
@@ -115,19 +117,20 @@ public sealed class InMemoryTopologyBuilder
     /// </summary>
     /// <param name="topic">The topic name to declare.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="InvalidOperationException">Thrown when <paramref name="topic" /> is already declared.</exception>
     public InMemoryTopologyBuilder Topic(string topic)
     {
-        if (string.IsNullOrWhiteSpace(topic))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(topic));
-        }
-
-        if (!_topicSet.Add(topic))
-        {
-            throw new InvalidOperationException($"Topic '{topic}' is already declared.");
-        }
+        topic.MustNotBeNullOrWhiteSpace();
+        Check.InvalidOperation(!_topicSet.Add(topic), $"Topic '{topic}' is already declared.");
 
         _topics.Add(topic);
         return this;
@@ -142,10 +145,7 @@ public sealed class InMemoryTopologyBuilder
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="configure" /> is <see langword="null" />.</exception>
     public InMemoryTopologyBuilder Publish<TMessage>(Action<InMemoryOutboundTargetBuilder<TMessage>> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         InMemoryOutboundTargetBuilder<TMessage> targetBuilder = new ();
         configure(targetBuilder);
@@ -160,19 +160,20 @@ public sealed class InMemoryTopologyBuilder
     /// <param name="topic">The declared topic to consume from.</param>
     /// <param name="configure">A callback that configures the consumer.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="configure" /> is <see langword="null" />.</exception>
     public InMemoryTopologyBuilder Consume(string topic, Action<InMemoryInboundConsumerBuilder> configure)
     {
-        if (string.IsNullOrWhiteSpace(topic))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(topic));
-        }
-
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        topic.MustNotBeNullOrWhiteSpace();
+        configure.MustNotBeNull();
 
         InMemoryInboundConsumerBuilder consumerBuilder = new (topic);
         configure(consumerBuilder);
@@ -188,14 +189,7 @@ public sealed class InMemoryTopologyBuilder
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="timeout" /> is not positive and not infinite.</exception>
     public InMemoryTopologyBuilder ShutdownTimeout(TimeSpan timeout)
     {
-        if (timeout != Timeout.InfiniteTimeSpan && timeout <= TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(timeout),
-                timeout,
-                "The value must be positive or Timeout.InfiniteTimeSpan."
-            );
-        }
+        timeout.MustBePositiveOrInfinite();
 
         _shutdownTimeout = timeout;
         return this;

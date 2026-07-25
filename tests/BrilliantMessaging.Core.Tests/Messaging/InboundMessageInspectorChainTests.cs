@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses.Exceptions;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -154,9 +155,9 @@ public sealed class InboundMessageInspectorChainTests
         var whenWithoutPredicate = () => builder.When(null!);
         var asWithBlankExplicitDiscriminator = () => builder.WhenHeader("x-kind").As<LegacyMessage>("  ");
 
-        constructEmptyList.Should().Throw<ArgumentNullException>().WithParameterName("inspectors");
-        constructDefaultList.Should().Throw<ArgumentNullException>().WithParameterName("inspectors");
-        constructListWithNullEntry.Should().Throw<ArgumentNullException>().WithParameterName("inspectors");
+        constructEmptyList.Should().Throw<EmptyCollectionException>().WithParameterName("inspectors");
+        constructDefaultList.Should().Throw<EmptyCollectionException>().WithParameterName("inspectors");
+        constructListWithNullEntry.Should().Throw<ExistingItemException>().WithParameterName("inspectors");
         constructPredicateWithoutPredicate.Should().Throw<ArgumentNullException>().WithParameterName("predicate");
         constructPredicateWithBlankDiscriminator.Should().Throw<ArgumentException>()
            .WithParameterName("discriminator");

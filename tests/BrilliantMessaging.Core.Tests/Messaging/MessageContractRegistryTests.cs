@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses.Exceptions;
 using FluentAssertions;
 using Xunit;
 
@@ -108,7 +109,7 @@ public sealed class MessageContractRegistryTests
 
         var act = () => map.WithDataSchema("http://[::1");
 
-        act.Should().Throw<ArgumentException>().WithParameterName("dataSchema");
+        act.Should().Throw<InvalidUriException>().WithParameterName("dataSchema");
     }
 
     [Fact]

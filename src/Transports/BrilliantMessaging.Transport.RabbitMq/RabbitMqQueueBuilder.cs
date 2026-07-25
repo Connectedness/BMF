@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.RabbitMq;
 
@@ -18,10 +19,18 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// declared queue.
     /// </summary>
     /// <param name="name">The queue name.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public RabbitMqQueueBuilder(string name)
     {
-        Name = RequireText(name, nameof(name));
+        Name = name.MustNotBeNullOrWhiteSpace();
         DeclareMode = RabbitMqDeclareMode.Active;
         Durable = true;
         _arguments["x-queue-type"] = "quorum";
@@ -115,10 +124,18 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// <param name="name">The argument name.</param>
     /// <param name="value">The argument value.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public RabbitMqQueueBuilder WithArgument(string name, object? value)
     {
-        _arguments[RequireText(name, nameof(name))] = value;
+        _arguments[name.MustNotBeNullOrWhiteSpace()] = value;
         return this;
     }
 
@@ -127,10 +144,18 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// </summary>
     /// <param name="exchangeName">The dead-letter exchange name.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="exchangeName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="exchangeName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="exchangeName" /> contains only whitespace.
+    /// </exception>
     public RabbitMqQueueBuilder WithDeadLetterExchange(string exchangeName)
     {
-        _arguments["x-dead-letter-exchange"] = RequireText(exchangeName, nameof(exchangeName));
+        _arguments["x-dead-letter-exchange"] = exchangeName.MustNotBeNullOrWhiteSpace();
         return this;
     }
 
@@ -177,10 +202,7 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="maxLength" /> is negative.</exception>
     public RabbitMqQueueBuilder WithMaxLength(long maxLength)
     {
-        if (maxLength < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(maxLength), "The value must be zero or greater.");
-        }
+        maxLength.MustNotBeNegative();
 
         _arguments["x-max-length"] = maxLength;
         return this;
@@ -194,10 +216,7 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="maxLengthBytes" /> is negative.</exception>
     public RabbitMqQueueBuilder WithMaxLengthBytes(long maxLengthBytes)
     {
-        if (maxLengthBytes < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(maxLengthBytes), "The value must be zero or greater.");
-        }
+        maxLengthBytes.MustNotBeNegative();
 
         _arguments["x-max-length-bytes"] = maxLengthBytes;
         return this;
@@ -208,10 +227,18 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// </summary>
     /// <param name="queueType">The queue type.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="queueType" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="queueType" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="queueType" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="queueType" /> contains only whitespace.
+    /// </exception>
     public RabbitMqQueueBuilder WithQueueType(string queueType)
     {
-        _arguments["x-queue-type"] = RequireText(queueType, nameof(queueType));
+        _arguments["x-queue-type"] = queueType.MustNotBeNullOrWhiteSpace();
         return this;
     }
 
@@ -276,10 +303,7 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="limit" /> is less than <c>-1</c>.</exception>
     public RabbitMqQueueBuilder WithDeliveryLimit(int limit)
     {
-        if (limit < -1)
-        {
-            throw new ArgumentOutOfRangeException(nameof(limit), "The value must be -1 or greater.");
-        }
+        limit.MustBeGreaterThanOrEqualTo(-1);
 
         _arguments["x-delivery-limit"] = limit;
         return this;
@@ -378,10 +402,7 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// </remarks>
     public RabbitMqQueueBuilder WithMaxPriority(byte maxPriority)
     {
-        if (maxPriority == 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(maxPriority), "The value must be greater than zero.");
-        }
+        maxPriority.MustBePositive();
 
         _arguments["x-max-priority"] = maxPriority;
         return this;
@@ -408,10 +429,7 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="size" /> is less than one.</exception>
     public RabbitMqQueueBuilder WithInitialClusterSize(int size)
     {
-        if (size < 1)
-        {
-            throw new ArgumentOutOfRangeException(nameof(size), "The value must be one or greater.");
-        }
+        size.MustBePositive();
 
         _arguments["x-quorum-initial-group-size"] = size;
         return this;
@@ -426,10 +444,7 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="timeout" /> is zero or negative.</exception>
     public RabbitMqQueueBuilder WithConsumerTimeout(TimeSpan timeout)
     {
-        if (timeout <= TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(nameof(timeout), "The value must be greater than zero.");
-        }
+        timeout.MustBePositive();
 
         _arguments["x-consumer-timeout"] = checked((long) timeout.TotalMilliseconds);
         return this;
@@ -478,22 +493,10 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
         };
     }
 
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
-    }
 
     private static long ToMilliseconds(TimeSpan value, string parameterName)
     {
-        if (value < TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(parameterName, "The value must be zero or greater.");
-        }
+        value.MustNotBeNegative(parameterName);
 
         return checked((long) value.TotalMilliseconds);
     }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging;
 
@@ -23,8 +24,8 @@ public sealed class EffectiveMessageContractRegistry : IMessageContractRegistry
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="canonical" /> or <paramref name="dialect" /> is <see langword="null" />.</exception>
     public EffectiveMessageContractRegistry(IMessageContractRegistry canonical, MessageContractRegistry dialect)
     {
-        _canonical = canonical ?? throw new ArgumentNullException(nameof(canonical));
-        _dialect = dialect ?? throw new ArgumentNullException(nameof(dialect));
+        _canonical = canonical.MustNotBeNull();
+        _dialect = dialect.MustNotBeNull();
     }
 
     /// <inheritdoc />
@@ -53,10 +54,7 @@ public sealed class EffectiveMessageContractRegistry : IMessageContractRegistry
     /// <inheritdoc />
     public IReadOnlyCollection<string> GetInboundDiscriminators(Type messageType)
     {
-        if (messageType is null)
-        {
-            throw new ArgumentNullException(nameof(messageType));
-        }
+        messageType.MustNotBeNull();
 
         return _dialect.GetInboundDiscriminators(messageType)
            .Concat(_canonical.GetInboundDiscriminators(messageType))

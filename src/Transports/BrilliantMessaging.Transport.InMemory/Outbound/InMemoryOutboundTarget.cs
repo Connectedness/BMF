@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BrilliantMessaging.Abstractions;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.InMemory.Inbound;
 
 namespace BrilliantMessaging.Transport.InMemory.Outbound;
@@ -35,7 +36,15 @@ public sealed class InMemoryOutboundTarget<TMessage> : OutboundTarget<TMessage>
     /// <param name="topic">The declared topic published messages are routed to.</param>
     /// <param name="broker">The broker that records and dispatches routed messages.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="broker" /> is <see langword="null" />.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     public InMemoryOutboundTarget(
         string name,
         IMessageSerializer serializer,
@@ -46,13 +55,8 @@ public sealed class InMemoryOutboundTarget<TMessage> : OutboundTarget<TMessage>
     )
         : base(name, InMemoryInboundEndpoint.TransportNameValue, serializer, messageContractRegistry, topologyName)
     {
-        if (string.IsNullOrWhiteSpace(topic))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(topic));
-        }
-
-        _topic = topic;
-        _broker = broker ?? throw new ArgumentNullException(nameof(broker));
+        _topic = topic.MustNotBeNullOrWhiteSpace();
+        _broker = broker.MustNotBeNull();
         DestinationName = topic;
     }
 

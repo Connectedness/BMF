@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Tests.Messaging.TestSupport;
+using BrilliantMessaging.GuardClauses.Exceptions;
 using FluentAssertions;
 using Xunit;
 
@@ -64,7 +65,7 @@ public sealed class InboundEndpointGuardTests
             (MessageAckMode) 999
         );
 
-        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("ackMode");
+        act.Should().Throw<EnumValueNotDefinedException>().WithParameterName("ackMode");
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 using RabbitMQ.Client;
 
 namespace BrilliantMessaging.Transport.RabbitMq;
@@ -20,11 +21,19 @@ public sealed class RabbitMqExchangeBuilder : IBuildable<RabbitMqExchangeDefinit
     /// </summary>
     /// <param name="name">The exchange name.</param>
     /// <param name="type">The exchange type (for example <c>direct</c>, <c>topic</c>, <c>fanout</c>, or <c>headers</c>).</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> or <paramref name="type" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> or <paramref name="type" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> or <paramref name="type" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> or <paramref name="type" /> contains only whitespace.
+    /// </exception>
     public RabbitMqExchangeBuilder(string name, string type)
     {
-        Name = RequireText(name, nameof(name));
-        Type = RequireText(type, nameof(type));
+        Name = name.MustNotBeNullOrWhiteSpace();
+        Type = type.MustNotBeNullOrWhiteSpace();
         DeclareMode = RabbitMqDeclareMode.Active;
         Durable = true;
     }
@@ -106,10 +115,18 @@ public sealed class RabbitMqExchangeBuilder : IBuildable<RabbitMqExchangeDefinit
     /// <param name="name">The argument name.</param>
     /// <param name="value">The argument value.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public RabbitMqExchangeBuilder WithArgument(string name, object? value)
     {
-        _arguments[RequireText(name, nameof(name))] = value;
+        _arguments[name.MustNotBeNullOrWhiteSpace()] = value;
         return this;
     }
 
@@ -118,10 +135,18 @@ public sealed class RabbitMqExchangeBuilder : IBuildable<RabbitMqExchangeDefinit
     /// </summary>
     /// <param name="exchangeName">The alternate exchange name.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="exchangeName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="exchangeName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="exchangeName" /> contains only whitespace.
+    /// </exception>
     public RabbitMqExchangeBuilder WithAlternateExchange(string exchangeName)
     {
-        _arguments["alternate-exchange"] = RequireText(exchangeName, nameof(exchangeName));
+        _arguments["alternate-exchange"] = exchangeName.MustNotBeNullOrWhiteSpace();
         return this;
     }
 
@@ -131,20 +156,18 @@ public sealed class RabbitMqExchangeBuilder : IBuildable<RabbitMqExchangeDefinit
     /// </summary>
     /// <param name="delayedExchangeType">The underlying exchange type used once the delay elapses; defaults to <c>direct</c>.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="delayedExchangeType" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="delayedExchangeType" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="delayedExchangeType" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="delayedExchangeType" /> contains only whitespace.
+    /// </exception>
     public RabbitMqExchangeBuilder AsDelayedMessageExchange(string delayedExchangeType = ExchangeType.Direct)
     {
-        _arguments["x-delayed-type"] = RequireText(delayedExchangeType, nameof(delayedExchangeType));
+        _arguments["x-delayed-type"] = delayedExchangeType.MustNotBeNullOrWhiteSpace();
         return this;
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

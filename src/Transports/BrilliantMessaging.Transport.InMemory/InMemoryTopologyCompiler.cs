@@ -5,6 +5,7 @@ using System.Reflection;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.InMemory.Inbound;
 using BrilliantMessaging.Transport.InMemory.Outbound;
 using Microsoft.Extensions.DependencyInjection;
@@ -52,13 +53,12 @@ public sealed class InMemoryTopologyCompiler
         ILoggerFactory loggerFactory
     )
     {
-        _messageContractRegistry = messageContractRegistry ??
-                                   throw new ArgumentNullException(nameof(messageContractRegistry));
-        _defaultSerializer = defaultSerializer ?? throw new ArgumentNullException(nameof(defaultSerializer));
-        _resolveSerializer = resolveSerializer ?? throw new ArgumentNullException(nameof(resolveSerializer));
-        _serviceScopeFactory = serviceScopeFactory ?? throw new ArgumentNullException(nameof(serviceScopeFactory));
-        _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
-        _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+        _messageContractRegistry = messageContractRegistry.MustNotBeNull();
+        _defaultSerializer = defaultSerializer.MustNotBeNull();
+        _resolveSerializer = resolveSerializer.MustNotBeNull();
+        _serviceScopeFactory = serviceScopeFactory.MustNotBeNull();
+        _scheduler = scheduler.MustNotBeNull();
+        _loggerFactory = loggerFactory.MustNotBeNull();
     }
 
     /// <summary>
@@ -71,10 +71,7 @@ public sealed class InMemoryTopologyCompiler
     /// <exception cref="TopologyValidationException">Thrown when the configuration fails validation.</exception>
     public InMemoryTopology Compile(string topologyName, InMemoryTopologyConfiguration configuration)
     {
-        if (configuration is null)
-        {
-            throw new ArgumentNullException(nameof(configuration));
-        }
+        configuration.MustNotBeNull();
 
         var validationErrors = Validate(configuration);
         if (validationErrors.Count > 0)

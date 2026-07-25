@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Abstractions;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Outbound;
 
@@ -28,13 +29,16 @@ public sealed class CloudEventMessageSerializer : IMessageSerializer
         CloudEventsOptions options
     )
     {
-        _payloadCodec = payloadCodec ?? throw new ArgumentNullException(nameof(payloadCodec));
-        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _payloadCodec = payloadCodec.MustNotBeNull();
+        _options = options.MustNotBeNull();
     }
 
     /// <inheritdoc />
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="message" /> is <see langword="null" />.</exception>
-    /// <exception cref="CloudEventMetadataException">Thrown when a required CloudEvents attribute (id, time, source, type, or data content type) is missing or invalid.</exception>
+    /// <exception cref="CloudEventMetadataException">
+    /// Thrown when a required CloudEvents attribute (id, time, source, type, or data content type) is missing
+    /// or invalid.
+    /// </exception>
     public ValueTask<CloudEventEnvelope> SerializeAsync<T>(
         T message,
         in CloudEventMetadata metadata,
@@ -43,38 +47,31 @@ public sealed class CloudEventMessageSerializer : IMessageSerializer
         CancellationToken cancellationToken = default
     )
     {
-        if (message is null)
-        {
-            throw new ArgumentNullException(nameof(message));
-        }
+        message.MustNotBeNullReference();
 
-        if (metadata.Id == Guid.Empty)
-        {
-            throw new CloudEventMetadataException(
+        metadata.Id.MustNotBeEmpty(
+            static () => new CloudEventMetadataException(
                 CloudEventAttributeNames.Id,
                 "Implement ICloudEvent or derive from BaseCloudEvent, or pass CloudEventMetadata with a non-empty Id."
-            );
-        }
-
-        if (metadata.Time == default)
-        {
-            throw new CloudEventMetadataException(
+            )
+        );
+        metadata.Time.MustNotBeDefault(
+            static () => new CloudEventMetadataException(
                 CloudEventAttributeNames.Time,
                 "Implement ICloudEvent or derive from BaseCloudEvent, or pass CloudEventMetadata with a construction-time Time value."
-            );
-        }
+            )
+        );
 
         var source = CloudEventsOptionsValidation.GetRequiredSource(metadata.Source ?? _options.Source);
         var resolvedType = GetRequiredType(type);
         var payload = _payloadCodec.Encode(message);
 
-        if (string.IsNullOrWhiteSpace(payload.DataContentType))
-        {
-            throw new CloudEventMetadataException(
+        payload.DataContentType.MustNotBeNullOrWhiteSpace(
+            static _ => new CloudEventMetadataException(
                 CloudEventAttributeNames.DataContentType,
                 "Configure the payload codec to return a non-empty data content type."
-            );
-        }
+            )
+        );
 
         CloudEventEnvelope envelope = new (
             "1.0",
@@ -93,14 +90,11 @@ public sealed class CloudEventMessageSerializer : IMessageSerializer
 
     private static string GetRequiredType(string? type)
     {
-        if (string.IsNullOrWhiteSpace(type))
-        {
-            throw new CloudEventMetadataException(
+        return type.MustNotBeNullOrWhiteSpace(
+            static _ => new CloudEventMetadataException(
                 CloudEventAttributeNames.Type,
                 "Resolve a non-empty CloudEvents type discriminator before serializing the message."
-            );
-        }
-
-        return type!;
+            )
+        );
     }
 }

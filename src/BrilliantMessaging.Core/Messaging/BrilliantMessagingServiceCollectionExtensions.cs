@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using BrilliantMessaging.Core.Messaging.Inbound;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -33,10 +34,7 @@ public static class BrilliantMessagingServiceCollectionExtensions
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="services" /> is <see langword="null" />.</exception>
     public static BrilliantMessagingBuilder AddBrilliantMessaging(this IServiceCollection services)
     {
-        if (services is null)
-        {
-            throw new ArgumentNullException(nameof(services));
-        }
+        services.MustNotBeNull();
 
         var messageContracts = GetOrAddMessageContracts(services);
         var topologies = GetOrAddTopologies(services);

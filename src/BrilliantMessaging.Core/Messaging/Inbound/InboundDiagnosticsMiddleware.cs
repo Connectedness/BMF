@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
 
@@ -30,15 +31,8 @@ public sealed class InboundDiagnosticsMiddleware : IMessageMiddleware
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="context" /> or <paramref name="next" /> is <see langword="null" />.</exception>
     public async Task InvokeAsync(IncomingMessageContext context, MessageDelegate next)
     {
-        if (context is null)
-        {
-            throw new ArgumentNullException(nameof(context));
-        }
-
-        if (next is null)
-        {
-            throw new ArgumentNullException(nameof(next));
-        }
+        context.MustNotBeNull();
+        next.MustNotBeNull();
 
         var transport = context.Transport;
         var destination = transport.Source;

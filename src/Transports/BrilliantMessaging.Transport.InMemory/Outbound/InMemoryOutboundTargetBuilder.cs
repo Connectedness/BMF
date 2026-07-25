@@ -1,6 +1,7 @@
 using System;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.InMemory.Outbound;
 
@@ -28,12 +29,12 @@ public sealed class InMemoryOutboundTargetBuilder<TMessage> : IBuildable<InMemor
     /// <inheritdoc />
     InMemoryOutboundTargetDefinition IBuildable<InMemoryOutboundTargetDefinition>.Build()
     {
-        if (_topic is null)
-        {
-            throw new InvalidOperationException("An in-memory outbound target must select a topic with ToTopic(...).");
-        }
-
-        return new InMemoryOutboundTargetDefinition(typeof(TMessage), _topic, _targetName, _serializerType);
+        var topic = _topic.MustNotBeNull(
+            static () => new InvalidOperationException(
+                "An in-memory outbound target must select a topic with ToTopic(...)."
+            )
+        );
+        return new InMemoryOutboundTargetDefinition(typeof(TMessage), topic, _targetName, _serializerType);
     }
 
     /// <summary>
@@ -41,13 +42,18 @@ public sealed class InMemoryOutboundTargetBuilder<TMessage> : IBuildable<InMemor
     /// </summary>
     /// <param name="topic">The declared topic to publish to.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     public InMemoryOutboundTargetBuilder<TMessage> ToTopic(string topic)
     {
-        if (string.IsNullOrWhiteSpace(topic))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(topic));
-        }
+        topic.MustNotBeNullOrWhiteSpace();
 
         _topic = topic;
         return this;

@@ -1,5 +1,6 @@
 using System;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses.Exceptions;
 using FluentAssertions;
 using Xunit;
 
@@ -49,6 +50,6 @@ public sealed class MessageDeliveryExceptionTests
     {
         var act = () => _ = new MessageDeliveryException("target", (MessageDeliveryFailureReason) 999);
 
-        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("reason");
+        act.Should().Throw<EnumValueNotDefinedException>().WithParameterName("reason");
     }
 }

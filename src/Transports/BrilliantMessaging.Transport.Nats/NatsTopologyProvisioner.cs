@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Outbound;
+using BrilliantMessaging.GuardClauses;
 using BrilliantMessaging.Transport.Nats.Inbound;
 using NATS.Client.JetStream;
 using NATS.Client.JetStream.Models;
@@ -33,10 +34,7 @@ public sealed class NatsTopologyProvisioner : ITopologyProvisioner
     /// <summary>
     /// Initializes a new instance of the <see cref="NatsTopologyProvisioner" /> class.
     /// </summary>
-    public NatsTopologyProvisioner(NatsTopology topology)
-    {
-        _topology = topology ?? throw new ArgumentNullException(nameof(topology));
-    }
+    public NatsTopologyProvisioner(NatsTopology topology) => _topology = topology.MustNotBeNull();
 
     /// <inheritdoc />
     public async Task ProvisionAsync(CancellationToken cancellationToken = default)

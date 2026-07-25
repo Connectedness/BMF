@@ -2,6 +2,7 @@ using System;
 using System.Collections.Immutable;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.InMemory.Inbound;
 
@@ -22,10 +23,18 @@ public sealed class InMemoryInboundConsumerBuilder : IBuildable<InMemoryInboundC
     /// Initializes a new instance of the <see cref="InMemoryInboundConsumerBuilder" /> class for the given topic.
     /// </summary>
     /// <param name="topic">The declared topic to consume.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     public InMemoryInboundConsumerBuilder(string topic)
     {
-        _topic = RequireText(topic, nameof(topic));
+        _topic = topic.MustNotBeNullOrWhiteSpace();
     }
 
     /// <inheritdoc />
@@ -49,14 +58,7 @@ public sealed class InMemoryInboundConsumerBuilder : IBuildable<InMemoryInboundC
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="concurrency" /> is less than one.</exception>
     public InMemoryInboundConsumerBuilder Concurrency(int concurrency)
     {
-        if (concurrency < 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(concurrency),
-                concurrency,
-                "The value must be greater than zero."
-            );
-        }
+        concurrency.MustBePositive();
 
         _concurrency = concurrency;
         return this;
@@ -71,10 +73,7 @@ public sealed class InMemoryInboundConsumerBuilder : IBuildable<InMemoryInboundC
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="configure" /> is <see langword="null" />.</exception>
     public InMemoryInboundConsumerBuilder OnFailure(Action<InMemoryDeliveryPolicyBuilder> configure)
     {
-        if (configure is null)
-        {
-            throw new ArgumentNullException(nameof(configure));
-        }
+        configure.MustNotBeNull();
 
         InMemoryDeliveryPolicyBuilder builder = new ();
         configure(builder);
@@ -116,13 +115,7 @@ public sealed class InMemoryInboundConsumerBuilder : IBuildable<InMemoryInboundC
     )
         where THandler : class, IMessageHandler<TMessage>
     {
-        if (typeof(THandler).IsInterface || typeof(THandler).IsAbstract)
-        {
-            throw new ArgumentException(
-                $"Handler type '{typeof(THandler)}' must be a concrete class.",
-                nameof(THandler)
-            );
-        }
+        typeof(THandler).MustBeConcreteClass(nameof(THandler));
 
         var handlerBuilder = new InMemoryInboundHandlerBuilder();
         configure?.Invoke(handlerBuilder);
@@ -139,15 +132,5 @@ public sealed class InMemoryInboundConsumerBuilder : IBuildable<InMemoryInboundC
             )
         );
         return this;
-    }
-
-    private static string RequireText(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", parameterName);
-        }
-
-        return value;
     }
 }

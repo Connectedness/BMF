@@ -1,6 +1,7 @@
 using System;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.InMemory.Inbound;
 
@@ -37,13 +38,13 @@ public sealed class InMemoryInboundHandlerBuilder : IBuildable<InMemoryInboundHa
     /// </summary>
     /// <param name="ackMode">The acknowledgement mode.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="ackMode" /> is not a defined value.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EnumValueNotDefinedException">
+    /// Thrown when <paramref name="ackMode" /> is not a defined
+    /// value.
+    /// </exception>
     public InMemoryInboundHandlerBuilder WithAckMode(MessageAckMode ackMode)
     {
-        if (!Enum.IsDefined(typeof(MessageAckMode), ackMode))
-        {
-            throw new ArgumentOutOfRangeException(nameof(ackMode), ackMode, "Unsupported acknowledgement mode.");
-        }
+        ackMode.MustBeValidEnumValue();
 
         _ackMode = ackMode;
         return this;

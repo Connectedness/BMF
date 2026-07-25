@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 using RabbitMQ.Client;
 
 namespace BrilliantMessaging.Transport.RabbitMq.Inbound;
@@ -24,7 +25,7 @@ public sealed class RabbitMqMessageAcknowledgement : IMessageAcknowledgement
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="channel" /> is <see langword="null" />.</exception>
     public RabbitMqMessageAcknowledgement(IChannel channel, ulong deliveryTag)
     {
-        _channel = channel ?? throw new ArgumentNullException(nameof(channel));
+        _channel = channel.MustNotBeNull();
         _deliveryTag = deliveryTag;
     }
 

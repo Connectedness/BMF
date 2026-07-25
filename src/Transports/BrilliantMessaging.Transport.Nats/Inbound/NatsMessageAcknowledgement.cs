@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 using NATS.Client.JetStream;
 
 namespace BrilliantMessaging.Transport.Nats.Inbound;
@@ -52,12 +53,12 @@ public sealed class NatsMessageAcknowledgement : IMessageAcknowledgement
         CancellationToken shutdownToken = default
     )
     {
-        _message = message ?? throw new ArgumentNullException(nameof(message));
+        _message = message.MustNotBeNull();
         _nakDelay = nakDelay;
         _deliveryAttempt = deliveryAttempt == 0 ? 1 : deliveryAttempt;
         _deadLetterAfterDeliveryAttempt = deadLetterAfterDeliveryAttempt <= 0 ? 1 : deadLetterAfterDeliveryAttempt;
         _maxDeliver = maxDeliver <= 0 ? 1 : maxDeliver;
-        _deadLetterAsync = deadLetterAsync ?? throw new ArgumentNullException(nameof(deadLetterAsync));
+        _deadLetterAsync = deadLetterAsync.MustNotBeNull();
         _shutdownToken = shutdownToken;
     }
 

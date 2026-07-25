@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Inbound;
 
@@ -20,7 +21,10 @@ public sealed class IncomingMessageContext
     /// <param name="cancellationToken">A token signalled when processing should stop.</param>
     /// <param name="messageType">The concrete message type resolved for this delivery.</param>
     /// <param name="items">An optional pre-seeded item bag; when omitted the bag is created lazily on first access.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="transport" />, <paramref name="endpoint" />, <paramref name="services" />, <paramref name="acknowledgement" />, or <paramref name="messageType" /> is <see langword="null" />.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="transport" />, <paramref name="endpoint" />, <paramref name="services" />,
+    /// <paramref name="acknowledgement" />, or <paramref name="messageType" /> is <see langword="null" />.
+    /// </exception>
     public IncomingMessageContext(
         TransportMessage transport,
         InboundEndpoint endpoint,
@@ -31,12 +35,12 @@ public sealed class IncomingMessageContext
         IncomingMessageContextItems? items = null
     )
     {
-        Transport = transport ?? throw new ArgumentNullException(nameof(transport));
-        Endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
-        Services = services ?? throw new ArgumentNullException(nameof(services));
-        Acknowledgement = acknowledgement ?? throw new ArgumentNullException(nameof(acknowledgement));
+        Transport = transport.MustNotBeNull();
+        Endpoint = endpoint.MustNotBeNull();
+        Services = services.MustNotBeNull();
+        Acknowledgement = acknowledgement.MustNotBeNull();
         CancellationToken = cancellationToken;
-        MessageType = messageType ?? throw new ArgumentNullException(nameof(messageType));
+        MessageType = messageType.MustNotBeNull();
         Items = items;
     }
 

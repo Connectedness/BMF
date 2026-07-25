@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using BrilliantMessaging.Abstractions;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Outbound;
 
@@ -31,30 +32,26 @@ public abstract class OutboundTarget
     /// The name of the topology the target belongs to, or <see langword="null" /> to use
     /// <see cref="Topology.DefaultName" />.
     /// </param>
-    /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="name" /> or <paramref name="transportName" /> is null or whitespace, or when
-    /// <paramref name="topologyName" /> is non-null but whitespace.
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> or <paramref name="transportName" /> is
+    /// <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" />, <paramref name="transportName" />, or a non-null
+    /// <paramref name="topologyName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" />, <paramref name="transportName" />, or a non-null
+    /// <paramref name="topologyName" /> contains only whitespace.
     /// </exception>
     protected OutboundTarget(string name, string transportName, string? topologyName = null)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(name));
-        }
-
-        if (string.IsNullOrWhiteSpace(transportName))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(transportName));
-        }
-
-        if (topologyName is not null && string.IsNullOrWhiteSpace(topologyName))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(topologyName));
-        }
+        name.MustNotBeNullOrWhiteSpace();
+        transportName.MustNotBeNullOrWhiteSpace();
 
         Name = name;
         TransportName = transportName;
-        TopologyName = topologyName ?? Topology.DefaultName;
+        TopologyName = topologyName?.MustNotBeNullOrWhiteSpace() ?? Topology.DefaultName;
     }
 
     /// <summary>
@@ -340,9 +337,8 @@ public abstract class OutboundTarget<T> : OutboundTarget
     )
         : base(name, transportName, topologyName)
     {
-        Serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
-        MessageContractRegistry = messageContractRegistry ??
-                                  throw new ArgumentNullException(nameof(messageContractRegistry));
+        Serializer = serializer.MustNotBeNull();
+        MessageContractRegistry = messageContractRegistry.MustNotBeNull();
     }
 
     /// <inheritdoc />
@@ -372,10 +368,7 @@ public abstract class OutboundTarget<T> : OutboundTarget
     /// </exception>
     public string GetRequiredDiscriminator(Type runtimeMessageType)
     {
-        if (runtimeMessageType is null)
-        {
-            throw new ArgumentNullException(nameof(runtimeMessageType));
-        }
+        runtimeMessageType.MustNotBeNull();
 
         try
         {
@@ -399,10 +392,7 @@ public abstract class OutboundTarget<T> : OutboundTarget
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="runtimeMessageType" /> is <see langword="null" />.</exception>
     public string? GetDataSchema(Type runtimeMessageType)
     {
-        if (runtimeMessageType is null)
-        {
-            throw new ArgumentNullException(nameof(runtimeMessageType));
-        }
+        runtimeMessageType.MustNotBeNull();
 
         return MessageContractRegistry.GetDataSchema(runtimeMessageType);
     }
@@ -496,10 +486,7 @@ public abstract class OutboundTarget<T> : OutboundTarget
         CancellationToken cancellationToken
     )
     {
-        if (message is null)
-        {
-            throw new ArgumentNullException(nameof(message));
-        }
+        message.MustNotBeNullReference();
 
         var runtimeType = message.GetType();
 

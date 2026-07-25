@@ -1,4 +1,5 @@
 using System;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Core.Messaging.Outbound;
 
@@ -18,8 +19,17 @@ public sealed class MessageDeliveryException : Exception
     /// The underlying exception. Required for every reason except
     /// <see cref="MessageDeliveryFailureReason.Timeout" />, which must not provide one.
     /// </param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="targetName" /> is null or whitespace, or when <paramref name="innerException" /> is inconsistent with <paramref name="reason" />.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="reason" /> is not a defined value.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="targetName" /> is <see langword="null" />.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">Thrown when <paramref name="targetName" /> is empty.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="targetName" /> contains only
+    /// whitespace.
+    /// </exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="innerException" /> is inconsistent with <paramref name="reason" />.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EnumValueNotDefinedException">
+    /// Thrown when <paramref name="reason" /> is not a defined
+    /// value.
+    /// </exception>
     public MessageDeliveryException(
         string targetName,
         MessageDeliveryFailureReason reason,
@@ -47,31 +57,18 @@ public sealed class MessageDeliveryException : Exception
         Exception? innerException
     )
     {
-        if (string.IsNullOrWhiteSpace(targetName))
-        {
-            throw new ArgumentException("The value cannot be null or whitespace.", nameof(targetName));
-        }
-
-        if (!Enum.IsDefined(typeof(MessageDeliveryFailureReason), reason))
-        {
-            throw new ArgumentOutOfRangeException(nameof(reason), reason, "Unsupported delivery-failure reason.");
-        }
-
-        if (reason == MessageDeliveryFailureReason.Timeout && innerException is not null)
-        {
-            throw new ArgumentException(
-                "A delivery timeout cannot provide an inner exception.",
-                nameof(innerException)
-            );
-        }
-
-        if (reason != MessageDeliveryFailureReason.Timeout && innerException is null)
-        {
-            throw new ArgumentException(
-                "A delivery failure other than timeout must provide an inner exception.",
-                nameof(innerException)
-            );
-        }
+        targetName.MustNotBeNullOrWhiteSpace();
+        reason.MustBeValidEnumValue();
+        Check.InvalidArgument(
+            reason == MessageDeliveryFailureReason.Timeout && innerException is not null,
+            nameof(innerException),
+            "A delivery timeout cannot provide an inner exception."
+        );
+        Check.InvalidArgument(
+            reason != MessageDeliveryFailureReason.Timeout && innerException is null,
+            nameof(innerException),
+            "A delivery failure other than timeout must provide an inner exception."
+        );
 
         return $"Delivery failed for outbound target '{targetName}' with reason '{reason}'.";
     }
