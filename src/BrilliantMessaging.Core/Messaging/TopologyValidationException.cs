@@ -40,13 +40,8 @@ public sealed class TopologyValidationException : Exception
     /// </summary>
     public IReadOnlyList<string> ValidationErrors { get; }
 
-    private static string BuildMessage(IReadOnlyList<string>? validationErrors)
+    private static string BuildMessage(IReadOnlyList<string> validationErrors)
     {
-        if (validationErrors is null || validationErrors.Count == 0)
-        {
-            return "Topology validation failed.";
-        }
-
         StringBuilder builder = new ("Topology validation failed:");
         for (var i = 0; i < validationErrors.Count; i++)
         {
