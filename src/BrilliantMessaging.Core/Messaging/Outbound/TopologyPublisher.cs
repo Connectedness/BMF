@@ -21,7 +21,15 @@ public readonly struct TopologyPublisher
     /// <param name="router">The underlying publisher to forward to.</param>
     /// <param name="topologyName">The topology to bind to.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="router" /> is <see langword="null" />.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topologyName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topologyName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topologyName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topologyName" /> contains only whitespace.
+    /// </exception>
     public TopologyPublisher(MessagePublisher router, string topologyName)
     {
         Router = router.MustNotBeNull();

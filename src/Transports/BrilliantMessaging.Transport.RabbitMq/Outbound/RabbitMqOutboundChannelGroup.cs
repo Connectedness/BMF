@@ -22,7 +22,15 @@ public sealed class RabbitMqOutboundChannelGroup : IAsyncDisposable, IDisposable
     /// <param name="channelFactory">A factory that opens a new channel for the group.</param>
     /// <param name="publisherConfirmMode">The publisher-confirm mode for channels in the group.</param>
     /// <param name="publisherConfirmTimeout">The bounded wait for publisher confirmations, or <see langword="null" /> for the default.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when <paramref name="maximumChannelCount" /> is less than one or the confirm timeout is out of
     /// range.

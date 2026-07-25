@@ -57,7 +57,15 @@ public abstract class RabbitMqRoutingKeyOutboundTarget<TMessage>
     }
 
     /// <inheritdoc />
-    /// <exception cref="ArgumentException">Thrown when <paramref name="routingKey" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="routingKey" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="routingKey" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="routingKey" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="CloudEventMetadataException">Thrown when <paramref name="message" /> does not implement <see cref="ICloudEvent" />.</exception>
     public Task PublishAsync(
         TMessage message,
@@ -80,7 +88,15 @@ public abstract class RabbitMqRoutingKeyOutboundTarget<TMessage>
     }
 
     /// <inheritdoc />
-    /// <exception cref="ArgumentException">Thrown when <paramref name="routingKey" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="routingKey" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="routingKey" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="routingKey" /> contains only whitespace.
+    /// </exception>
     public Task PublishAsync(
         TMessage message,
         in CloudEventMetadata metadata,
@@ -93,7 +109,15 @@ public abstract class RabbitMqRoutingKeyOutboundTarget<TMessage>
     }
 
     /// <inheritdoc />
-    /// <exception cref="ArgumentException">Thrown when <paramref name="routingKey" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="routingKey" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="routingKey" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="routingKey" /> contains only whitespace.
+    /// </exception>
     public Task PublishAsync(
         TMessage message,
         in CloudEventMetadata metadata,

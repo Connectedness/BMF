@@ -23,7 +23,15 @@ public sealed class InMemoryInboundConsumerBuilder : IBuildable<InMemoryInboundC
     /// Initializes a new instance of the <see cref="InMemoryInboundConsumerBuilder" /> class for the given topic.
     /// </summary>
     /// <param name="topic">The declared topic to consume.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     public InMemoryInboundConsumerBuilder(string topic)
     {
         _topic = topic.MustNotBeNullOrWhiteSpace();

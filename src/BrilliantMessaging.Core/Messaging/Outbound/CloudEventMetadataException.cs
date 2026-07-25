@@ -15,7 +15,16 @@ public sealed class CloudEventMetadataException : Exception
     /// </summary>
     /// <param name="attributeName">The name of the missing or invalid CloudEvents attribute.</param>
     /// <param name="supplyInstructions">Guidance on how to supply the attribute, appended to the message.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="attributeName" /> or <paramref name="supplyInstructions" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="attributeName" /> or <paramref name="supplyInstructions" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="attributeName" /> or <paramref name="supplyInstructions" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="attributeName" /> or <paramref name="supplyInstructions" /> contains only
+    /// whitespace.
+    /// </exception>
     public CloudEventMetadataException(string attributeName, string supplyInstructions)
         : base(
             $"CloudEvents attribute '{attributeName.MustNotBeNullOrWhiteSpace()}' is missing or invalid. {supplyInstructions.MustNotBeNullOrWhiteSpace()}"

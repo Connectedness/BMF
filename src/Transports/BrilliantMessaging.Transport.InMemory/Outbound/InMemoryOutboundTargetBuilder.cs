@@ -42,7 +42,15 @@ public sealed class InMemoryOutboundTargetBuilder<TMessage> : IBuildable<InMemor
     /// </summary>
     /// <param name="topic">The declared topic to publish to.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     public InMemoryOutboundTargetBuilder<TMessage> ToTopic(string topic)
     {
         topic.MustNotBeNullOrWhiteSpace();

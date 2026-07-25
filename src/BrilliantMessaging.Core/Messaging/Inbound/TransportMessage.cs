@@ -187,7 +187,15 @@ public abstract class TransportMessage
     /// <param name="name">The header name.</param>
     /// <param name="value">When this method returns, the header value as a string, or <see langword="null" /> when the header is absent or null.</param>
     /// <returns><see langword="true" /> when the header is present and non-null; otherwise <see langword="false" />.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public bool TryGetHeaderString(string name, out string? value)
     {
         name.MustNotBeNullOrWhiteSpace();

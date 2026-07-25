@@ -22,7 +22,15 @@ public sealed class MessageContractMapBuilder
     /// </summary>
     /// <param name="discriminator">The alias discriminator to accept inbound.</param>
     /// <returns>The same <see cref="MessageContractMapBuilder" /> instance for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="discriminator" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="discriminator" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="discriminator" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="discriminator" /> contains only whitespace.
+    /// </exception>
     public MessageContractMapBuilder WithInboundAlias(string discriminator)
     {
         _registration.InboundAliases.Add(discriminator.MustNotBeNullOrWhiteSpace());

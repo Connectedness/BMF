@@ -35,7 +35,15 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
     /// Initializes a new instance of the <see cref="RabbitMqInboundConsumerBuilder" /> class for the given queue.
     /// </summary>
     /// <param name="queueName">The name of the queue to consume.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="queueName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="queueName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="queueName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="queueName" /> contains only whitespace.
+    /// </exception>
     public RabbitMqInboundConsumerBuilder(string queueName)
     {
         _queueName = queueName.MustNotBeNullOrWhiteSpace();
@@ -105,7 +113,15 @@ public sealed class RabbitMqInboundConsumerBuilder : IBuildable<RabbitMqInboundC
     /// </summary>
     /// <param name="channelGroupName">The name of the channel group to use.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="channelGroupName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="channelGroupName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="channelGroupName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="channelGroupName" /> contains only whitespace.
+    /// </exception>
     public RabbitMqInboundConsumerBuilder UseChannelGroup(string channelGroupName)
     {
         _channelGroupName = channelGroupName.MustNotBeNullOrWhiteSpace();

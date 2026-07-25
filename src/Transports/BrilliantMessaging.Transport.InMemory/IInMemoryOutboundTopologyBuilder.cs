@@ -13,7 +13,15 @@ public interface IInMemoryOutboundTopologyBuilder
     /// </summary>
     /// <param name="topic">The topic name to declare.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="InvalidOperationException">Thrown when <paramref name="topic" /> is already declared.</exception>
     IInMemoryOutboundTopologyBuilder Topic(string topic);
 

@@ -25,7 +25,15 @@ public sealed class TopologyRegistrationCatalog
     /// Registers a topology name.
     /// </summary>
     /// <param name="name">The topology name to register.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="InvalidOperationException">Thrown when <paramref name="name" /> is already registered.</exception>
     public void Add(string name)
     {

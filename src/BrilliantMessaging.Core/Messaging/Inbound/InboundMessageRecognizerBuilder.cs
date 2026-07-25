@@ -44,7 +44,15 @@ public sealed class InboundMessageRecognizerBuilder
     /// <typeparam name="TMessage">The message type returned when the recognizer matches.</typeparam>
     /// <param name="explicitDiscriminator">The discriminator returned when the recognizer matches.</param>
     /// <returns>The parent chain builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="explicitDiscriminator" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="explicitDiscriminator" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="explicitDiscriminator" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="explicitDiscriminator" /> contains only whitespace.
+    /// </exception>
     public InboundMessageInspectorChainBuilder As<TMessage>(string explicitDiscriminator)
     {
         return _chainBuilder.AddRecognizer(

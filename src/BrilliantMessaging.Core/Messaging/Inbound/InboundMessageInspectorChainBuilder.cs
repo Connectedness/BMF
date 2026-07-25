@@ -76,7 +76,15 @@ public sealed class InboundMessageInspectorChainBuilder : IBuildable<ImmutableAr
     /// </summary>
     /// <param name="name">The header name.</param>
     /// <returns>A recognizer builder that must be completed with <c>As&lt;T&gt;()</c>.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public InboundMessageRecognizerBuilder WhenHeader(string name)
     {
         var headerName = name.MustNotBeNullOrWhiteSpace();
@@ -89,7 +97,15 @@ public sealed class InboundMessageInspectorChainBuilder : IBuildable<ImmutableAr
     /// <param name="name">The header name.</param>
     /// <param name="value">The expected header value.</param>
     /// <returns>A recognizer builder that must be completed with <c>As&lt;T&gt;()</c>.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> or <paramref name="value" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> or <paramref name="value" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> or <paramref name="value" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> or <paramref name="value" /> contains only whitespace.
+    /// </exception>
     public InboundMessageRecognizerBuilder WhenHeader(string name, string value)
     {
         var headerName = name.MustNotBeNullOrWhiteSpace();
@@ -105,7 +121,15 @@ public sealed class InboundMessageInspectorChainBuilder : IBuildable<ImmutableAr
     /// </summary>
     /// <param name="value">The expected content type.</param>
     /// <returns>A recognizer builder that must be completed with <c>As&lt;T&gt;()</c>.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="value" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="value" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="value" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="value" /> contains only whitespace.
+    /// </exception>
     public InboundMessageRecognizerBuilder WhenContentType(string value)
     {
         var expectedValue = value.MustNotBeNullOrWhiteSpace();

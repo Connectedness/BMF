@@ -32,9 +32,17 @@ public abstract class OutboundTarget
     /// The name of the topology the target belongs to, or <see langword="null" /> to use
     /// <see cref="Topology.DefaultName" />.
     /// </param>
-    /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="name" /> or <paramref name="transportName" /> is null or whitespace, or when
-    /// <paramref name="topologyName" /> is non-null but whitespace.
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> or <paramref name="transportName" /> is
+    /// <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" />, <paramref name="transportName" />, or a non-null
+    /// <paramref name="topologyName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" />, <paramref name="transportName" />, or a non-null
+    /// <paramref name="topologyName" /> contains only whitespace.
     /// </exception>
     protected OutboundTarget(string name, string transportName, string? topologyName = null)
     {

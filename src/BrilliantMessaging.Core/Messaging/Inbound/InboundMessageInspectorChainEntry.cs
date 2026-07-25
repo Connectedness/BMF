@@ -64,7 +64,12 @@ public sealed class RecognizerInboundMessageInspectorChainEntry : InboundMessage
     /// registry.
     /// </param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="predicate" /> or <paramref name="messageType" /> is <see langword="null" />.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="explicitDiscriminator" /> is empty or whitespace.</exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="explicitDiscriminator" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="explicitDiscriminator" /> contains only whitespace.
+    /// </exception>
     public RecognizerInboundMessageInspectorChainEntry(
         Func<TransportMessage, bool> predicate,
         Type messageType,

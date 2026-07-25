@@ -94,7 +94,15 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// </summary>
     /// <param name="exchangeName">The name of the fanout exchange.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="exchangeName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="exchangeName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="exchangeName" /> contains only whitespace.
+    /// </exception>
     public RabbitMqOutboundTargetBuilder<TMessage> ToFanoutExchange(string exchangeName)
     {
         _exchangeName = exchangeName.MustNotBeNullOrWhiteSpace();
@@ -111,7 +119,15 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// <param name="exchangeName">The name of the direct exchange.</param>
     /// <param name="routingKey">The fixed routing key; an empty string is permitted.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="exchangeName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="exchangeName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="exchangeName" /> contains only whitespace.
+    /// </exception>
     public RabbitMqOutboundTargetBuilder<TMessage> ToDirectExchange(string exchangeName, string routingKey)
     {
         _exchangeName = exchangeName.MustNotBeNullOrWhiteSpace();
@@ -128,7 +144,15 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// <param name="exchangeName">The name of the direct exchange.</param>
     /// <param name="routingKeyFactory">A function that produces the routing key from the message.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="exchangeName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="exchangeName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="exchangeName" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="routingKeyFactory" /> is <see langword="null" />.</exception>
     public RabbitMqOutboundTargetBuilder<TMessage> ToDirectExchange(
         string exchangeName,
@@ -149,7 +173,15 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// <param name="exchangeName">The name of the topic exchange.</param>
     /// <param name="routingKey">The fixed topic routing key; an empty string is permitted.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="exchangeName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="exchangeName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="exchangeName" /> contains only whitespace.
+    /// </exception>
     public RabbitMqOutboundTargetBuilder<TMessage> ToTopicExchange(string exchangeName, string routingKey)
     {
         _exchangeName = exchangeName.MustNotBeNullOrWhiteSpace();
@@ -166,7 +198,15 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// <param name="exchangeName">The name of the topic exchange.</param>
     /// <param name="routingKeyFactory">A function that produces the topic routing key from the message.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="exchangeName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="exchangeName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="exchangeName" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="routingKeyFactory" /> is <see langword="null" />.</exception>
     public RabbitMqOutboundTargetBuilder<TMessage> ToTopicExchange(
         string exchangeName,
@@ -187,7 +227,15 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// </summary>
     /// <param name="exchangeName">The name of the headers exchange.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="exchangeName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="exchangeName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="exchangeName" /> contains only whitespace.
+    /// </exception>
     public RabbitMqOutboundTargetBuilder<TMessage> ToHeadersExchange(string exchangeName)
     {
         _exchangeName = exchangeName.MustNotBeNullOrWhiteSpace();
@@ -203,7 +251,15 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// </summary>
     /// <param name="channelGroupName">The name of the channel group to use.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="channelGroupName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="channelGroupName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="channelGroupName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="channelGroupName" /> contains only whitespace.
+    /// </exception>
     public RabbitMqOutboundTargetBuilder<TMessage> UseChannelGroup(string channelGroupName)
     {
         _channelGroupName = channelGroupName.MustNotBeNullOrWhiteSpace();
@@ -217,7 +273,15 @@ public sealed class RabbitMqOutboundTargetBuilder<TMessage> : IBuildable<RabbitM
     /// <param name="name">The header name.</param>
     /// <param name="value">The header value.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public RabbitMqOutboundTargetBuilder<TMessage> WithHeader(string name, object? value)
     {
         _headers[name.MustNotBeNullOrWhiteSpace()] = value;

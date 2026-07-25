@@ -85,7 +85,15 @@ public sealed class InMemoryBroker
     /// </summary>
     /// <param name="topic">The topic to inspect.</param>
     /// <returns>The recorded messages, or an empty list when nothing has been routed to the topic.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     public IReadOnlyList<InMemoryTransportMessage> GetMessages(string topic)
     {
         topic.MustNotBeNullOrWhiteSpace();
@@ -104,7 +112,15 @@ public sealed class InMemoryBroker
     /// Clears all recorded messages for the given topic.
     /// </summary>
     /// <param name="topic">The topic whose recordings should be cleared.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     public void ClearRecordings(string topic)
     {
         topic.MustNotBeNullOrWhiteSpace();

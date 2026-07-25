@@ -22,7 +22,15 @@ public sealed class PredicateInboundMessageInspector : IInboundMessageInspector
     /// <param name="discriminator">The discriminator returned when the predicate matches.</param>
     /// <param name="messageType">The message type returned when the predicate matches.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="predicate" /> or <paramref name="messageType" /> is <see langword="null" />.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="discriminator" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="discriminator" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="discriminator" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="discriminator" /> contains only whitespace.
+    /// </exception>
     public PredicateInboundMessageInspector(
         Func<TransportMessage, bool> predicate,
         string discriminator,

@@ -17,7 +17,15 @@ public sealed class RabbitMqInboundChannelGroup
     /// <param name="maximumChannelCount">The maximum number of consumer channels the group may open; must be greater than zero.</param>
     /// <param name="prefetchCount">The per-consumer prefetch (QoS) count; must be greater than zero.</param>
     /// <param name="consumerDispatchConcurrency">The consumer dispatch concurrency per channel; must be greater than zero.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when any numeric argument is out of range.</exception>
     public RabbitMqInboundChannelGroup(
         string name,

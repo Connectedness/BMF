@@ -19,7 +19,15 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// declared queue.
     /// </summary>
     /// <param name="name">The queue name.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public RabbitMqQueueBuilder(string name)
     {
         Name = name.MustNotBeNullOrWhiteSpace();
@@ -116,7 +124,15 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// <param name="name">The argument name.</param>
     /// <param name="value">The argument value.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="name" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="name" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="name" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="name" /> contains only whitespace.
+    /// </exception>
     public RabbitMqQueueBuilder WithArgument(string name, object? value)
     {
         _arguments[name.MustNotBeNullOrWhiteSpace()] = value;
@@ -128,7 +144,15 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// </summary>
     /// <param name="exchangeName">The dead-letter exchange name.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="exchangeName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="exchangeName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="exchangeName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="exchangeName" /> contains only whitespace.
+    /// </exception>
     public RabbitMqQueueBuilder WithDeadLetterExchange(string exchangeName)
     {
         _arguments["x-dead-letter-exchange"] = exchangeName.MustNotBeNullOrWhiteSpace();
@@ -203,7 +227,15 @@ public sealed class RabbitMqQueueBuilder : IBuildable<RabbitMqQueueDefinition>
     /// </summary>
     /// <param name="queueType">The queue type.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="queueType" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="queueType" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="queueType" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="queueType" /> contains only whitespace.
+    /// </exception>
     public RabbitMqQueueBuilder WithQueueType(string queueType)
     {
         _arguments["x-queue-type"] = queueType.MustNotBeNullOrWhiteSpace();

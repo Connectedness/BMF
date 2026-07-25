@@ -13,7 +13,15 @@ public interface IInMemoryInboundTopologyBuilder
     /// </summary>
     /// <param name="topic">The topic name to declare.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="InvalidOperationException">Thrown when <paramref name="topic" /> is already declared.</exception>
     IInMemoryInboundTopologyBuilder Topic(string topic);
 
@@ -24,7 +32,15 @@ public interface IInMemoryInboundTopologyBuilder
     /// <param name="topic">The declared topic to consume from.</param>
     /// <param name="configure">A callback that configures the consumer.</param>
     /// <returns>The same builder for chaining.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="topic" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="topic" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="topic" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="topic" /> contains only whitespace.
+    /// </exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="configure" /> is <see langword="null" />.</exception>
     IInMemoryInboundTopologyBuilder Consume(string topic, Action<InMemoryInboundConsumerBuilder> configure);
 

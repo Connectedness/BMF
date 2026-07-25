@@ -22,7 +22,15 @@ public sealed class RabbitMqInboundConsumer
     /// Thrown when <paramref name="inspectorChain" />, <paramref name="channelGroup" />, or
     /// <paramref name="endpoints" /> is <see langword="null" />.
     /// </exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="queueName" /> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="queueName" /> is <see langword="null" />.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.EmptyStringException">
+    /// Thrown when <paramref name="queueName" /> is empty.
+    /// </exception>
+    /// <exception cref="BrilliantMessaging.GuardClauses.Exceptions.WhiteSpaceStringException">
+    /// Thrown when <paramref name="queueName" /> contains only whitespace.
+    /// </exception>
     public RabbitMqInboundConsumer(
         string queueName,
         RabbitMqInboundMessageInspectorChain inspectorChain,
