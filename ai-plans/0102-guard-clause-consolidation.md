@@ -2,7 +2,7 @@
 
 > Implementation approach changed on 2026-07-24: the source exporter is invoked with ValidateGeneratedFileBuild=false because the exported nullable-flow and caller-argument-expression attributes are supplied by BrilliantMessaging.Core's Polyfill dependency. The exact committed export is instead validated by BrilliantMessaging's warning-clean Release build and direct test-project runs in its real consuming context. This supersedes the later instruction requiring the exporter's standalone matching build validation.
 
-> Implementation approach changed on 2026-07-24: Light.GuardClauses now cleans up annotations correctly during source export, so the generation script no longer post-processes the generated file. The export retains the JetBrains `NoEnumeration` annotations and emits the JetBrains annotation types, because ReSharper otherwise reports "possible multiple enumeration" when a guard clause is applied to an `IEnumerable<T>` that is enumerated afterwards. This supersedes the instruction to remove all JetBrains annotations from the export.
+> Implementation approach changed on 2026-07-24: Light.GuardClauses now cleans up annotations correctly during source export, so the generation script no longer rewrites the generated code (it still inserts the source commit into the provenance comment). The export retains the JetBrains `NoEnumeration` annotations and emits the JetBrains annotation types, because ReSharper otherwise reports "possible multiple enumeration" when a guard clause is applied to an `IEnumerable<T>` that is enumerated afterwards. This supersedes the instruction to remove all JetBrains annotations from the export.
 
 ## Rationale
 
@@ -28,7 +28,7 @@ The generated surface should embrace the Light.GuardClauses exception taxonomy. 
 - [x] Automated tests need to be written, following the repository test rules.
 - [x] All test projects pass when run directly with the Microsoft Testing Platform runner.
 - [x] Release builds stay warning-clean with `TreatWarningsAsErrors`.
-- [x] The generation script produces the committed file without post-processing the exporter output.
+- [x] The generation script does not rewrite any generated code; its only post-processing step is inserting the Light.GuardClauses source commit into the provenance comment.
 - [x] ReSharper's InspectCode is available as a local dotnet tool and reports no "possible multiple enumeration" issues for guard-clause call sites.
 
 ## Technical Details
