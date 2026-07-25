@@ -130,7 +130,13 @@ public sealed class RabbitMqQueueBindingBuilder : IBuildable<RabbitMqQueueBindin
     {
         var validatedName = name.MustNotBeNullOrWhiteSpace();
 
-        validatedName.MustNotBe("x-match", StringComparison.Ordinal, nameof(name));
+        if (string.Equals(validatedName, "x-match", StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                "The 'x-match' header is the match-mode control argument; use WithHeaderMatch to set it.",
+                nameof(name)
+            );
+        }
 
         if (!_arguments.ContainsKey("x-match"))
         {
