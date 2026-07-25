@@ -31,10 +31,13 @@ public sealed class TopologyRegistrationCatalog
     {
         name.MustNotBeNullOrWhiteSpace();
 
-        Check.InvalidOperation(
-            !_namesSet.Add(name),
-            $"Topology '{name}' is already registered. Registered topologies: {FormatNames(_names)}."
-        );
+        // FormatNames sorts and joins every registered name, so it must stay out of the happy path.
+        if (!_namesSet.Add(name))
+        {
+            throw new InvalidOperationException(
+                $"Topology '{name}' is already registered. Registered topologies: {FormatNames(_names)}."
+            );
+        }
 
         _names.Add(name);
     }
