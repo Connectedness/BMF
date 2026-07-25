@@ -1,7 +1,7 @@
-using BrilliantMessaging.GuardClauses;
 using System;
 using BrilliantMessaging.Core.Messaging;
 using BrilliantMessaging.Core.Messaging.Inbound;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.RabbitMq.Inbound;
 

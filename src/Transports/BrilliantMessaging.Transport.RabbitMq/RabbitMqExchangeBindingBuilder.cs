@@ -1,8 +1,8 @@
-using BrilliantMessaging.GuardClauses;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using BrilliantMessaging.Core.Messaging;
+using BrilliantMessaging.GuardClauses;
 
 namespace BrilliantMessaging.Transport.RabbitMq;
 
