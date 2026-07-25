@@ -31,12 +31,10 @@ selected_assertions=(
     MustBeConcreteClass
     MustBeIn
     MustBeGreaterThanOrEqualTo
-    MustBeOfType
     MustBePositive
     MustBePositiveOrInfinite
     MustBeUri
     MustBeValidEnumValue
-    MustNotBe
     MustNotBeDefault
     MustNotBeDefaultOrEmpty
     MustNotBeEmpty
@@ -51,7 +49,6 @@ selected_assertions=(
 )
 
 factory_overload_assertions=(
-    MustBeOfType
     MustBeUri
     MustNotBeDefault
     MustNotBeEmpty

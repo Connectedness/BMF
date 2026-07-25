@@ -47,14 +47,14 @@ public sealed class GuardClausesPublicApiTests
         var whiteSpace = () => " ".MustNotBeNullOrWhiteSpace();
         var numeric = () => 0.MustBePositive();
         var enumeration = () => ((DayOfWeek) 99).MustBeValidEnumValue();
-        var type = () => new object().MustBeOfType<string>();
+        var type = () => typeof(object).MustBeAssignableTo(typeof(string));
         var uri = () => "http://[::1".MustBeUri();
 
         nullValue.Should().Throw<ArgumentNullException>();
         whiteSpace.Should().Throw<WhiteSpaceStringException>();
         numeric.Should().Throw<ArgumentOutOfRangeException>();
         enumeration.Should().Throw<EnumValueNotDefinedException>();
-        type.Should().Throw<TypeCastException>();
+        type.Should().Throw<ArgumentException>();
         uri.Should().Throw<InvalidUriException>();
     }
 

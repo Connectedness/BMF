@@ -4,6 +4,8 @@
 
 > Implementation approach changed on 2026-07-24: Light.GuardClauses now cleans up annotations correctly during source export, so the generation script no longer rewrites the generated code (it still inserts the source commit into the provenance comment). The export retains the JetBrains `NoEnumeration` annotations and emits the JetBrains annotation types, because ReSharper otherwise reports "possible multiple enumeration" when a guard clause is applied to an `IEnumerable<T>` that is enumerated afterwards. This supersedes the instruction to remove all JetBrains annotations from the export.
 
+> Implementation approach changed on 2026-07-25 (PR review follow-up): `Check.InvalidOperation` and the exception-factory overloads take their message or factory eagerly, so call sites on a publish or per-message path keep an explicit `if` + `throw` instead. `MustNotBe` and `MustBeOfType` lost their last call sites in that pass and were dropped from the export, which also removes `ValuesEqualException` and `TypeCastException`. This supersedes the instruction to select those two assertion roots and a `MustBeOfType` exception-factory overload.
+
 ## Rationale
 
 BrilliantMessaging currently repeats private guard helpers and inline precondition checks across Core, OpenTelemetry, and the transport projects. Consolidate these checks behind a curated, public source export from a compatible Light.GuardClauses checkout, compiled once into BrilliantMessaging.Core. The resulting API should live under `BrilliantMessaging.GuardClauses` and its generated sub-namespaces, giving BrilliantMessaging, its transports, and third-party extensions the same guard-clause surface without adding a runtime package dependency.
@@ -53,12 +55,10 @@ Enable `AssertionWhitelist` and explicitly disable every catalog entry that is n
 - `MustBeConcreteClass`
 - `MustBeIn`
 - `MustBeGreaterThanOrEqualTo`
-- `MustBeOfType`
 - `MustBePositive`
 - `MustBePositiveOrInfinite`
 - `MustBeUri`
 - `MustBeValidEnumValue`
-- `MustNotBe`
 - `MustNotBeDefault`
 - `MustNotBeDefaultOrEmpty`
 - `MustNotBeEmpty`
@@ -71,7 +71,7 @@ Enable `AssertionWhitelist` and explicitly disable every catalog entry that is n
 - `MustNotStartWith`
 - `ObjectDisposed`
 
-Let source reachability retain required helpers, exception types, and factory members rather than selecting those dependencies manually. Keep exception-factory overloads only for assertions used to preserve a domain or state exception, initially `MustBeOfType`, `MustBeUri`, `MustNotBeDefault`, `MustNotBeEmpty`, `MustNotBeNull`, and `MustNotBeNullOrWhiteSpace`; disable factory overloads for the other roots unless migration reveals a concrete call site. This keeps the public generated surface deliberate while still supporting `CloudEventMetadataException` and null-result `InvalidOperationException` cases.
+Let source reachability retain required helpers, exception types, and factory members rather than selecting those dependencies manually. Keep exception-factory overloads only for assertions used to preserve a domain or state exception, initially `MustBeUri`, `MustNotBeDefault`, `MustNotBeEmpty`, `MustNotBeNull`, and `MustNotBeNullOrWhiteSpace`; disable factory overloads for the other roots unless migration reveals a concrete call site. This keeps the public generated surface deliberate while still supporting `CloudEventMetadataException` and null-result `InvalidOperationException` cases.
 
 Use the assertions as value-returning expressions where this simplifies constructors and assignments. Null references map to `MustNotBeNull` or, for unconstrained/reference-capable generic values, `MustNotBeNullReference`; text maps to `MustNotBeNullOrWhiteSpace`; immutable-array and collection invariants map to `MustNotBeDefaultOrEmpty`, `MustNotBeNullOrEmpty`, and `MustNotContainNull`. Numeric constraints map to `MustBePositive`, `MustBePositiveOrInfinite`, `MustNotBeNegative`, `MustBeGreaterThanOrEqualTo`, or `MustBeIn`. Enum, type, URI, reserved-prefix, and forbidden-value checks map to their named assertions. State and disposal checks map to `InvalidOperation` and `ObjectDisposed`.
 

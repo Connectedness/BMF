@@ -236,38 +236,6 @@ namespace BrilliantMessaging.GuardClauses
         }
 
         /// <summary>
-        /// Ensures that <paramref name = "parameter"/> can be cast to <typeparamref name = "T"/> and returns the cast value, or otherwise throws a <see cref = "TypeCastException"/>.
-        /// </summary>
-        /// <param name = "parameter">The value to be cast.</param>
-        /// <param name = "parameterName">The name of the parameter (optional).</param>
-        /// <param name = "message">The message that will be passed to the resulting exception (optional).</param>
-        /// <exception cref = "TypeCastException">Thrown when <paramref name = "parameter"/> cannot be cast to <typeparamref name = "T"/>.</exception>
-        /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "parameter"/> is null.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T MustBeOfType<T>([NotNull, NoEnumeration] this object? parameter, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
-        {
-            if (parameter.MustNotBeNull(parameterName, message)is T castValue)
-                return castValue;
-            Throw.InvalidTypeCast(parameter, typeof(T), parameterName, message);
-            return default;
-        }
-
-        /// <summary>
-        /// Ensures that <paramref name = "parameter"/> can be cast to <typeparamref name = "T"/> and returns the cast value, or otherwise throws your custom exception.
-        /// </summary>
-        /// <param name = "parameter">The value to be cast.</param>
-        /// <param name = "exceptionFactory">The delegate that creates your custom exception. The <paramref name = "parameter"/> is passed to this delegate.</param>
-        /// <exception cref = "Exception">Your custom exception thrown when <paramref name = "parameter"/> cannot be cast to <typeparamref name = "T"/>.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T MustBeOfType<T>([NotNull, NoEnumeration] this object? parameter, Func<object?, Exception> exceptionFactory)
-        {
-            if (parameter is T castValue)
-                return castValue;
-            Throw.CustomException(exceptionFactory, parameter);
-            return default;
-        }
-
-        /// <summary>
         /// Ensures that the specified <paramref name = "parameter"/> is positive (greater than zero), or otherwise
         /// throws an <see cref = "ArgumentOutOfRangeException"/>.
         /// </summary>
@@ -630,88 +598,6 @@ namespace BrilliantMessaging.GuardClauses
             if (!EnumInfo<T>.IsValidEnumValue(parameter))
             {
                 Throw.EnumValueNotDefined(parameter, parameterName, message);
-            }
-
-            return parameter;
-        }
-
-        /// <summary>
-        /// Ensures that <paramref name = "parameter"/> is not equal to <paramref name = "other"/> using the default equality comparer, or otherwise throws a <see cref = "ValuesEqualException"/>.
-        /// </summary>
-        /// <param name = "parameter">The first value to be compared.</param>
-        /// <param name = "other">The other value to be compared.</param>
-        /// <param name = "parameterName">The name of the parameter (optional).</param>
-        /// <param name = "message">The message that will be passed to the resulting exception (optional).</param>
-        /// <exception cref = "ValuesEqualException">Thrown when <paramref name = "parameter"/> and <paramref name = "other"/> are equal.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T MustNotBe<T>(this T parameter, T other, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(parameter, other))
-            {
-                Throw.ValuesEqual(parameter, other, parameterName, message);
-            }
-
-            return parameter;
-        }
-
-        /// <summary>
-        /// Ensures that <paramref name = "parameter"/> is not equal to <paramref name = "other"/> using the specified equality comparer, or otherwise throws a <see cref = "ValuesEqualException"/>.
-        /// </summary>
-        /// <param name = "parameter">The first value to be compared.</param>
-        /// <param name = "other">The other value to be compared.</param>
-        /// <param name = "equalityComparer">The equality comparer used for comparing the two values.</param>
-        /// <param name = "parameterName">The name of the parameter (optional).</param>
-        /// <param name = "message">The message that will be passed to the resulting exception (optional).</param>
-        /// <exception cref = "ValuesEqualException">Thrown when <paramref name = "parameter"/> and <paramref name = "other"/> are equal.</exception>
-        /// <exception cref = "ArgumentNullException">Thrown when <paramref name = "equalityComparer"/> is null.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T MustNotBe<T>(this T parameter, T other, IEqualityComparer<T> equalityComparer, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
-        {
-            if (equalityComparer.MustNotBeNull(nameof(equalityComparer), message).Equals(parameter, other))
-            {
-                Throw.ValuesEqual(parameter, other, parameterName, message);
-            }
-
-            return parameter;
-        }
-
-        /// <summary>
-        /// Ensures that the two strings are not equal using the specified <paramref name = "comparisonType"/>, or otherwise throws a <see cref = "ValuesEqualException"/>.
-        /// </summary>
-        /// <param name = "parameter">The first string to be compared.</param>
-        /// <param name = "other">The second string to be compared.</param>
-        /// <param name = "comparisonType">The enum value specifying how the two strings should be compared.</param>
-        /// <param name = "parameterName">The name of the parameter (optional).</param>
-        /// <param name = "message">The message that will be passed to the resulting exception (optional).</param>
-        /// <exception cref = "ValuesEqualException">Thrown when <paramref name = "parameter"/> is equal to <paramref name = "other"/>.</exception>
-        /// <exception cref = "ArgumentException">Thrown when <paramref name = "comparisonType"/> is not a valid value from the <see cref = "StringComparison"/> enum.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string? MustNotBe(this string? parameter, string? other, StringComparison comparisonType, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
-        {
-            if (string.Equals(parameter, other, comparisonType))
-            {
-                Throw.ValuesEqual(parameter, other, parameterName, message);
-            }
-
-            return parameter;
-        }
-
-        /// <summary>
-        /// Ensures that the two strings are not equal using the specified <paramref name = "comparisonType"/>, or otherwise throws a <see cref = "ValuesEqualException"/>.
-        /// </summary>
-        /// <param name = "parameter">The first string to be compared.</param>
-        /// <param name = "other">The second string to be compared.</param>
-        /// <param name = "comparisonType">The enum value specifying how the two strings should be compared.</param>
-        /// <param name = "parameterName">The name of the parameter (optional).</param>
-        /// <param name = "message">The message that will be passed to the resulting exception (optional).</param>
-        /// <exception cref = "ValuesEqualException">Thrown when <paramref name = "parameter"/> is equal to <paramref name = "other"/>.</exception>
-        /// <exception cref = "ArgumentException">Thrown when <paramref name = "comparisonType"/> is not a valid value from the <see cref = "StringComparisonType"/> enum.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string? MustNotBe(this string? parameter, string? other, StringComparisonType comparisonType, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null)
-        {
-            if (parameter.Equals(other, comparisonType))
-            {
-                Throw.ValuesEqual(parameter, other, parameterName, message);
             }
 
             return parameter;
@@ -1957,27 +1843,6 @@ namespace BrilliantMessaging.GuardClauses.Exceptions
     }
 
     /// <summary>
-    /// This exception indicates that a value cannot be cast to another type.
-    /// </summary>
-    [Serializable]
-    public class TypeCastException : ArgumentException
-    {
-        /// <summary>
-        /// Creates a new instance of <see cref = "TypeCastException"/>.
-        /// </summary>
-        /// <param name = "parameterName">The name of the parameter (optional).</param>
-        /// <param name = "message">The message of the exception (optional).</param>
-        public TypeCastException(string? parameterName = null, string? message = null) : base(message, parameterName)
-        {
-        }
-
-        /// <inheritdoc/>
-        protected TypeCastException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
-    }
-
-    /// <summary>
     /// This exception indicates that an URI is invalid.
     /// </summary>
     [Serializable]
@@ -1994,27 +1859,6 @@ namespace BrilliantMessaging.GuardClauses.Exceptions
 
         /// <inheritdoc/>
         protected UriException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
-    }
-
-    /// <summary>
-    /// This exception indicates that two values are equal.
-    /// </summary>
-    [Serializable]
-    public class ValuesEqualException : ArgumentException
-    {
-        /// <summary>
-        /// Creates a new instance of <see cref = "ValuesEqualException"/>.
-        /// </summary>
-        /// <param name = "parameterName">The name of the parameter (optional).</param>
-        /// <param name = "message">The message of the exception (optional).</param>
-        public ValuesEqualException(string? parameterName = null, string? message = null) : base(message, parameterName)
-        {
-        }
-
-        /// <inheritdoc/>
-        protected ValuesEqualException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
     }
@@ -2119,12 +1963,6 @@ namespace BrilliantMessaging.GuardClauses.ExceptionFactory
         [DoesNotReturn]
         public static void InvalidOperation(string? message = null) => throw new InvalidOperationException(message);
         /// <summary>
-        /// Throws the default <see cref = "TypeCastException"/> indicating that a reference cannot be downcast, using the
-        /// optional parameter name and message.
-        /// </summary>
-        [DoesNotReturn]
-        public static void InvalidTypeCast(object? parameter, Type targetType, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null) => throw new TypeCastException(parameterName, message ?? $"{parameterName ?? "The value"} {parameter.ToStringOrNull()} cannot be cast to \"{targetType}\".");
-        /// <summary>
         /// Throws the default <see cref = "ArgumentException"/> indicating that values of the candidate type cannot be
         /// assigned to variables of the required type, using the optional parameter name and message.
         /// </summary>
@@ -2204,12 +2042,6 @@ namespace BrilliantMessaging.GuardClauses.ExceptionFactory
         /// </summary>
         [DoesNotReturn]
         public static void MustBeUri(string parameter, UriKind uriKind, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null) => throw new InvalidUriException(parameterName, message ?? $"{parameterName ?? "The string"} must be a valid URI ({uriKind}), but it actually is \"{parameter}\".");
-        /// <summary>
-        /// Throws the default <see cref = "ValuesEqualException"/> indicating that two values are equal, using the optional
-        /// parameter name and message.
-        /// </summary>
-        [DoesNotReturn]
-        public static void ValuesEqual<T>(T parameter, T other, [CallerArgumentExpression("parameter")] string? parameterName = null, string? message = null) => throw new ValuesEqualException(parameterName, message ?? $"{parameterName ?? "The value"} must not be equal to {other.ToStringOrNull()}, but it actually is {parameter.ToStringOrNull()}.");
         /// <summary>
         /// Throws the default <see cref = "WhiteSpaceStringException"/> indicating that a string contains only white space,
         /// using the optional parameter name and message.
