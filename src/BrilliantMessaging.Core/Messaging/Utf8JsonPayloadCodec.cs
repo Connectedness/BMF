@@ -58,11 +58,14 @@ public sealed class Utf8JsonPayloadCodec : IPayloadCodec
 
     private JsonTypeInfo GetRequiredTypeInfo(Type type)
     {
-        _serializerOptions.TryGetTypeInfo(type, out var typeInfo);
-        return typeInfo.MustNotBeNull(
-            () => new InvalidOperationException(
-                $"JsonTypeInfo metadata for type '{type}' was not provided by TypeInfoResolver of type '{GetResolverDisplayName()}'. If using source generation, ensure that all root types passed to the codec have been annotated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically."
-            )
+        // This runs per encoded and decoded message, so no closure is allocated for the failure message.
+        if (_serializerOptions.TryGetTypeInfo(type, out var typeInfo))
+        {
+            return typeInfo;
+        }
+
+        throw new InvalidOperationException(
+            $"JsonTypeInfo metadata for type '{type}' was not provided by TypeInfoResolver of type '{GetResolverDisplayName()}'. If using source generation, ensure that all root types passed to the codec have been annotated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically."
         );
     }
 
