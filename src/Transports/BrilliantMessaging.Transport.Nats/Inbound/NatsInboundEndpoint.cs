@@ -34,9 +34,8 @@ public sealed class NatsInboundEndpoint<TMessage> : NatsInboundEndpoint
         redeliveryClassifier
     )
     {
-        handlerType
-           .MustBeAssignableTo(typeof(IMessageHandler<TMessage>))
-           .MustBeConcreteClass(nameof(handlerType));
+        // InboundEndpoint's constructor already ensured that handlerType is a concrete class.
+        handlerType.MustBeAssignableTo(typeof(IMessageHandler<TMessage>));
 
         Subject = subject;
     }

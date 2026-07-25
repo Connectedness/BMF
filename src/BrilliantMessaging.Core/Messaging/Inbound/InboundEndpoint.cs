@@ -174,8 +174,7 @@ public class InboundEndpoint<TMessage> : InboundEndpoint
             redeliveryClassifier
         )
     {
-        handlerType
-           .MustBeAssignableTo(typeof(IMessageHandler<TMessage>))
-           .MustBeConcreteClass(nameof(handlerType));
+        // The base constructor already ensured that handlerType is a concrete class.
+        handlerType.MustBeAssignableTo(typeof(IMessageHandler<TMessage>));
     }
 }

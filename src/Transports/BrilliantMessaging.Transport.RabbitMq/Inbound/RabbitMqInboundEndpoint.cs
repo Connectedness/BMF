@@ -88,8 +88,7 @@ public sealed class RabbitMqInboundEndpoint<TMessage> : RabbitMqInboundEndpoint
             redeliveryClassifier
         )
     {
-        handlerType
-           .MustBeAssignableTo(typeof(IMessageHandler<TMessage>))
-           .MustBeConcreteClass(nameof(handlerType));
+        // InboundEndpoint's constructor already ensured that handlerType is a concrete class.
+        handlerType.MustBeAssignableTo(typeof(IMessageHandler<TMessage>));
     }
 }
