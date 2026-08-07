@@ -15,45 +15,50 @@ sort-direction: descending
 exclude-contributors:
   - renovate[bot]
 
-exclude-labels:
-  - skip-changelog
-  - renovate
-  - chore
-  - ci
-  - build
-  - test
-  - refactor
-
-include-labels:
-  - breaking
-  - enhancement
-  - feature
-  - bug
-  - fix
-  - perf
-  - docs
-  - documentation
-
 category-template: '### $TITLE'
 categories:
+  - type: 'pre-include'
+    when:
+      labels:
+        - breaking
+        - enhancement
+        - feature
+        - bug
+        - fix
+        - perf
+        - docs
+        - documentation
+  - type: 'pre-exclude'
+    when:
+      labels:
+        - skip-changelog
+        - renovate
+        - chore
+        - ci
+        - build
+        - test
+        - refactor
   - title: '💥 Breaking Changes'
-    labels:
-      - breaking
+    when:
+      label: breaking
   - title: '✨ Features'
-    labels:
-      - enhancement
-      - feature
+    when:
+      labels:
+        - enhancement
+        - feature
   - title: '🐛 Bug Fixes'
-    labels:
-      - bug
-      - fix
+    when:
+      labels:
+        - bug
+        - fix
   - title: '⚡ Performance Improvements'
-    labels:
-      - perf
+    when:
+      label: perf
   - title: '📚 Documentation'
-    labels:
-      - docs
-      - documentation
+    when:
+      labels:
+        - docs
+        - documentation
 
 include-pre-releases: false
 
